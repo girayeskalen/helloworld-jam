@@ -1,2 +1,2 @@
 # helloworld-jam
-HelloWorld oyun projemiz
+HelloWorld oyun projemiz.
