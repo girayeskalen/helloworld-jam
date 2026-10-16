@@ -20,9 +20,13 @@ export class TacticalHUD {
 
   constructor(root: HTMLElement, controller: GameController, level: LevelData, private readonly audio: SoundSynth) {
     this.actionIds = level.interventions.map(action => action.id);
+    const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]') ?? document.createElement('link');
+    favicon.rel = 'icon';
+    favicon.href = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" rx="7" fill="#242c27"/><path d="M3 23h8l4-13 6 23 5-17 4 7h7" fill="none" stroke="#dbc18b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+    if (!favicon.isConnected) document.head.append(favicon);
     root.innerHTML = `
       <header class="hud-header">
-        <div class="brand"><span class="brand-mark">◉</span><h1>ARTÇI</h1><div class="brand-caption">AFTERSHOCK<br><span>TACTICAL REWIND</span></div></div>
+        <div class="brand"><svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true"><path d="M2 23h9l4-13 6 23 5-17 4 7h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><h1>ARTÇI</h1><div class="brand-caption">AFTERSHOCK<br><span>TACTICAL REWIND</span></div></div>
         <div class="header-meta">FELAKETİ GÖR. GELECEĞİ DEĞİŞTİR.<br><span>AFET HAZIRLIĞI VE FARKINDALIK / v0.1</span></div>
         <button id="sound" class="sound-button" type="button">SESİ AÇ</button>
       </header>
@@ -92,7 +96,7 @@ export class TacticalHUD {
     this.clock.hidden = !evacuating;
     this.clock.textContent = `ARTÇIYA ${state.aftershockRemaining.toFixed(1)} sn`;
     this.clock.classList.toggle('urgent', state.aftershockRemaining < 4);
-    this.event.textContent = state.events.at(-1)?.message ?? (planning ? 'Kırmızı kesik oklar: öngörülen riskler · Turkuaz: önlem alındı' : 'Önce gözlemle. Her olay bir sonraki tehlikeyi tetikleyebilir.');
+    this.event.textContent = state.events.at(-1)?.message ?? (planning ? 'Kesik oklar: öngörülen riskler · Yeşil işaret: önlem alındı' : 'Önce gözlemle. Her olay bir sonraki tehlikeyi tetikleyebilir.');
     this.report.hidden = !state.score;
     if (state.score && this.lastScore !== JSON.stringify(state.score)) {
       this.lastScore = JSON.stringify(state.score);
