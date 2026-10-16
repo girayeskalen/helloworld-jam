@@ -1,15 +1,81 @@
-# helloworld-jam
-HelloWorld oyun projemiz.
+# ARTÇI — AFTERSHOCK: Tactical Rewind
+
+CIVIL GAME JAM 2026 için **Afet Hazırlığı ve Farkındalık** temalı, 2D yandan kesitli taktiksel afet öngörü ve zamanı geri sarma oyunu. Into the Breach'in risk okuması ve Katana ZERO'nun yeniden deneme fikrinden esinlenir; bu oyunların kodu veya kaynakları kullanılmaz.
 
 İki kişilik ekibimizin ortak deposu: [girayeskalen/helloworld-jam](https://github.com/girayeskalen/helloworld-jam).
 
-Henüz oyun motoru seçmedik. Motor ve proje yapısı belirlendiğinde kurulum ve çalıştırma adımlarını buraya ekleyeceğiz.
+**Vertical Slice v0.1:** Vite + TypeScript + HTML5 Canvas 2D + Web Audio API. Bütün grafikler kodla çizilir; sesler çalışma anında sentezlenir. Harici görsel, ses veya font dosyası indirilmez. Çizim yüzeyi 1280×720'dir ve pencereye orantılı ölçeklenir.
+
+## Kurulum ve çalıştırma
+
+[Node.js](https://nodejs.org/) **22.12 veya üstü** ve npm gerekir. Güncel masaüstü Chrome/Edge/Firefox gibi Canvas 2D ve Web Audio destekleyen bir tarayıcı kullanın. Chromium üzerinde otomatik doğrulama yapılmıştır; diğer tarayıcılarda manuel kontrol sıradaki görevdir.
+
+Proje kökünde:
+
+```sh
+npm install
+npm run dev
+```
+
+Geliştirme sunucusu varsayılan olarak `http://127.0.0.1:5173` adresini tarayıcıda açar. Port doluysa terminalde yazan adresi kullanın. Ses tarayıcı kuralı gereği ilk tıklama/tuştan sonra açılır; **M** veya ses düğmesiyle kapatılabilir. Sekme gizlenince simülasyon ve geri sayım duraklar.
+
+```sh
+npm run build
+npm run preview
+```
+
+`build`, önce sıkı TypeScript kontrolünü sonra Vite üretim derlemesini çalıştırır. Çıktı `dist/` dizinindedir. `preview` bu çıktıyı yerelde sunar; terminaldeki adresi açın. Üretim sürümünü `index.html` dosyasına çift tıklayarak değil, HTTP üzerinden çalıştırın. Kurulu bağımlılıkları kilit dosyasından birebir yenilemek için `npm ci` kullanılabilir.
+
+Oynanış testlerini çalıştırmak için bir kez test tarayıcısını kurun:
+
+```sh
+npx playwright install chromium
+npm test
+```
+
+Testler kendi Vite sunucusunu 5174 portunda açar; portun boş olması gerekir. Linux'ta eksik sistem kütüphaneleri bildirilirse Playwright'ın [kurulum rehberini](https://playwright.dev/docs/browsers#install-system-dependencies) izleyin. Normal oyun/derleme için test tarayıcısı kurulumu gerekmez.
+
+## Nasıl oynanır?
+
+1. **FORESIGHT / Öngörü:** Dört saniyelik felaket otomatik oynar. Dolap devrilir, lamba düşer, gaz kaçağı kıvılcımla patlamaya dönüşür; panikle merdivene yönelen Deniz yaralanır.
+2. **REWIND / Geri sarma:** Kaydedilen fizik ve NPC durumları 1,5 saniyede VHS efektiyle T=0'a döner.
+3. **PLANNING / Planlama:** Üç AP'yi kullanın. Nesneye veya sağdaki düğmeye tıklayın; **1:** dolabı L-demirle sabitle, **2:** Deniz'e masa altında Çök-Kapan-Tutun komutu ver, **3:** otomatik gaz kesici sensör tak. **R** planı sıfırlar. Aynı müdahale iki kez AP harcamaz.
+4. **EXECUTION / Uygulama:** **Space** veya “Depremi Başlat” ile kararları sınayın. Sarsıntı bitince **WASD / yön tuşlarıyla** Deniz'i sağdaki turkuaz zemin çıkışına götürün. Merdiven enkazının altındaki açık koridoru izleyin. Artçıya kadar 10 saniye vardır. Karne açıldığında **R** veya “Yeniden Dene” tüm döngüyü başlatır.
+
+Karne: mühendislik 40 + farkındalık 30 + tahliye 30 = 100 puan. **S:** 100, **A:** 80–99, **B:** 50–79, **C:** 0–49. Üç önlem ve başarılı tahliye S-rank verir. Yalnızca farkındalık müdahalesi gaz kaynaklı yaralanmayı engellemez. Bu, oyunun kendi puan sistemidir; jam jüri ölçütlerinden ayrıdır.
+
+Bu prototipteki 4 ve 10 saniyelik süreler oyun tasarımıdır; gerçek depremi veya artçı zamanını öngörmez. Eğitim içeriği [AFAD önerilerinden](https://afad.gov.tr/deprem-oncesi-ani-ve-sonrasi-alabileceginiz-onlemleri-biliyor-musunuz) özetlenmiştir. Oyun, fiziksel bina güvenliği değerlendirmesi yapmaz.
+
+## Mimari ve dosya sahipliği
+
+```text
+src/
+  types/game.ts                 Ortak sözleşme; değişiklikler koordineli
+  core/                         Kişi 1 — Core Simulation & Physics
+    Engine.ts                   Sabit 60 Hz adım / render döngüsü
+    SimulationManager.ts        Dört faz, AP, giriş, tahliye, karne
+    TimelineRewind.ts            İzole snapshot kaydı ve ters örnekleme
+    PhysicsHazardSystem.ts      Yerçekimi, devrilme ve olay zinciri
+  ui_vfx/                       Kişi 2 — Tactical UI, Audio, VFX
+    Renderer.ts                 Blueprint kesit, tehlike vektörleri, VHS
+    TacticalHUD.ts              Erişilebilir DOM düğmeleri ve karne
+    SoundSynth.ts               Web Audio sentezi ve ses kontrolü
+    ParticleSystem.ts           Olay tabanlı parçacıklar
+    styles.css                  HUD ve duyarlı ekran yerleşimi
+  levels/levels.ts              Kişi 2 — Salt bölüm verisi ve farkındalık
+  main.ts                       Kişi 1 — Sistem bağlantıları / entegrasyon
+tests/game.spec.ts              Kişi 1 — Tarayıcı ve simülasyon kontrolleri
+```
+
+Core, DOM/Canvas/Web Audio'ya bağımlı değildir; `Engine` yalnızca zamanlama için tarayıcı API'sini kullanır. Sunum, `GamePresentation` üzerinden salt okunur `GameState` alır; müdahaleleri `GameController` aracılığıyla iletir. `Phase` dört ana durumdan oluşur; son fazın `ExecutionStage` adımları `SHAKING`, `EVACUATION`, `REPORT` olarak ayrılır. Fizik 60 Hz'dir; çizim ve ses rastgeleliği simülasyon sonucunu değiştirmez. `TimelineRewind` bölüm verisini ve orijinal snapshot'ları değiştirmeden kopyalar. Yeni bölümler mevcut sözleşmeyle `levels/` içinde hazırlanır.
+
+Paralel çalışma sırasında `feat/core-*` ve `feat/ui-*` gibi ayrı dallar kullanın. **Kişi 1**, ortak tipler, giriş noktası, kök yapılandırmalar, lock dosyası ve ortak belgelerin entegrasyon sorumlusudur. **Kişi 2**, `src/ui_vfx/` ve `src/levels/` dışında değişiklik yapmadan arayüz taleplerini kendi PR açıklamasında iletir. Ortak sözleşme değişikliği önce birlikte kararlaştırılır, sonra tek kişi uygular. Ayrı dosya sahipliği aynı satırların paralel düzenlenmesini önler; Git bütün olası birleştirmelerde sıfır çakışma garantisi vermez. Ayrıntılar [AGENTS.md](AGENTS.md) içinde.
 
 ## Ortak çalışma düzeni
 
 - Herkes kendi bilgisayarındaki proje kopyasında, kendi GitHub ve Codex hesabıyla çalışır.
 - Değişiklikleri GitHub üzerinden paylaşırız. Bir kişinin Codex sohbeti diğer kişinin sohbetine aktarılmaz; ortak kararları ve görev durumlarını dosyalara yazarız.
-- Başlangıçta ortak `main` dalında çalışıyoruz. Aynı dosyayı aynı anda değiştirmeden önce haberleşiriz; görev sahiplerini `STATUS.md` içinde belirtiriz.
+- `main` entegrasyon dalıdır; herkes kendi görev dalında çalışır. Aynı dosyayı aynı anda değiştirmeden önce haberleşiriz; görev sahiplerini `STATUS.md` içinde belirtiriz.
 - **Kaydetmek** dosyayı bilgisayarında günceller. **Commit** değişikliklerin yerel Git kaydını oluşturur. **Push** commitleri GitHub'a gönderir. **Pull** GitHub'daki değişiklikleri bilgisayarına alır.
 
 ## 1. Projeyi aç
@@ -92,7 +158,7 @@ git push
 git status
 ```
 
-Push başarılı olunca GitHub depo sayfasında son commit görünür. `git status` yerel dalın `origin/main` ile güncel olduğunu ve çalışma alanının temiz olduğunu göstermelidir.
+Push başarılı olunca GitHub depo sayfasında son commit görünür. `git status` yerel dalın takip ettiği uzak dalla güncel olduğunu ve çalışma alanının temiz olduğunu göstermelidir.
 
 GitHub oturum açma ekranı çıkarsa **Sign in with your browser** düğmesine tıkla, tarayıcıda kendi hesabına giriş yap ve gösterilen yetkilendirmeyi tamamla. Şifreni veya erişim anahtarını README'ye ya da sohbete yazma.
 
@@ -112,3 +178,4 @@ Henüz kendi bilgisayarına indirmediyse VS Code'da `Ctrl+Shift+P` → **Git: Cl
 
 - `STATUS.md`: görevler, görev sahipleri ve bilinen sorunlar.
 - `AGENTS.md`: Codex'in bu depoda çalışırken uyması gereken kurallar.
+- `BEYAN.md`: AI ve hazır kaynak kullanımı, kaynaklar ve lisans kayıtları. Teslim formuna aktarılacak canlı kayıttır.
