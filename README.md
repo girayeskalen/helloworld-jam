@@ -3,7 +3,11 @@ HelloWorld oyun projemiz.
 
 İki kişilik ekibimizin ortak deposu: [girayeskalen/helloworld-jam](https://github.com/girayeskalen/helloworld-jam).
 
-Henüz oyun motoru seçmedik. Motor ve proje yapısı belirlendiğinde kurulum ve çalıştırma adımlarını buraya ekleyeceğiz.
+Oyun motoru: **standart Godot 4.7.2 + GDScript**. Başlangıç yaklaşımımız küçük bir 2D oyun, Compatibility renderer ve Windows x86_64 teslimi. Ayrıntılı karşılaştırma ve seçim gerekçesi [ENGINE_DECISION.md](ENGINE_DECISION.md) içinde. Bu bilgisayarda editör ve CLI sürümü doğrulandı; export şablonları ve diğer bilgisayarın kurulumu henüz doğrulanmadı. Henüz oyun projesi yok; çalıştırma adımları gerçek proje oluştuğunda eklenecek.
+
+Yarışma öncesi adım adım hazırlık için [PREPARATION.md](PREPARATION.md) dosyasını oku. Bu rehber araç kurulumu ve tarihli ekip hazırlığını kapsar. Güncel aşama ve görevler [STATUS.md](STATUS.md) içinde takip edilir.
+
+Ekip yeni bir oyun fikri belirledi; ayrıntıları henüz bu depoya aktarılmadı. [GAME_DESIGN.md](GAME_DESIGN.md), önceki ve seçilmeyen oyun önerisinin arşividir; yeni oyunun uygulama planı değildir. Yeni fikir ve görevler paylaşılana kadar oyun geliştirmesine başlanmayacak.
 
 ## Ortak çalışma düzeni
 
@@ -112,3 +116,8 @@ Henüz kendi bilgisayarına indirmediyse VS Code'da `Ctrl+Shift+P` → **Git: Cl
 
 - `STATUS.md`: görevler, görev sahipleri ve bilinen sorunlar.
 - `AGENTS.md`: Codex'in bu depoda çalışırken uyması gereken kurallar.
+- `PREPARATION.md`: yarışma öncesi hazırlık adımları ve seçilen motorun kurulumu.
+- `ENGINE_DECISION.md`: motor karşılaştırması, seçim gerekçesi ve doğrulanan kurulum durumu.
+- `GAME_DESIGN.md`: seçilmeyen önceki oyun önerileri ve tasarım araştırması arşivi.
+- `SOURCES.md`: AI kullanımı ve hazır kaynak/lisans kayıtları.
+- `SUBMISSION.md`: yarışma sonunda web teslimi için doldurulacak taslak.
