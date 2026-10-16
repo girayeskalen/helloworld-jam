@@ -61,14 +61,15 @@ src/
     PhysicsHazardSystem.ts      Matter dünyası, darbeler, kırılma ve gerçek bağlar
     PhysicsLevel.ts             Kişi 1 referans fizik sahnesi; eski bölüm verisini korur
   ui_vfx/                       Kişi 2 — Tactical UI, Audio, VFX
-    Renderer.ts                 Blueprint kesit, tehlike vektörleri, VHS
-    TacticalHUD.ts              Erişilebilir DOM düğmeleri ve karne
+    Renderer.ts                 Malzemeli kesit, tehlike vektörleri, VHS (v0.1 sözleşmesi)
+    SceneArt.ts                 Kişi 2 — Önbellekli mimari ve prosedürel malzemeler
+    TacticalHUD.ts              Erişilebilir DOM düğmeleri ve karne (v0.1)
     SoundSynth.ts               Web Audio sentezi ve ses kontrolü
     ParticleSystem.ts           Olay tabanlı parçacıklar
     styles.css                  HUD ve duyarlı ekran yerleşimi
   levels/levels.ts              Kişi 2 — Salt bölüm verisi ve farkındalık
   integration/                  Kişi 1 — Yeni fizik sözleşmesinin çalışan referans sunumu
-    PhysicsView.ts              Gövde köşeleri, tutunma ve planlama kontrolleri
+    PhysicsView.ts              Gerçek gövdeler + SceneArt; tutunma/planlama kontrolleri
     physics.css                 Referans görünüm stilleri
   main.ts                       Kişi 1 — Sistem bağlantıları / entegrasyon
 tests/game.spec.ts              Kişi 1 — Gerçek tuş/fare, faz ve HUD kontrolleri
@@ -77,7 +78,9 @@ tests/physics.spec.ts           Kişi 1 — Rijit cisim, snapshot, AP, grip ve t
 
 Core, DOM/Canvas/Web Audio'ya bağımlı değildir; `Engine` yalnızca zamanlama için tarayıcı API'sini kullanır. Sunum, `GamePresentation` üzerinden salt okunur `GameState` alır; müdahaleleri `GameController` aracılığıyla iletir. `Phase` dört ana durumdan oluşur; son fazın `ExecutionStage` adımları `SHAKING`, `EVACUATION`, `REPORT` olarak ayrılır. Oynanış 60 Hz, Matter alt adımları 120 Hz, kayıt 30 Hz'dir. Çizim ve ses rastgeleliği fiziği etkilemez. Snapshot içinde Matter nesnesi tutulmaz; konum, hız, açı, kırılma, gaz durumu ve bağ varlığı serileştirilir. Geri sarma sırasında fizik ileri işletilmez. Planlama/tekrar başlangıcı temiz dünyadan yeniden kurulur. Ara bir snapshot'tan devam için solver temas önbelleği yeniden oluşturulur; bit düzeyinde ara kare devamı garantisi verilmez.
 
-**Kişi 2'ye entegrasyon:** `src/ui_vfx/` ve `src/levels/` dosyaları bu görevde değiştirilmedi. `main.ts` şu an `src/integration/PhysicsView.ts` referans sunumunu kullanır; SoundSynth ve ParticleSystem mevcut modüllerden alınır. Kişi 2 kendi Renderer/HUD'unu yeni `GameState.physicsBodies`, `constraints`, `safeTriangles`, `grip`, `seismic` alanlarına geçirebilir. `x/y` kütle merkezi, `angle` radyandır; kaymış kütle merkezi ve compound masayı doğru çizmek için `parts` dünya köşelerini kullanın. `dangerArc` sabitlenmemiş yüksek eşyaların öngörü alanıdır. AP, müdahale maliyeti ve süreleri `LevelData` üzerinden okuyun; eski HUD 3 AP varsaydığı için doğrudan yeniden bağlanmamalıdır.
+**Görsel dal entegrasyonu:** `feat/ui-realistic-visuals` dalındaki `fa2de72` değişikliği, v0.2 fizik çalışmasıyla birleştirildi. Arkadaşın Renderer/HUD/SceneArt/efekt/stil kodu korunur. Aktif `PhysicsView`, `SceneArt` mimari arka planı ve ahşap/beton malzemeleri ile güncellenen ParticleSystem ve genel stilleri kullanır; hareketli nesneleri gerçek `physicsBodies.parts` köşelerinden çizer.
+
+**Kişi 2'ye kalan uyarlama:** Ayrıntılı `Renderer.ts` ve `TacticalHUD.ts` hâlâ eski animasyon/AP düzenini kullanıyor; doğrudan aktif görünüm yapılmadı. Bu modülleri `physicsBodies`, `constraints`, `safeTriangles`, `grip`, `seismic` alanlarına geçirin. `x/y` kütle merkezi, `angle` radyandır; kaymış kütle merkezi ve compound masa için `parts` dünya köşelerini kullanın. AP/maliyet/süreleri `LevelData` üzerinden okuyun. `PhysicsView.ts` çalışan referanstır; görsel katkının doğrulama ve AI notları [VISUAL_NOTES.md](src/ui_vfx/VISUAL_NOTES.md) içindedir.
 
 `PhysicsLevel.ts`, eski bölüm verisini değiştirmeden v0.2 fizik tanımlarına dönüştürür. `LevelData.physics` ile yeni veri geçirilebilir; şu referans sistem `ground`, `upper-floor`, `wall-left`, `column`, `ceiling-beam`, `ceiling-a`, `ceiling-b`, `lamp`, `gas` ve `desk` kimliklerini bekler. Şu an bir kontrol edilebilir NPC vardır. Kesit modelinde NPC, masa ayaklarının önünden/arkasından geçebilir: yalnız sağlam masa/NPC çarpışması filtrelenir; eşya–masa ve karakter–enkaz temasları tam fizikseldir. NPC diğer eşyaların içinden geçmez.
 

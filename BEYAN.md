@@ -14,7 +14,7 @@ Araç: **OpenAI Codex, GPT-6 tabanlı kodlama ajanı**. Bu oturumun tam model s�
 
 | Kategori | Durum | Amaç, çıktı ve kullanım yeri |
 | --- | --- | --- |
-| Görsel | Kullanıldı | Blueprint görsel tasarımının ve prosedürel çizim/VHS/parçacık kodunun AI ile üretimi: `src/ui_vfx/Renderer.ts`, `ParticleSystem.ts`, `styles.css`; v0.2 referans çizimi `src/integration/PhysicsView.ts` ve `physics.css`. AI görsel üretim aracı veya dış görsel dosyası kullanılmadı; katkı çizim kodu yoluyla dolaylıdır. |
+| Görsel | Kullanıldı | İlk Blueprint tasarımının ve sonraki doğal malzeme/ışık/gölge, iç mekân, karakter, VHS/parçacık kodunun AI ile üretimi: `src/ui_vfx/Renderer.ts`, `SceneArt.ts`, `ParticleSystem.ts`, `styles.css`; v0.2 referans çizimi `src/integration/PhysicsView.ts` ve `physics.css`. AI görsel üretim aracı veya dış görsel dosyası kullanılmadı; katkı çizim kodu yoluyla dolaylıdır. |
 | Ses | Kullanıldı | Osilatör, filtre, gürültü ve zarfla ses sentezi tasarımı/kodu: `src/ui_vfx/SoundSynth.ts`. AI ses üretim servisi veya hazır kayıt yok; katkı sentez kodu yoluyla dolaylıdır. |
 | Kod | Kullanıldı | Vite/TypeScript iskeleti, ortak veri tipleri, dört faz, fizik olay zinciri, snapshot geri sarma, AP, tahliye, HUD, bölüm verisi ve tarayıcı testleri; v0.2 Matter entegrasyonu, kırılma/yük modeli, fizik snapshot'ları, aktif tutunma/zıplama ve referans entegrasyon görünümü: `src/**`, kök yapılandırmalar, `tests/**`, `playwright.config.ts`. |
 | Metin | Kullanıldı | Oyun içi Türkçe açıklamalar, müdahale ve karne metinleri, bu beyan ile README/STATUS/AGENTS güncellemeleri. Farkındalık cümleleri AFAD'dan kontrol edilerek özgün biçimde özetlendi. |
@@ -77,4 +77,9 @@ Kaynak: `package-lock.json` ve kurulu paketlerin `package.json` lisans/üretici 
 
 ## v0.2 kapsam notu
 
-Kişi 1 göreviyle Matter.js ve tipleri kuruldu. Mevcut `src/ui_vfx/` ve `src/levels/` içeriği korunarak yeni referans sunum `src/integration/` içinde oluşturuldu. Fizik/hasar birimleri ve dalga sinyali oyun modelidir; gerçek yapı dayanımı veya öngörü iddiası değildir. Kullanıcı bu görevde commit ve push istemedi.
+Kişi 1 göreviyle Matter.js ve tipleri kuruldu. Mevcut `src/ui_vfx/` ve `src/levels/` içeriği korunarak yeni referans sunum `src/integration/` içinde oluşturuldu. Fizik/hasar birimleri ve dalga sinyali oyun modelidir; gerçek yapı dayanımı veya öngörü iddiası değildir. İlk fizik görevinde commit/push istenmedi; sonraki kullanıcı isteğiyle Git paylaşımı ve görsel dal entegrasyonu yapıldı.
+
+
+## Görsel dal entegrasyon kaydı
+
+`feat/ui-realistic-visuals` / `fa2de72` katkısının kendi beyanı [VISUAL_NOTES.md](src/ui_vfx/VISUAL_NOTES.md) içindedir. Araç OpenAI Codex; tam model etiketi ayrıca doğrulanmadı. Görsel ve kod katkısı SceneArt, Renderer, TacticalHUD, ParticleSystem ve stillerde; metin/diğer katkısı tasarım vizyonu, entegrasyon notları ve doğrulamadır. Bu görsel görevde yeni ses kodu, hazır görsel/ses/font, yeni paket veya asset indirmesi bildirilmedi. Önceki ses ve AI kayıtları korunur. Birleşik v0.2 görünümü SceneArt arka planı/malzemelerini gerçek fizik gövdeleriyle kullanır; ayrıntılı Renderer/HUD geçişi takip işidir.

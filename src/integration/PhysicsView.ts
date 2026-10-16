@@ -1,12 +1,14 @@
 import type { DeepReadonly, GameController, GamePresentation, GameState, LevelData, PhysicsBodyState, Vec2 } from '../types/game';
 import { ParticleSystem } from '../ui_vfx/ParticleSystem';
 import { SoundSynth } from '../ui_vfx/SoundSynth';
+import { SceneArt } from '../ui_vfx/SceneArt';
 import './physics.css';
 
 const colors = { cyan: '#89e6c6', danger: '#ff8b70', gold: '#efc580', dim: '#547483' };
 /** Fizik sözleşmesinin referans entegrasyonu. ui_vfx/ ve levels/ dosyalarına dokunmaz. */
 export class PhysicsView implements GamePresentation {
   private readonly ctx: CanvasRenderingContext2D;
+  private readonly art: SceneArt;
   private readonly particles = new ParticleSystem();
   readonly sound = new SoundSynth();
   private phase = '';
@@ -16,6 +18,7 @@ export class PhysicsView implements GamePresentation {
 
   constructor(canvas: HTMLCanvasElement, private readonly root: HTMLElement, private readonly level: LevelData, controller: GameController) {
     this.ctx = canvas.getContext('2d')!;
+    this.art = new SceneArt(this.ctx);
     root.innerHTML = `
       <header class="p-header"><h1>ARTÇI</h1><div class="p-sub">AFTERSHOCK<br>TACTICAL REWIND</div><div class="p-version">YÜK YOLU / 01<br>TAKTİK SİMÜLASYON · v0.2</div><button id="sound" class="p-sound">SESİ AÇ</button></header>
       <nav class="p-phases">${['FORESIGHT', 'REWIND', 'PLANNING', 'EXECUTION'].map((phase, i) => `<span data-phase="${phase}">0${i + 1} ${['ÖNGÖRÜ', 'GERİ SARMA', 'HAZIRLIK', 'HAYATTA KAL'][i]}</span>`).join('')}</nav>
@@ -90,15 +93,11 @@ export class PhysicsView implements GamePresentation {
 
   private draw(state: DeepReadonly<GameState>): void {
     const ctx = this.ctx;
-    ctx.clearRect(0, 0, 1280, 720); ctx.fillStyle = '#081a25'; ctx.fillRect(0, 0, 1280, 720);
-    for (let x = 0; x < 1280; x += 24) this.line(x, 120, x, 720, '#14303e', 0.5);
-    for (let y = 120; y < 720; y += 24) this.line(0, y, 1280, y, '#14303e', 0.5);
+    // Kişi 2'nin önbellekli mimarisi; hareketli nesneler yalnız gerçek fizik köşelerinden çizilir.
+    ctx.clearRect(0, 0, 1280, 720); ctx.drawImage(this.art.backdrop, 0, 0);
     this.line(40, 118, 1240, 118, '#355364');
     this.text('01 / YÜK YOLU', 64, 172, 13, '#c4d9df');
     this.text(`T ${state.phase === 'REWIND' ? '≪' : '+'} ${state.time.toFixed(2)} s`, 798, 172, 14, colors.cyan);
-    ctx.fillStyle = '#102a36'; ctx.fillRect(112, 204, 840, 348);
-    ctx.fillStyle = '#0a202c'; ctx.fillRect(128, 325, 808, 212);
-    for (let x = 185; x < 900; x += 180) { ctx.strokeStyle = '#315363'; ctx.strokeRect(x, 230, 76, 54); this.line(x + 38, 230, x + 38, 284, '#315363'); }
     const exit = this.level.exit;
     ctx.fillStyle = '#163f3b'; ctx.fillRect(exit.x, exit.y, exit.width, exit.height);
     ctx.strokeStyle = colors.cyan; ctx.strokeRect(exit.x, exit.y, exit.width, exit.height);
@@ -146,7 +145,10 @@ export class PhysicsView implements GamePresentation {
     const ctx = this.ctx;
     const structural = ['wall', 'floor'].includes(body.type) || body.isStatic && body.type === 'column';
     const color = body.isSecured ? colors.cyan : structural ? '#557d90' : body.integrity < body.maxIntegrity * 0.4 ? colors.danger : '#a0bac6';
-    ctx.fillStyle = structural ? '#284552' : body.type === 'debris' ? '#50493f' : '#1c3543'; ctx.strokeStyle = color; ctx.lineWidth = structural ? 1 : 1.6;
+    ctx.fillStyle = ['cabinet', 'bookcase', 'table'].includes(body.type) ? this.art.wood
+      : structural || ['column', 'ceiling', 'debris'].includes(body.type) ? this.art.concrete
+      : body.type === 'fridge' ? '#b9bdb0' : '#50594f';
+    ctx.strokeStyle = color; ctx.lineWidth = structural ? 1 : 1.6;
     for (const part of body.parts) { this.polygon(part); ctx.fill(); ctx.stroke(); }
     if (['cabinet', 'bookcase', 'fridge'].includes(body.type)) {
       ctx.save(); ctx.translate(body.x, body.y); ctx.rotate(body.angle);
@@ -156,7 +158,10 @@ export class PhysicsView implements GamePresentation {
     }
     if (body.type === 'gas') { ctx.beginPath(); ctx.arc(body.x, body.y - 26, 11, 0, Math.PI * 2); ctx.stroke(); }
     if (!structural && planning) {
-      this.text(body.label, body.x - Math.min(body.width / 2, 40), Math.max(345, body.y - body.height / 2 - 10), 9, color);
+      const labelX = body.x - Math.min(body.width / 2, 40), labelY = Math.max(345, body.y - body.height / 2 - 10);
+      ctx.font = '9px ui-monospace, Consolas, monospace'; ctx.fillStyle = '#171f23e8';
+      ctx.fillRect(labelX - 3, labelY - 10, ctx.measureText(body.label).width + 6, 14);
+      this.text(body.label, labelX, labelY, 9, color);
       if (body.dangerArc) {
         const arc = body.dangerArc;
         ctx.strokeStyle = '#ff8b7060'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.arc(arc.origin.x, arc.origin.y, arc.radius, arc.startAngle, arc.endAngle); ctx.stroke(); ctx.setLineDash([]);

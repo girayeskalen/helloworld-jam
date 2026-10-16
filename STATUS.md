@@ -1,10 +1,10 @@
 # Proje durumu
 
-Son güncelleme: **16 Ekim 2026** · **ARTÇI v0.2 — Kişi 1 / Core Physics, Simulation & Gameplay**
+Son güncelleme: **16 Ekim 2026** · **ARTÇI v0.2 — Core + görsel dal entegrasyonu**
 
 ## Güncel kapsam
 
-Vite + TypeScript + **Matter.js 0.20.0** + Canvas 2D + Web Audio API. Kullanıcı Kişi 1 rolünü üstlendi. Kişi 2'nin `src/ui_vfx/` ve `src/levels/` dosyaları bu görevde değiştirilmedi. Kişi 1'in referans fizik sahnesi `src/core/PhysicsLevel.ts`, çalışan entegrasyon görünümü `src/integration/` içindedir.
+Vite + TypeScript + **Matter.js 0.20.0** + Canvas 2D + Web Audio API. Kullanıcı Kişi 1 rolünü üstlendi. İlk fizik görevinde Kişi 2 dosyaları değiştirilmedi; sonraki paylaşım isteğinde `origin/feat/ui-realistic-visuals` dalındaki `fa2de72` commitinin görsel kodu ve master tasarım vizyonu birleştirildi. Aktif PhysicsView, bu daldan SceneArt arka planı/malzemeleri, ParticleSystem ve genel stilleri kullanır. Kişi 1'in referans fizik sahnesi `src/core/PhysicsLevel.ts`, çalışan entegrasyon görünümü `src/integration/` içindedir.
 
 | Görev | Sorumlu | Durum | Sonuç |
 | --- | --- | --- | --- |
@@ -17,25 +17,26 @@ Vite + TypeScript + **Matter.js 0.20.0** + Canvas 2D + Web Audio API. Kullanıc�
 | Aktif tahliye ve karne | Kişi 1 | Tamamlandı | 12 sn sayaç, yatay hareket, Space/W/↑ zıplama, S/↓ hızlı iniş, coyote süresi, havada tekrar zıplama engeli. S-rank oynanabilir rota doğrulandı. |
 | Ortak v0.2 veri sözleşmesi | Kişi 1 | Tamamlandı | Salt okunur gövde/parts, kütle merkezi, açı, güvence, integrity, dangerArc, bağlar, grip, sismik hareket ve boşluk verisi. Matter nesneleri UI'ya sızmaz. |
 | Fizik/tarayıcı doğrulaması | Kişi 1 | Tamamlandı | Son doğrulama sonuçları aşağıda. |
-| Renderer ve TacticalHUD'u v0.2 sözleşmesine geçirmek | Kişi 2 | Bekliyor | Mevcut dosyalar korunuyor; `PhysicsView.ts` çalışan kullanım örneğidir. AP/maliyet/süreleri LevelData'dan, gövde çizimini parts'tan alın. |
+| Görsel dalı fizik sürümüyle birleştirmek | Kişi 1 — entegrasyon | Tamamlandı | Kod çakışması yok; AGENTS tasarım vizyonu ve v0.2 kuralları birlikte korundu. Yeni görsel kaynak/AI notları BEYAN'a işlendi. |
+| Renderer ve TacticalHUD'u v0.2 sözleşmesine geçirmek | Kişi 2 | Bekliyor | Görsel dalın ayrıntılı Renderer/HUD'u hâlâ eski sözleşmede; SceneArt/efektler aktif referans görünümde bağlı. `PhysicsView.ts` çalışan kullanım örneğidir. AP/maliyet/süreleri LevelData'dan, gövde çizimini parts'tan alın. |
 | Yeni fizik bölümü ve oyun dengesi | Kişi 2 / Kişi 1 entegrasyon | Bekliyor | Şu an tek referans sahne, iki sığınak ve bir kontrol edilebilir NPC var. Sabit kimlikli bağların genel bölüm verisine taşınması sonraki core işi. |
-| İnsan oynanış/işitsel kalite ve diğer tarayıcılar | Ekip | Bekliyor | Otomasyon Chromium/Linux'ta; Windows, Firefox/Edge ve insan geri bildirimi henüz doğrulanmadı. |
+| İnsan oynanış/işitsel kalite ve diğer tarayıcılar | Ekip | Bekliyor | Birleşik v0.2 otomasyonu Chromium/Linux'ta; UI dalının Windows/v0.1 doğrulaması VISUAL_NOTES içinde kayıtlı. Birleşik v0.2 Windows, Firefox/Edge ve insan oynanış kontrolü bekliyor. |
 | Jam teslimi ve son beyan | Ekip | Bekliyor | README, BEYAN, eski SOURCES ve SUBMISSION birlikte kontrol edilecek; bu görev yayın/teslim yapmıyor. |
 
 ## Doğrulama ve sınırlamalar
 
 - `npm install matter-js` ve `npm install -D @types/matter-js` başarılı; kurulumda açık bildirilmedi.
-- `npm run build`: TypeScript ve üretim derlemesi başarılı.
+- `npm run build`: görsel dal ile birleştirme sonrasında TypeScript ve üretim derlemesi başarılı.
 - `npm test`: **8/8 geçti**. Beş fizik testi; deterministik tekrar ve tam geri sarma, rijit cisim/bağ/güçlendirme, AP/sığınak sınırları, grip etkisi/enerjisi, zıplama ve S/timeout sonuçlarını doğruladı. Üç tarayıcı testi gerçek tuş/fare girişleri, ölçekli tıklama, S-rank, yeniden başlatma, ses, sekme duraklaması ve panel yerleşimini doğruladı.
 - Oynanış 60 Hz, fizik 120 Hz alt adım, kayıt 30 Hz. Gövdeler aynı başlangıç/aynı girişle aynı sonucu verdi; geri sarma NPC sağlığı, kopan bağlar ve oluşan parçalar dahil başlangıç durumuna döndü.
 - Serbest gardırop devrilirken L-demirli gardırop dik kaldı; zayıf masa/kolon kırılırken güçlendirilmiş taşıyıcı yük taşıdı. Aynı planda aktif dengeleme sağlık/tutunuş kaybını azalttı. Kolon sığınağı planıyla 100/100 S-rank elde edildi.
 - Fizik modeli gerçek rijit cisim çözücüsünü kullanır; deprem dalga yayılımı veya yapısal dayanım hesabı değildir. Kütle/hasar/süreler oyun ölçeğinde. `SafeTriangle` anlık destek ve çakışma boşluğudur; gerçek bina güvenliği garantisi değildir.
 - Kesitte karakter sağlam masa ayaklarının önünden/arkasından geçebilir; karakter–enkaz ve eşya–masa temasları fizikseldir. Yeni grounded sorgusu aynı çarpışma filtrelerini dikkate alır.
 - Ara kare snapshot geri yüklenirken solver temas önbelleği yeniden kurulur; bit düzeyinde warm-start devam garantisi yoktur. Planlama ve yeni execution T=0 dünyasından tekrar kurulur.
-- Son üretim paketi `npm run preview` ile HTTP üzerinden oynandı: gerçek tuş girişleriyle 100/100 S-rank, hatasız JavaScript konsolu ve harici kaynak isteği olmaması doğrulandı. Lisans bildirimi HTTP 200 ile sunuldu.
-- `git diff --check`, yerel belge bağlantıları, lock/sürüm uyumu ve Kişi 2 dosyalarının değişmemesi kontrol edildi.
+- Birleşik üretim paketi `npm run preview` ile HTTP üzerinden oynandı; planlama, tutunma, tahliye ve karne ekranları incelendi: gerçek tuş girişleriyle 100/100 S-rank, hatasız JavaScript konsolu ve harici kaynak isteği olmaması doğrulandı. Lisans bildirimi HTTP 200 ile sunuldu.
+- `git diff --check`, yerel belge bağlantıları ve lock/sürüm uyumu kontrol edildi. Görsel dalın `src/ui_vfx/` dosyaları kaynak commit ile birebir korundu.
 - Runtime Matter.js MIT metni `public/THIRD_PARTY_NOTICES.txt` içindedir ve build'e kopyalanır.
-- **Kullanıcı isteği gereği bu görevde commit ve push yapılmadı.** Önceki v0.1'in `b2f78cb` commiti uzaktaydı; bu görev yeni yerel değişiklikler oluşturdu.
+- İlk v0.2 görevi commit/push yapmadan tamamlandı. Kullanıcının sonraki paylaşım isteğiyle core çalışması `0abc518` olarak kaydedildi; arkadaşın `fa2de72` görsel commiti merge geçmişi korunarak alındı. GitHub gönderiminin sonucu uzak dal kontrolüyle doğrulanır.
 
 ## Önceki kayıtlar
 
