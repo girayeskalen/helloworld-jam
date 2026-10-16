@@ -43,3 +43,10 @@ Kaynak: [resmî kural kitapçığı v09](https://game.ktimo.com.tr/assets/CIVIL_
 - Üçüncü taraf lisans bildirimlerini koru; yeniden dağıtım hakkı olmayan ham dosyaları repoya koyma. Hazır kod kütüphaneleri ile geliştirme/test araçlarını da kaydet.
 - AI için resmî bir oran sınırı veya otomatik puan kesintisi uydurma. Yanlış veya eksik beyan diskalifiye sebebidir; teslim öncesi ekip gerçek kullanımını kontrol edip formdaki karşılıklarına aktarır.
 - Farkındalık metinleri güvenilir kaynağa bağlanır. Oyundaki geri sarma, basitleştirilmiş fizik ve artçı sayacı gerçek dünyaya ilişkin öngörü ya da güvenlik garantisi gibi sunulmaz.
+
+## Korunan hazırlık ve teslim kayıtları
+
+- Oyuna özgü üretim, resmî tema açıklamasından sonraki 48 saatlik etkinlik süresinde yapılır; başlangıç 16 Ekim 2026, 18.00 (UTC+3). Etkinlik öncesi eğitim dosyalarını yarışma oyununa taşıma.
+- `ENGINE_DECISION.md` ve `PREPARATION.md` içindeki Godot yönergeleri tarihli arşivdir; kullanıcı ARTÇI için Vite/TypeScript kararını vermiştir. Arşivdeki motor kararını güncel görev gibi uygulama.
+- Önceki AI/araştırma kayıtlarını `SOURCES.md` içinde koru; ARTÇI üretim kayıtları `BEYAN.md` içindedir. Teslim beyanında ikisini birlikte dikkate al.
+- Jam tesliminde `SUBMISSION.md` taslağını, public repo erişimini ve gerçek oynanabilir sürümü kontrol et; kaynak, lisans veya sonuç uydurma.

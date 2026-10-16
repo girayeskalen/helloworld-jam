@@ -179,3 +179,11 @@ Henüz kendi bilgisayarına indirmediyse VS Code'da `Ctrl+Shift+P` → **Git: Cl
 - `STATUS.md`: görevler, görev sahipleri ve bilinen sorunlar.
 - `AGENTS.md`: Codex'in bu depoda çalışırken uyması gereken kurallar.
 - `BEYAN.md`: AI ve hazır kaynak kullanımı, kaynaklar ve lisans kayıtları. Teslim formuna aktarılacak canlı kayıttır.
+
+## Önceki hazırlık kayıtları
+
+- [PREPARATION.md](PREPARATION.md): tarihli yarışma öncesi hazırlık; Godot kurulum adımları ARTÇI için uygulanmaz.
+- [ENGINE_DECISION.md](ENGINE_DECISION.md): önceki motor araştırması ve Godot kararı; güncel karar yukarıdaki Vite/TypeScript yığınıdır.
+- [GAME_DESIGN.md](GAME_DESIGN.md): seçilmeyen önceki fikirlerin arşivi. Güncel ARTÇI kapsamı bu README içindedir.
+- [SOURCES.md](SOURCES.md): önceki araştırma/AI kayıtları. Oyun geliştirme beyanı BEYAN.md ile birlikte değerlendirilir.
+- [SUBMISSION.md](SUBMISSION.md): jam teslim taslağı ve temsilcinin tamamlayacağı kontrol listesi.

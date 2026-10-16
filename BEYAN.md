@@ -2,6 +2,8 @@
 
 Kayıt tarihi: **16 Ekim 2026** · Sürüm: **Vertical Slice v0.1**
 
+ARTÇI öncesi hazırlık ve seçilmeyen tasarım araştırmasının AI/kaynak kayıtları [SOURCES.md](SOURCES.md) içinde korunur; teslimde bu dosyayla birlikte dikkate alınır.
+
 Bu dosya teslim formuna aktarılacak geliştirme kaydıdır; tek başına etkinliğe teslim veya uygunluk onayı değildir. Ekip, sonraki değişikliklerde kayıtları günceller. Kişi 1 entegrasyon sorumlusudur; Kişi 2 kendi değişikliklerinin kullanım notlarını PR açıklamasında iletir.
 
 Dayanak: [CIVIL GAME JAM resmî kural kitapçığı v09](https://game.ktimo.com.tr/assets/CIVIL_GAME_JAM_Kural_Kitapcigi_v09.pdf), 3.4 ve 4.1–4.4; PDF 16 Ekim 2026'da okunarak doğrulandı. AI ve hazır kaynak için beş kategori ayrı cevaplanır; küçük, değiştirilmiş veya dolaylı kullanımlar da açıklanır. Yanlış/eksik beyan diskalifiye sebebidir. Son teslimde güncel kitapçık ve gerçek kullanım yeniden kontrol edilmelidir.
