@@ -1,9 +1,63 @@
-/** Ortak sözleşme v0.1. Değişiklikler iki kişinin mutabakatıyla entegrasyon sorumlusunda. */
+/** Sözleşme v0.2: Matter nesneleri dışarı sızmaz; koordinatlar piksel, açılar radyan. */
 export type Vec2 = { x: number; y: number };
 export type Rect = Vec2 & { width: number; height: number };
 export type Phase = 'FORESIGHT' | 'REWIND' | 'PLANNING' | 'EXECUTION';
 export type ExecutionStage = 'SHAKING' | 'EVACUATION' | 'REPORT';
-export type InterventionId = 'anchor-cabinet' | 'coach-npc' | 'gas-sensor';
+export type InterventionId = 'anchor-cabinet' | 'coach-npc' | 'gas-sensor' | 'anchor-bookcase' | 'anchor-fridge' | 'reinforce-table' | 'reinforce-column';
+
+export type PhysicsObjectType = 'floor' | 'wall' | 'column' | 'cabinet' | 'bookcase' | 'fridge' | 'table' | 'lamp' | 'ceiling' | 'debris' | 'gas' | 'npc';
+export interface DangerArc { origin: Vec2; radius: number; startAngle: number; endAngle: number }
+export interface PhysicsBodyState {
+  id: string;
+  type: PhysicsObjectType;
+  label: string;
+  /** Dünya kütle merkezi. Compound gövdeleri doğru çizmek için parts kullanılır. */
+  x: number; y: number; width: number; height: number; angle: number;
+  velocity: Vec2; angularVelocity: number;
+  mass: number; friction: number;
+  isStatic: boolean; isSecured: boolean;
+  integrity: number; maxIntegrity: number;
+  broken: boolean; grounded: boolean;
+  dangerArc: DangerArc | null;
+  parts: Vec2[][];
+}
+export interface PhysicsObjectDefinition {
+  id: string; type: PhysicsObjectType; label: string;
+  x: number; y: number; width: number; height: number;
+  mass: number; friction: number; integrity: number;
+  isStatic?: boolean;
+  /** Gövdeye göre değil, dünya koordinatlarında compound dikdörtgenleri. */
+  parts?: Rect[];
+  centreOffset?: Vec2;
+}
+export interface ShelterDefinition { id: string; label: string; supportId: string; position: Vec2 }
+export interface PhysicsLevelData { objects: PhysicsObjectDefinition[]; shelters: ShelterDefinition[]; seed: number }
+export interface SafeTriangle {
+  id: string; supportId: string; label: string;
+  polygon: Vec2[]; position: Vec2;
+  isClear: boolean; supported: boolean; occupied: boolean; blockedBy: string[];
+}
+export interface GripState {
+  balance: number; velocity: number; target: number; greenHalfWidth: number;
+  stamina: number; stableTime: number; exposureTime: number;
+  slips: number; holding: boolean; slipCooldown: number;
+}
+export interface SeismicState { x: number; y: number; pWave: number; sWave: number; intensity: number }
+export interface PhysicsConstraintState {
+  id: string; bodyA: string | null; bodyB: string;
+  pointA: Vec2; pointB: Vec2; length: number; stiffness: number; damping: number;
+  breakingStrain: number; kind: 'anchor' | 'support' | 'suspension' | 'grip';
+}
+export interface PhysicsBodySnapshot {
+  id: string; definition: PhysicsObjectDefinition; position: Vec2; velocity: Vec2; angle: number; angularVelocity: number;
+  isStatic: boolean; isSensor: boolean; collisionMask: number;
+  integrity: number; maxIntegrity: number; broken: boolean; isSecured: boolean; lastImpactTick: number;
+}
+export interface PhysicsSnapshot {
+  bodies: PhysicsBodySnapshot[]; constraints: PhysicsConstraintState[];
+  motion: SeismicState; tick: number; jumpHeld: boolean; coyoteTime: number;
+  gasLeaking: boolean; ignited: boolean; lampReleased: boolean;
+}
 
 export interface Hazard {
   id: string;
@@ -33,6 +87,8 @@ export interface NPC {
   health: number;
   coached: boolean;
   status: 'idle' | 'panicking' | 'sheltering' | 'injured' | 'evacuating' | 'safe';
+  grounded?: boolean;
+  velocity?: Vec2;
 }
 
 export interface Tile {
@@ -68,6 +124,7 @@ export interface LevelData {
   tiles: Tile[];
   interventions: Intervention[];
   awarenessRules: AwarenessRule[];
+  physics?: PhysicsLevelData;
 }
 
 export interface SimulationEvent {
@@ -102,9 +159,16 @@ export interface GameState {
   shake: number;
   score: ScoreCard | null;
   message: string;
+  physicsBodies: PhysicsBodyState[];
+  constraints: PhysicsConstraintState[];
+  safeTriangles: SafeTriangle[];
+  selectedShelterId: string;
+  grip: GripState;
+  seismic: SeismicState;
+  physicsTick: number;
 }
 
-export interface InputState { left: boolean; right: boolean; up: boolean; down: boolean }
+export interface InputState { left: boolean; right: boolean; up: boolean; down: boolean; jump?: boolean; grip?: boolean }
 export type DeepReadonly<T> = T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } : T;
 export interface GameController {
   getState(): DeepReadonly<GameState>;
@@ -112,6 +176,7 @@ export interface GameController {
   execute(): void;
   restart(): void;
   undoPlanning(): void;
+  selectShelter(id: string): boolean;
 }
 export interface GamePresentation {
   render(state: DeepReadonly<GameState>, delta: number): void;

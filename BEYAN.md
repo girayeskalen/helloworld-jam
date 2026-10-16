@@ -1,6 +1,6 @@
 # ARTÇI — AI ve hazır kaynak beyanı
 
-Kayıt tarihi: **16 Ekim 2026** · Sürüm: **Vertical Slice v0.1**
+Kayıt tarihi: **16 Ekim 2026** · Sürüm: **Fizik prototipi v0.2**
 
 ARTÇI öncesi hazırlık ve seçilmeyen tasarım araştırmasının AI/kaynak kayıtları [SOURCES.md](SOURCES.md) içinde korunur; teslimde bu dosyayla birlikte dikkate alınır.
 
@@ -14,9 +14,9 @@ Araç: **OpenAI Codex, GPT-6 tabanlı kodlama ajanı**. Bu oturumun tam model s�
 
 | Kategori | Durum | Amaç, çıktı ve kullanım yeri |
 | --- | --- | --- |
-| Görsel | Kullanıldı | Blueprint görsel tasarımının ve prosedürel çizim/VHS/parçacık kodunun AI ile üretimi: `src/ui_vfx/Renderer.ts`, `ParticleSystem.ts`, `styles.css`. AI görsel üretim aracı veya dış görsel dosyası kullanılmadı; katkı çizim kodu yoluyla dolaylıdır. |
+| Görsel | Kullanıldı | Blueprint görsel tasarımının ve prosedürel çizim/VHS/parçacık kodunun AI ile üretimi: `src/ui_vfx/Renderer.ts`, `ParticleSystem.ts`, `styles.css`; v0.2 referans çizimi `src/integration/PhysicsView.ts` ve `physics.css`. AI görsel üretim aracı veya dış görsel dosyası kullanılmadı; katkı çizim kodu yoluyla dolaylıdır. |
 | Ses | Kullanıldı | Osilatör, filtre, gürültü ve zarfla ses sentezi tasarımı/kodu: `src/ui_vfx/SoundSynth.ts`. AI ses üretim servisi veya hazır kayıt yok; katkı sentez kodu yoluyla dolaylıdır. |
-| Kod | Kullanıldı | Vite/TypeScript iskeleti, ortak veri tipleri, dört faz, fizik olay zinciri, snapshot geri sarma, AP, tahliye, HUD, bölüm verisi ve tarayıcı testleri: `src/**`, kök yapılandırmalar, `tests/**`, `playwright.config.ts`. |
+| Kod | Kullanıldı | Vite/TypeScript iskeleti, ortak veri tipleri, dört faz, fizik olay zinciri, snapshot geri sarma, AP, tahliye, HUD, bölüm verisi ve tarayıcı testleri; v0.2 Matter entegrasyonu, kırılma/yük modeli, fizik snapshot'ları, aktif tutunma/zıplama ve referans entegrasyon görünümü: `src/**`, kök yapılandırmalar, `tests/**`, `playwright.config.ts`. |
 | Metin | Kullanıldı | Oyun içi Türkçe açıklamalar, müdahale ve karne metinleri, bu beyan ile README/STATUS/AGENTS güncellemeleri. Farkındalık cümleleri AFAD'dan kontrol edilerek özgün biçimde özetlendi. |
 | Diğer | Kullanıldı | Mimari/faz modelleme, dosya sahipliği önerileri, test senaryoları ve doküman düzenleme desteği. |
 
@@ -28,7 +28,7 @@ Oyun adı, tema, teknoloji yığını, ana mekanik fikri ve üç müdahale kulla
 | --- | --- | --- |
 | Görsel | Kullanılmadı | Harici sprite, fotoğraf, ikon paketi, texture veya model yok. Çizgiler/şekiller Canvas ile, metin ve işaretler sistem fontuyla çizilir. |
 | Ses | Kullanılmadı | Hazır müzik, efekt, sample veya kayıt yok. Web Audio ile çalışma anında sentezlenir. |
-| Kod | Kullanıldı | Aşağıdaki Vite, TypeScript, Playwright ve dolaylı araç bağımlılıkları. Hazır oyun kodu veya oyun şablonu kopyalanmadı. |
+| Kod | Kullanıldı | Aşağıdaki Matter.js çalışma zamanı, Vite, TypeScript, Playwright ve dolaylı araç bağımlılıkları. Hazır oyun kodu veya oyun şablonu kopyalanmadı. |
 | Metin | Kullanıldı | AFAD'ın aşağıda bağlantısı verilen afet hazırlığı önerilerinden bilgi düzeyinde yararlanıldı; kaynak metin veya kılavuz dosyası oyuna kopyalanmadı. |
 | Diğer | Kullanıldı | Node.js/npm geliştirme ortamı, test amaçlı Chromium ve işletim sisteminin mevcut yazı tipleri. Ayrı font dosyası veya test tarayıcısı oyunla dağıtılmıyor. |
 
@@ -36,6 +36,8 @@ Oyun adı, tema, teknoloji yığını, ana mekanik fikri ve üç müdahale kulla
 
 | Ad / sürüm | Üretici veya sağlayıcı / kaynak | Lisans / hak bilgisi | Kullanım |
 | --- | --- | --- | --- |
+| Matter.js 0.20.0 | [Liam Brummitt ve katkıcılar](https://github.com/liabru/matter-js) | MIT; tam bildirim `public/THIRD_PARTY_NOTICES.txt` içinde ve üretim paketine kopyalanır | Rijit gövdeler, çarpışma çözümü, yerçekimi ve fiziksel bağlar; kütüphane kaynağı değiştirilmedi. |
+| @types/matter-js 0.20.2 | [DefinitelyTyped katkıcıları](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/matter-js) | MIT | TypeScript geliştirme tipleri; çalışma zamanına eklenmez. |
 | Vite 8.3.4 | [Vite ekibi](https://github.com/vitejs/vite) | MIT | Geliştirme sunucusu ve üretim paketleme; kaynak değiştirilmedi. |
 | TypeScript 7.0.2 | [Microsoft](https://github.com/microsoft/TypeScript) | Apache-2.0 | Tip kontrolü; kaynak değiştirilmedi. |
 | @playwright/test, playwright, playwright-core 1.64.1 | [Microsoft](https://github.com/microsoft/playwright) | Apache-2.0 | Otomatik tarayıcı testleri; oyun paketine eklenmez. |
@@ -47,7 +49,7 @@ Oyun adı, tema, teknoloji yığını, ana mekanik fikri ve üç müdahale kulla
 
 ### Bu ortamda kurulu dolaylı kod bağımlılıkları
 
-Kaynak: `package-lock.json` ve kurulu paketlerin `package.json` lisans/üretici kayıtları. Hepsi geliştirme/test araç zincirindedir; kaynaklarında değişiklik yapılmadı. Windows/macOS veya başka mimaride npm, aynı araçların platforma uygun native paketini seçebilir; kilit dosyası bu varyantları da içerir.
+Kaynak: `package-lock.json` ve kurulu paketlerin `package.json` lisans/üretici kayıtları. Aşağıdaki dolaylı paketler geliştirme/test araç zincirindedir; kaynaklarında değişiklik yapılmadı. Windows/macOS veya başka mimaride npm, aynı araçların platforma uygun native paketini seçebilir; kilit dosyası bu varyantları da içerir.
 
 | Kaynak / sağlayıcı | Paketler / sürümler | Lisans |
 | --- | --- | --- |
@@ -72,3 +74,7 @@ Kaynak: `package-lock.json` ve kurulu paketlerin `package.json` lisans/üretici 
 - İki kişinin ek AI/asset kullanımlarını bu kayda ekleyin; teslim formunda AI ve hazır kaynak için beş kategoriyi ayrı ayrı doldurun.
 - Bu dosyadaki araçların amaç, kullanım yeri, kaynak ve lisans bilgilerini form alanlarına aktarın. Takım temsilcisi gerçek kullanımın eksiksizliğini doğrulasın.
 - Son build, oynama bağlantısı ve public repo sürümünün eşleşmesini doğrulayın; paket içindeki gerekli üçüncü taraf bildirimlerini koruyun. Teslim/yayın bu görev kapsamında yapılmadı.
+
+## v0.2 kapsam notu
+
+Kişi 1 göreviyle Matter.js ve tipleri kuruldu. Mevcut `src/ui_vfx/` ve `src/levels/` içeriği korunarak yeni referans sunum `src/integration/` içinde oluşturuldu. Fizik/hasar birimleri ve dalga sinyali oyun modelidir; gerçek yapı dayanımı veya öngörü iddiası değildir. Kullanıcı bu görevde commit ve push istemedi.

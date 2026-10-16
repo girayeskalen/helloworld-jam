@@ -1,5 +1,49 @@
 # Proje durumu
 
+Son güncelleme: **16 Ekim 2026** · **ARTÇI v0.2 — Kişi 1 / Core Physics, Simulation & Gameplay**
+
+## Güncel kapsam
+
+Vite + TypeScript + **Matter.js 0.20.0** + Canvas 2D + Web Audio API. Kullanıcı Kişi 1 rolünü üstlendi. Kişi 2'nin `src/ui_vfx/` ve `src/levels/` dosyaları bu görevde değiştirilmedi. Kişi 1'in referans fizik sahnesi `src/core/PhysicsLevel.ts`, çalışan entegrasyon görünümü `src/integration/` içindedir.
+
+| Görev | Sorumlu | Durum | Sonuç |
+| --- | --- | --- | --- |
+| Matter.js ve TypeScript tipleri | Kişi 1 | Tamamlandı | `matter-js` 0.20.0, `@types/matter-js` 0.20.2 kuruldu; lock ve MIT bildirimi güncellendi. |
+| Rijit cisim dünyası ve temel hareketi | Kişi 1 | Tamamlandı | Fiziksel kat/duvar/kolon, ağır gardırop, kitaplık, buzdolabı, compound masa, askılı lamba ve tavan yükleri. P/S esinli kinematik temel ve kuvvet/tork. |
+| Fiziksel müdahaleler ve hasar | Kişi 1 | Tamamlandı | L-demir/çelik çapraz bağları; yük ve darbe hasarı, kopan askı, fiziksel kırılma parçaları, gaz/kıvılcım zinciri. |
+| Fizik geri sarma | Kişi 1 | Tamamlandı | Her 2 karede bir 30 Hz kayıt, 60 Hz interpolasyon; hız/açı/NPC/bağ/parça durumu geri alınır, T=0 temiz dünya. |
+| Planlama ve sığınak seçimi | Kişi 1 | Tamamlandı | 5 AP, farklı 1/2 AP maliyetli 7 seçenek, masa/kolon sığınağı; tekrar ücretlendirme ve bütçe aşımı engelli. |
+| Aktif tutunma | Kişi 1 | Tamamlandı | A/D ile denge, kısa Space tutuşları ve yenilenen enerji; yeşil bölge fiziksel tutuş bağını korur. Girişsiz denemede kopma/savrulma ve sağlık kaybı. |
+| Aktif tahliye ve karne | Kişi 1 | Tamamlandı | 12 sn sayaç, yatay hareket, Space/W/↑ zıplama, S/↓ hızlı iniş, coyote süresi, havada tekrar zıplama engeli. S-rank oynanabilir rota doğrulandı. |
+| Ortak v0.2 veri sözleşmesi | Kişi 1 | Tamamlandı | Salt okunur gövde/parts, kütle merkezi, açı, güvence, integrity, dangerArc, bağlar, grip, sismik hareket ve boşluk verisi. Matter nesneleri UI'ya sızmaz. |
+| Fizik/tarayıcı doğrulaması | Kişi 1 | Tamamlandı | Son doğrulama sonuçları aşağıda. |
+| Renderer ve TacticalHUD'u v0.2 sözleşmesine geçirmek | Kişi 2 | Bekliyor | Mevcut dosyalar korunuyor; `PhysicsView.ts` çalışan kullanım örneğidir. AP/maliyet/süreleri LevelData'dan, gövde çizimini parts'tan alın. |
+| Yeni fizik bölümü ve oyun dengesi | Kişi 2 / Kişi 1 entegrasyon | Bekliyor | Şu an tek referans sahne, iki sığınak ve bir kontrol edilebilir NPC var. Sabit kimlikli bağların genel bölüm verisine taşınması sonraki core işi. |
+| İnsan oynanış/işitsel kalite ve diğer tarayıcılar | Ekip | Bekliyor | Otomasyon Chromium/Linux'ta; Windows, Firefox/Edge ve insan geri bildirimi henüz doğrulanmadı. |
+| Jam teslimi ve son beyan | Ekip | Bekliyor | README, BEYAN, eski SOURCES ve SUBMISSION birlikte kontrol edilecek; bu görev yayın/teslim yapmıyor. |
+
+## Doğrulama ve sınırlamalar
+
+- `npm install matter-js` ve `npm install -D @types/matter-js` başarılı; kurulumda açık bildirilmedi.
+- `npm run build`: TypeScript ve üretim derlemesi başarılı.
+- `npm test`: **8/8 geçti**. Beş fizik testi; deterministik tekrar ve tam geri sarma, rijit cisim/bağ/güçlendirme, AP/sığınak sınırları, grip etkisi/enerjisi, zıplama ve S/timeout sonuçlarını doğruladı. Üç tarayıcı testi gerçek tuş/fare girişleri, ölçekli tıklama, S-rank, yeniden başlatma, ses, sekme duraklaması ve panel yerleşimini doğruladı.
+- Oynanış 60 Hz, fizik 120 Hz alt adım, kayıt 30 Hz. Gövdeler aynı başlangıç/aynı girişle aynı sonucu verdi; geri sarma NPC sağlığı, kopan bağlar ve oluşan parçalar dahil başlangıç durumuna döndü.
+- Serbest gardırop devrilirken L-demirli gardırop dik kaldı; zayıf masa/kolon kırılırken güçlendirilmiş taşıyıcı yük taşıdı. Aynı planda aktif dengeleme sağlık/tutunuş kaybını azalttı. Kolon sığınağı planıyla 100/100 S-rank elde edildi.
+- Fizik modeli gerçek rijit cisim çözücüsünü kullanır; deprem dalga yayılımı veya yapısal dayanım hesabı değildir. Kütle/hasar/süreler oyun ölçeğinde. `SafeTriangle` anlık destek ve çakışma boşluğudur; gerçek bina güvenliği garantisi değildir.
+- Kesitte karakter sağlam masa ayaklarının önünden/arkasından geçebilir; karakter–enkaz ve eşya–masa temasları fizikseldir. Yeni grounded sorgusu aynı çarpışma filtrelerini dikkate alır.
+- Ara kare snapshot geri yüklenirken solver temas önbelleği yeniden kurulur; bit düzeyinde warm-start devam garantisi yoktur. Planlama ve yeni execution T=0 dünyasından tekrar kurulur.
+- Son üretim paketi `npm run preview` ile HTTP üzerinden oynandı: gerçek tuş girişleriyle 100/100 S-rank, hatasız JavaScript konsolu ve harici kaynak isteği olmaması doğrulandı. Lisans bildirimi HTTP 200 ile sunuldu.
+- `git diff --check`, yerel belge bağlantıları, lock/sürüm uyumu ve Kişi 2 dosyalarının değişmemesi kontrol edildi.
+- Runtime Matter.js MIT metni `public/THIRD_PARTY_NOTICES.txt` içindedir ve build'e kopyalanır.
+- **Kullanıcı isteği gereği bu görevde commit ve push yapılmadı.** Önceki v0.1'in `b2f78cb` commiti uzaktaydı; bu görev yeni yerel değişiklikler oluşturdu.
+
+## Önceki kayıtlar
+
+<details>
+<summary>v0.1 doğrulaması, Git paylaşımı ve yarışma hazırlık geçmişi</summary>
+
+# Proje durumu
+
 Son güncelleme: **16 Ekim 2026** · **ARTÇI — AFTERSHOCK: Tactical Rewind / Vertical Slice v0.1**
 
 Tema: Afet Hazırlığı ve Farkındalık. Teknoloji: Vite + TypeScript + Canvas 2D + Web Audio API. Gerçek isimler henüz belirtilmedi; Kişi 1 ve Kişi 2 rol etiketleridir. Ortak dosyaların tek yazma sorumlusu Kişi 1'dir; Kişi 2 ilerleme notlarını PR açıklamasında iletir.
@@ -113,5 +157,7 @@ Henüz oyun hatası bildirilmedi; oyun projesi yok. Tamamlanmamış araç hazır
 | Bu oturumda native editör/tarayıcı UI otomasyonu erişimi yok | Codex | Dosya ve CLI kullanılabiliyor; gerçek görüntü, ses ve insan oynayış kontrolleri ayrıca yapılacak. |
 
 Bir sorun ortaya çıktığında nasıl tekrarlandığını ve varsa hata mesajını kısaca ekle.
+
+</details>
 
 </details>

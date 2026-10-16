@@ -1,0 +1,44 @@
+/* Kişi 1 entegrasyon görünümü: Kişi 2'nin ui_vfx dosyaları korunur. */
+#hud { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+.p-header { position: absolute; top: 4%; left: 3.2%; right: 3.2%; display: flex; align-items: center; gap: 1.5cqw; }
+.p-header h1 { font-size: 4cqw; }
+.p-header .p-sub { color: #8ca9b5; font-size: .8cqw; line-height: 1.7; letter-spacing: .12cqw; }
+.p-header .p-version { margin-left: auto; color: #efc580; font-size: .85cqw; text-align: right; }
+.p-sound { background: #102a36; border: 1px solid #476677; color: #d5e6e9; padding: .7cqw; font-size: .7cqw; }
+.p-phases { display: flex; gap: 2.4cqw; position: absolute; top: 17.6%; left: 3.2%; font-size: .78cqw; color: #748e9b; }
+.p-phases .active { color: #8be8c9; border-bottom: 2px solid #8be8c9; padding-bottom: .65cqw; }
+.p-panel { position: absolute; left: 77%; width: 20%; top: 23%; }
+.p-panel h2 { margin: .5cqw 0; font-size: 1.5cqw; }
+.p-panel .p-kicker { color: #809aa8; font-size: .68cqw; letter-spacing: .1cqw; }
+.p-budget { display: flex; justify-content: space-between; padding: .6cqw 0; color: #a8c1cb; font-size: .8cqw; }
+.p-budget b { font-size: 1.3cqw; color: #efc580; }
+.p-actions { display: grid; gap: .25cqw; }
+.p-action { width: 100%; border: 1px solid #355566; background: #102733; color: #d7e6e7; padding: .48cqw .6cqw; text-align: left; font-size: .8cqw; }
+.p-action span { display: flex; align-items: center; gap: .5cqw; }
+.p-action b { margin-left: auto; color: #efc580; font-size: .72cqw; font-weight: 400; }
+.p-action small { display: block; color: #8daab8; font-size: .65cqw; margin-top: .24cqw; }
+.p-action.applied { background: #123a35; border-color: #66ae95; }
+.p-action:disabled { opacity: .45; }
+.p-action.applied:disabled { opacity: 1; }
+.p-action:not(:disabled):hover { border-color: #efc580; background: #193846; }
+.p-shelters { display: flex; gap: .3cqw; margin-top: .65cqw; }
+.p-shelters button { background: #132a36; color: #b5cbd3; border: 1px solid #355566; padding: .5cqw; font-size: .72cqw; flex: 1; }
+.p-shelters button.selected { border-color: #89e6c6; color: #89e6c6; }
+.p-start { width: 100%; padding: .8cqw .4cqw; margin-top: .65cqw; border: 0; background: #89e6c6; color: #09242b; font-size: .82cqw; font-weight: 700; }
+.p-start:disabled { opacity: .35; }
+.p-undo { width: 100%; border: 0; background: transparent; color: #9bb4c0; font-size: .65cqw; padding: .45cqw; }
+.p-keys { color: #8ca8b5; font-size: .67cqw; line-height: 1.6; margin-top: .7cqw; }
+.p-grip { margin: .8cqw 0; padding: .9cqw; background: #122e38; border: 1px solid #3b6170; }
+.p-grip strong { font-size: 1.05cqw; color: #89e6c6; }
+.p-grip p { color: #b2cbd2; line-height: 1.6; font-size: .75cqw; margin: .65cqw 0; }
+.p-grip meter { display: block; width: 100%; height: .7cqw; accent-color: #efc580; }
+.p-timer { color: #89e6c6; border-block: 1px solid #36545f; padding: 1cqw 0; font-size: 2.5cqw; }
+.p-timer.urgent { color: #ff8b70; }
+.p-event { position: absolute; left: 5%; top: 81%; color: #e5bd7a; font-size: .72cqw; max-width: 68%; }
+.p-status { position: absolute; left: 3.2%; bottom: 3%; width: 93.6%; border-top: 1px solid #345160; padding-top: .8cqw; color: #a7c4cd; font-size: .78cqw; line-height: 1.4; }
+.p-report { position: absolute; left: 15%; top: 27%; width: 53%; padding: 2.3cqw; background: #0a202bf5; border: 1px solid #89e6c6; box-shadow: 0 0 0 100vmax #03101888; pointer-events: auto; }
+.p-report h2 { font-size: 2.3cqw; }
+.p-report #rank { float: right; font-size: 6cqw; }
+.p-report p { font-size: .9cqw; line-height: 1.65; color: #aec7d0; }
+.p-report #score-breakdown { color: #efc580; font-size: .8cqw; border-block: 1px solid #36545f; padding: 1cqw 0; line-height: 1.8; }
+.p-grip-status { font-size: .7cqw; color: #efc580; }

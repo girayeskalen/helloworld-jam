@@ -1,8 +1,8 @@
-# Codex çalışma kuralları — ARTÇI v0.1
+# Codex çalışma kuralları — ARTÇI v0.2
 
 - İşe başlamadan ilgili dosyaları, `README.md`, `STATUS.md`, `BEYAN.md` ve `git status` çıktısını incele.
 - Ekip arkadaşının ve kullanıcının mevcut değişikliklerini koru. Görev dışı değişiklikleri silme, geri alma veya kendi commitine katma. Aynı dosyada çakışan işler varsa durumu açıkla ve değişiklikleri koruyarak ilerle.
-- Teknoloji kararı: **Vite + TypeScript + HTML5 Canvas 2D + Web Audio API**. Çözünürlük 1280×720; grafik ve ses kodla prosedürel üretilir. Yeni oyun motoru, framework, görsel/ses/font dosyası veya bağımlılığı görev gerektirmedikçe ekleme.
+- Teknoloji kararı: **Vite + TypeScript + Matter.js + HTML5 Canvas 2D + Web Audio API**. Çözünürlük 1280×720; grafik ve ses kodla prosedürel üretilir. Yeni oyun motoru, framework, görsel/ses/font dosyası veya bağımlılığı görev gerektirmedikçe ekleme.
 - Yalnızca istenen kapsamda çalış. Kullanıcıya sonuçları, kontrolleri ve kalan sorunları anlaşılır Türkçeyle bildir.
 - Commit ve push yalnızca kullanıcı istediğinde yapılır. Force push veya kullanıcı açıkça istemedikçe değişiklik kaybettiren Git komutları kullanma.
 
@@ -10,11 +10,11 @@
 
 | Alan | Tek yazma sorumlusu | Sınır |
 | --- | --- | --- |
-| `src/core/**` | Kişi 1 — Core Simulation & Physics | Simülasyon, AP, deterministik fizik, geri sarma, tahliye, skor. |
+| `src/core/**` | Kişi 1 — Core Physics, Simulation & Gameplay | Simülasyon, AP, deterministik fizik, geri sarma, tahliye, skor. |
 | `src/ui_vfx/**` | Kişi 2 — Tactical UI, Audio, VFX & Levels | Çizim, DOM HUD, sentez, parçacıklar, stiller. |
 | `src/levels/**` | Kişi 2 | `LevelData` uyumlu saf veri; core dosyalarını değiştirme. |
 | `src/types/game.ts` | Kişi 1, iki kişinin mutabakatıyla | Ortak sözleşme; paralel çalışma sırasında dondurulur. |
-| `src/main.ts`, kök yapılandırmalar, `package-lock.json`, `tests/**` | Kişi 1 — entegrasyon | Bağlantılar ve ortak kontroller; eşzamanlı ikinci yazar olmaz. |
+| `src/main.ts`, `src/integration/**`, kök yapılandırmalar, `package-lock.json`, `tests/**` | Kişi 1 — entegrasyon | Bağlantılar ve ortak kontroller; eşzamanlı ikinci yazar olmaz. |
 | `README.md`, `STATUS.md`, `AGENTS.md`, `BEYAN.md` | Kişi 1 — entegrasyon | Kişi 2 görev/AI/kaynak notlarını kendi PR açıklamasında iletir; birleştirirken Kişi 1 kaydeder. |
 
 - Gerçek kişi adları henüz bildirilmedi; Kişi 1 / Kişi 2 rol etiketleridir. İsim uydurma.
@@ -27,7 +27,10 @@
 ## Teknik sözleşme ve kontroller
 
 - `Phase`: `FORESIGHT → REWIND → PLANNING → EXECUTION`. Son fazda `SHAKING → EVACUATION → REPORT` adımları vardır.
-- `Engine` sabit 1/60 saniye fizik adımı kullanır. `SimulationManager` durumun tek sahibidir. Geri sarma tam ve izole durum kopyalarıyla yapılır.
+- `Engine` 60 Hz oynanış, Matter dünyası 120 Hz alt adım kullanır. `SimulationManager` durumun tek sahibidir. `TimelineRewind`, her ikinci adımda (30 Hz) izole veri snapshot'ı alır; Matter gövdelerini/bağlarını doğrudan serialize etme. Kopan bağ ve parçaları da geri yükle. `Engine.clear` sonrasında broadphase listesini yeniden kur.
+- P/S bileşenli temel hareketi ve kat kuvvetleri deterministik olmalı; duvar/floor kinematiği ile eşya kuvvetlerini çizim animasyonuna indirgeme. Birimlerin oyun ölçeğinde olduğunu belirt.
+- NPC tutunması fiziksel bağdır; grip göstergesi bağın açılmasını/kapanmasını etkiler. Tahliyede yerçekimi, grounded/coyote ve yükselen kenarda zıplama kullan.
+- Ortak v0.2 sözleşmesine göre `physicsBodies.parts` dünya köşeleri, `x/y` kütle merkezi, `angle` radyandır. Yeni görünümün referans entegrasyonu `src/integration/` içindedir; Kişi 2 dosyalarını otomatik taşıma veya silme.
 - AP yalnızca planlamada düşer; aynı müdahale iki kez uygulanmaz. Sarsıntı sırasında hareket girişi tahliye başlatmaz. Gizli sekmede süre durur.
 - Kod değişikliğinde `npm run build` çalıştır. Faz, AP, snapshot, tehlike zinciri veya kontroller değişirse ilgili `npm test` senaryolarını da çalıştır. Gerekirse `npx playwright install chromium` ile test tarayıcısını kur.
 - UI değişikliğinde normal/ölçeklenmiş ekranda tıklama, klavye, görsel yerleşim ve konsol hatalarını denetle. Dokümantasyonda içerik, bağlantılar ve `git diff --check` kontrol edilir. Yapılamayan kontrolleri gerekçeleriyle bildir.

@@ -4,7 +4,7 @@ CIVIL GAME JAM 2026 için **Afet Hazırlığı ve Farkındalık** temalı, 2D ya
 
 İki kişilik ekibimizin ortak deposu: [girayeskalen/helloworld-jam](https://github.com/girayeskalen/helloworld-jam).
 
-**Vertical Slice v0.1:** Vite + TypeScript + HTML5 Canvas 2D + Web Audio API. Bütün grafikler kodla çizilir; sesler çalışma anında sentezlenir. Harici görsel, ses veya font dosyası indirilmez. Çizim yüzeyi 1280×720'dir ve pencereye orantılı ölçeklenir.
+**Fizik prototipi v0.2:** Vite + TypeScript + **Matter.js 0.20.0** + HTML5 Canvas 2D + Web Audio API. Bütün grafikler kodla çizilir; sesler çalışma anında sentezlenir. Harici görsel, ses veya font dosyası indirilmez. Çizim yüzeyi 1280×720'dir ve pencereye orantılı ölçeklenir.
 
 ## Kurulum ve çalıştırma
 
@@ -37,14 +37,17 @@ Testler kendi Vite sunucusunu 5174 portunda açar; portun boş olması gerekir. 
 
 ## Nasıl oynanır?
 
-1. **FORESIGHT / Öngörü:** Dört saniyelik felaket otomatik oynar. Dolap devrilir, lamba düşer, gaz kaçağı kıvılcımla patlamaya dönüşür; panikle merdivene yönelen Deniz yaralanır.
-2. **REWIND / Geri sarma:** Kaydedilen fizik ve NPC durumları 1,5 saniyede VHS efektiyle T=0'a döner.
-3. **PLANNING / Planlama:** Üç AP'yi kullanın. Nesneye veya sağdaki düğmeye tıklayın; **1:** dolabı L-demirle sabitle, **2:** Deniz'e masa altında Çök-Kapan-Tutun komutu ver, **3:** otomatik gaz kesici sensör tak. **R** planı sıfırlar. Aynı müdahale iki kez AP harcamaz.
-4. **EXECUTION / Uygulama:** **Space** veya “Depremi Başlat” ile kararları sınayın. Sarsıntı bitince **WASD / yön tuşlarıyla** Deniz'i sağdaki turkuaz zemin çıkışına götürün. Merdiven enkazının altındaki açık koridoru izleyin. Artçıya kadar 10 saniye vardır. Karne açıldığında **R** veya “Yeniden Dene” tüm döngüyü başlatır.
+1. **FORESIGHT / Öngörü:** 8 saniyelik sarsıntıda gerçek gövdelerin hareketini izle. Darbeler, kopan askılar, devrilme, masa/kolon hasarı ve gaz-kıvılcım zinciri sonucu değiştirir.
+2. **REWIND / Geri sarma:** Her iki fizik karesinden biri kaydedilir (30 Hz). Gövdeler, hızlar, açılar, NPC sağlığı, parçalar ve bağlar 1,8 saniyede interpolasyonla geri oynar. Planlama T=0'da temiz dünya ile başlar.
+3. **PLANNING / Hazırlık:** **5 AP** vardır. **1:** gardırop sabitle (1), **2:** kitaplık sabitle (1), **3:** buzdolabı sabitle (1), **4:** masa çaprazı (2), **5:** kolon çaprazı (2), **6:** gaz kesici (1), **7:** sığınma planı (1). Nesne veya düğmeye tıklanabilir. Masa altı/kolon yanı hedefi değiştirilebilir; ilk sığınak seçimi plan komutunu 1 AP'ye alır, hedef değiştirmek tekrar ücretlendirilmez. **R** bütün planı ve bağlarını sıfırlar.
+4. **EXECUTION / Aktif tutunma:** **Space** ile başlat. **A/D veya ←/→** ile göstergeyi yeşil bölgede tut. **Space** kısa bir tutuşla merkeze çeker; sürekli basmak enerjiyi tüketir. Tuşu bırakınca enerji yenilenir. Denge bozulursa tutuş bağı çözülür; karakter fiziksel olarak savrulabilir ve yaralanabilir.
+5. **EVACUATION / Tahliye:** Sarsıntı durunca **12 saniye** başlar. **A/D veya ←/→** ile koş; **Space, W veya ↑** ile zıpla; **S/↓** havada hızlı iniş sağlar. Havada ikinci zıplama yoktur. Enkaz, devrilmiş eşyalar ve yerinde kalan taşıyıcılar fiziksel yolu değiştirebilir. Sağdaki kapıya ulaş. Karnede **R** yeniden başlatır.
 
-Karne: mühendislik 40 + farkındalık 30 + tahliye 30 = 100 puan. **S:** 100, **A:** 80–99, **B:** 50–79, **C:** 0–49. Üç önlem ve başarılı tahliye S-rank verir. Yalnızca farkındalık müdahalesi gaz kaynaklı yaralanmayı engellemez. Bu, oyunun kendi puan sistemidir; jam jüri ölçütlerinden ayrıdır.
+Dört ana `Phase` korunur; tutunma, tahliye ve karne `EXECUTION` içindeki adımlardır. Örnek başarılı plan: kolon çaprazı (2) + gardırop sabitleme (1) + gaz kesici (1) + kolon yanında sığınma planı (1). Tek başına düğmelere basmak tam puan vermez; tutunuş ve tahliye de tamamlanmalıdır. Başka planların açık bıraktığı rotayı öngörüden okuyun.
 
-Bu prototipteki 4 ve 10 saniyelik süreler oyun tasarımıdır; gerçek depremi veya artçı zamanını öngörmez. Eğitim içeriği [AFAD önerilerinden](https://afad.gov.tr/deprem-oncesi-ani-ve-sonrasi-alabileceginiz-onlemleri-biliyor-musunuz) özetlenmiştir. Oyun, fiziksel bina güvenliği değerlendirmesi yapmaz.
+Karne: mühendislik 40 + farkındalık/tutunma 30 + tahliye 30. Mühendislik puanı gerçekten ayakta kalan güçlendirme, dik kalan sabit eşya, gaz kesici ve patlamanın önlenmesini hesaba katar. Yeşil bölgede geçirilen süre farkındalık puanını etkiler. **S: ≥90 ve başarılı tahliye; A: ≥75 ve başarılı tahliye; B: ≥50; C: diğer sonuçlar.** Bu, jam jüri puanlamasından ayrı oyun içi sistemdir.
+
+P/S dalga esinli hareketli temel ve kat kesme kuvveti fizik motoruna aktarılır; bu bir sismik dalga yayılımı veya yapı mühendisliği çözücüsü değildir. Kütleler, yük/hasar eşikleri ve süreler oyun birimleridir. `SafeTriangle`, destek gövdesi hâlâ ayaktayken karakter hacminin diğer cisimlerle çakışmadığı oyun içi boşluğu gösterir; gerçek bir binada güvenlik garantisi değildir. Eğitim davranışı, [AFAD'ın sağlam masa altında Çök-Kapan-Tutun ve sarsıntı sonrasında tahliye önerisine](https://afad.gov.tr/deprem-oncesi-ani-ve-sonrasi-alabileceginiz-onlemleri-biliyor-musunuz) dayanır. 12 saniye gerçek artçı zamanı tahmini değildir.
 
 ## Mimari ve dosya sahipliği
 
@@ -55,7 +58,8 @@ src/
     Engine.ts                   Sabit 60 Hz adım / render döngüsü
     SimulationManager.ts        Dört faz, AP, giriş, tahliye, karne
     TimelineRewind.ts            İzole snapshot kaydı ve ters örnekleme
-    PhysicsHazardSystem.ts      Yerçekimi, devrilme ve olay zinciri
+    PhysicsHazardSystem.ts      Matter dünyası, darbeler, kırılma ve gerçek bağlar
+    PhysicsLevel.ts             Kişi 1 referans fizik sahnesi; eski bölüm verisini korur
   ui_vfx/                       Kişi 2 — Tactical UI, Audio, VFX
     Renderer.ts                 Blueprint kesit, tehlike vektörleri, VHS
     TacticalHUD.ts              Erişilebilir DOM düğmeleri ve karne
@@ -63,11 +67,19 @@ src/
     ParticleSystem.ts           Olay tabanlı parçacıklar
     styles.css                  HUD ve duyarlı ekran yerleşimi
   levels/levels.ts              Kişi 2 — Salt bölüm verisi ve farkındalık
+  integration/                  Kişi 1 — Yeni fizik sözleşmesinin çalışan referans sunumu
+    PhysicsView.ts              Gövde köşeleri, tutunma ve planlama kontrolleri
+    physics.css                 Referans görünüm stilleri
   main.ts                       Kişi 1 — Sistem bağlantıları / entegrasyon
-tests/game.spec.ts              Kişi 1 — Tarayıcı ve simülasyon kontrolleri
+tests/game.spec.ts              Kişi 1 — Gerçek tuş/fare, faz ve HUD kontrolleri
+tests/physics.spec.ts           Kişi 1 — Rijit cisim, snapshot, AP, grip ve tahliye testleri
 ```
 
-Core, DOM/Canvas/Web Audio'ya bağımlı değildir; `Engine` yalnızca zamanlama için tarayıcı API'sini kullanır. Sunum, `GamePresentation` üzerinden salt okunur `GameState` alır; müdahaleleri `GameController` aracılığıyla iletir. `Phase` dört ana durumdan oluşur; son fazın `ExecutionStage` adımları `SHAKING`, `EVACUATION`, `REPORT` olarak ayrılır. Fizik 60 Hz'dir; çizim ve ses rastgeleliği simülasyon sonucunu değiştirmez. `TimelineRewind` bölüm verisini ve orijinal snapshot'ları değiştirmeden kopyalar. Yeni bölümler mevcut sözleşmeyle `levels/` içinde hazırlanır.
+Core, DOM/Canvas/Web Audio'ya bağımlı değildir; `Engine` yalnızca zamanlama için tarayıcı API'sini kullanır. Sunum, `GamePresentation` üzerinden salt okunur `GameState` alır; müdahaleleri `GameController` aracılığıyla iletir. `Phase` dört ana durumdan oluşur; son fazın `ExecutionStage` adımları `SHAKING`, `EVACUATION`, `REPORT` olarak ayrılır. Oynanış 60 Hz, Matter alt adımları 120 Hz, kayıt 30 Hz'dir. Çizim ve ses rastgeleliği fiziği etkilemez. Snapshot içinde Matter nesnesi tutulmaz; konum, hız, açı, kırılma, gaz durumu ve bağ varlığı serileştirilir. Geri sarma sırasında fizik ileri işletilmez. Planlama/tekrar başlangıcı temiz dünyadan yeniden kurulur. Ara bir snapshot'tan devam için solver temas önbelleği yeniden oluşturulur; bit düzeyinde ara kare devamı garantisi verilmez.
+
+**Kişi 2'ye entegrasyon:** `src/ui_vfx/` ve `src/levels/` dosyaları bu görevde değiştirilmedi. `main.ts` şu an `src/integration/PhysicsView.ts` referans sunumunu kullanır; SoundSynth ve ParticleSystem mevcut modüllerden alınır. Kişi 2 kendi Renderer/HUD'unu yeni `GameState.physicsBodies`, `constraints`, `safeTriangles`, `grip`, `seismic` alanlarına geçirebilir. `x/y` kütle merkezi, `angle` radyandır; kaymış kütle merkezi ve compound masayı doğru çizmek için `parts` dünya köşelerini kullanın. `dangerArc` sabitlenmemiş yüksek eşyaların öngörü alanıdır. AP, müdahale maliyeti ve süreleri `LevelData` üzerinden okuyun; eski HUD 3 AP varsaydığı için doğrudan yeniden bağlanmamalıdır.
+
+`PhysicsLevel.ts`, eski bölüm verisini değiştirmeden v0.2 fizik tanımlarına dönüştürür. `LevelData.physics` ile yeni veri geçirilebilir; şu referans sistem `ground`, `upper-floor`, `wall-left`, `column`, `ceiling-beam`, `ceiling-a`, `ceiling-b`, `lamp`, `gas` ve `desk` kimliklerini bekler. Şu an bir kontrol edilebilir NPC vardır. Kesit modelinde NPC, masa ayaklarının önünden/arkasından geçebilir: yalnız sağlam masa/NPC çarpışması filtrelenir; eşya–masa ve karakter–enkaz temasları tam fizikseldir. NPC diğer eşyaların içinden geçmez.
 
 Paralel çalışma sırasında `feat/core-*` ve `feat/ui-*` gibi ayrı dallar kullanın. **Kişi 1**, ortak tipler, giriş noktası, kök yapılandırmalar, lock dosyası ve ortak belgelerin entegrasyon sorumlusudur. **Kişi 2**, `src/ui_vfx/` ve `src/levels/` dışında değişiklik yapmadan arayüz taleplerini kendi PR açıklamasında iletir. Ortak sözleşme değişikliği önce birlikte kararlaştırılır, sonra tek kişi uygular. Ayrı dosya sahipliği aynı satırların paralel düzenlenmesini önler; Git bütün olası birleştirmelerde sıfır çakışma garantisi vermez. Ayrıntılar [AGENTS.md](AGENTS.md) içinde.
 

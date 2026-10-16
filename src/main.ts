@@ -1,86 +1,74 @@
 import { Engine } from './core/Engine';
 import { SimulationManager } from './core/SimulationManager';
+import { PhysicsView } from './integration/PhysicsView';
 import { prototypeLevel } from './levels/levels';
-import type { GamePresentation, InputState } from './types/game';
-import { Renderer } from './ui_vfx/Renderer';
-import { SoundSynth } from './ui_vfx/SoundSynth';
-import { TacticalHUD } from './ui_vfx/TacticalHUD';
+import type { InputState } from './types/game';
 import './ui_vfx/styles.css';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
 const simulation = new SimulationManager(prototypeLevel);
-const renderer = new Renderer(canvas, prototypeLevel);
-const sound = new SoundSynth();
-const hud = new TacticalHUD(document.querySelector<HTMLElement>('#hud')!, simulation, prototypeLevel, sound);
+const level = simulation.level;
+const view = new PhysicsView(canvas, document.querySelector<HTMLElement>('#hud')!, level, simulation);
 const keys = new Set<string>();
-let previousPhase = '';
-let previousTime = 0;
-
-const presentation: GamePresentation = {
-  render(state, delta) {
-    if ((state.phase === 'FORESIGHT' && (previousPhase !== state.phase || state.time < previousTime)) || (state.phase === 'EXECUTION' && previousPhase === 'PLANNING')) this.reset();
-    renderer.render(state, delta);
-    hud.render(state);
-    sound.update(state);
-    previousPhase = state.phase;
-    previousTime = state.time;
-  },
-  reset() { renderer.reset(); hud.reset(); sound.reset(); },
-};
-
-const readInput = (): InputState => ({
-  left: keys.has('ArrowLeft') || keys.has('KeyA'),
-  right: keys.has('ArrowRight') || keys.has('KeyD'),
-  up: keys.has('ArrowUp') || keys.has('KeyW'),
-  down: keys.has('ArrowDown') || keys.has('KeyS'),
+const listeners = new AbortController();
+const options = { signal: listeners.signal };
+const input = (): InputState => ({
+  left: keys.has('ArrowLeft') || keys.has('KeyA'), right: keys.has('ArrowRight') || keys.has('KeyD'),
+  up: keys.has('ArrowUp') || keys.has('KeyW'), down: keys.has('ArrowDown') || keys.has('KeyS'),
+  jump: keys.has('Space'), grip: keys.has('Space'),
 });
-
-const engine = new Engine(simulation, presentation, readInput);
+const engine = new Engine(simulation, view, input);
 window.addEventListener('keydown', event => {
-  const nativeButtonSpace = event.code === 'Space' && event.target instanceof HTMLButtonElement;
+  const state = simulation.getState();
+  const nativeButtonSpace = event.code === 'Space' && event.target instanceof HTMLButtonElement && (state.phase === 'PLANNING' || state.score);
   if (nativeButtonSpace) return;
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) event.preventDefault();
   keys.add(event.code);
   if (event.repeat) return;
-  if (event.code === 'KeyM') {
-    document.querySelector<HTMLButtonElement>('#sound')!.click();
-    return;
-  }
-  void sound.unlock();
-  if (event.code === 'Space') simulation.execute();
+  if (event.code === 'KeyM') { document.querySelector<HTMLButtonElement>('#sound')!.click(); return; }
+  void view.sound.unlock();
+  if (event.code === 'Space' && state.phase === 'PLANNING') { simulation.execute(); canvas.focus(); }
   if (event.code === 'KeyR') {
-    if (simulation.getState().phase === 'PLANNING') simulation.undoPlanning();
-    else if (simulation.getState().score) simulation.restart();
+    if (state.phase === 'PLANNING') simulation.undoPlanning(); else if (state.score) simulation.restart();
   }
-  const action = { Digit1: 'anchor-cabinet', Digit2: 'coach-npc', Digit3: 'gas-sensor' } as const;
-  const id = action[event.code as keyof typeof action];
-  if (id && simulation.intervene(id)) sound.confirm();
-});
-window.addEventListener('keyup', event => keys.delete(event.code));
+  const digit = /^Digit([1-7])$/.exec(event.code);
+  if (digit) {
+    const action = level.interventions[Number(digit[1]) - 1];
+    if (action && simulation.intervene(action.id)) view.sound.confirm();
+  }
+}, options);
+window.addEventListener('keyup', event => keys.delete(event.code), options);
 window.addEventListener('pointerdown', event => {
-  if (!(event.target instanceof Element && event.target.closest('#sound'))) void sound.unlock();
-});
-window.addEventListener('blur', () => keys.clear());
+  if (!(event.target instanceof Element && event.target.closest('#sound'))) void view.sound.unlock();
+}, options);
+window.addEventListener('blur', () => keys.clear(), options);
 document.addEventListener('visibilitychange', () => {
-  keys.clear();
-  document.querySelector<HTMLElement>('#pause-notice')!.hidden = !document.hidden;
+  keys.clear(); document.querySelector<HTMLElement>('#pause-notice')!.hidden = !document.hidden;
   if (document.hidden) engine.stop(); else engine.start();
-});
-canvas.addEventListener('pointerdown', event => {
-  const bounds = canvas.getBoundingClientRect();
-  const x = (event.clientX - bounds.left) * canvas.width / bounds.width;
-  const y = (event.clientY - bounds.top) * canvas.height / bounds.height;
-  const action = prototypeLevel.interventions.find(item => x >= item.hitbox.x && x <= item.hitbox.x + item.hitbox.width && y >= item.hitbox.y && y <= item.hitbox.y + item.hitbox.height);
-  if (action && simulation.intervene(action.id)) sound.confirm();
-  canvas.focus();
-});
-canvas.addEventListener('pointermove', event => {
-  const bounds = canvas.getBoundingClientRect();
-  const x = (event.clientX - bounds.left) * canvas.width / bounds.width;
-  const y = (event.clientY - bounds.top) * canvas.height / bounds.height;
-  canvas.style.cursor = simulation.getState().phase === 'PLANNING' && prototypeLevel.interventions.some(item => x >= item.hitbox.x && x <= item.hitbox.x + item.hitbox.width && y >= item.hitbox.y && y <= item.hitbox.y + item.hitbox.height) ? 'pointer' : 'default';
-});
+}, options);
 
-presentation.render(simulation.getState(), 0);
+function actionAt(event: PointerEvent) {
+  const bounds = canvas.getBoundingClientRect();
+  const x = (event.clientX - bounds.left) * canvas.width / bounds.width;
+  const y = (event.clientY - bounds.top) * canvas.height / bounds.height;
+  const state = simulation.getState();
+  return level.interventions.find(action => {
+    const body = state.physicsBodies.find(body => body.id === action.targetId);
+    if (!body) return false;
+    return body.parts.some(part => {
+      // Planlama gövdelerinin gerçek köşelerinden ölçek bağımsız seçim kutusu.
+      const xs = part.map(p => p.x), ys = part.map(p => p.y);
+      return x >= Math.min(...xs) - 6 && x <= Math.max(...xs) + 6 && y >= Math.min(...ys) - 6 && y <= Math.max(...ys) + 6;
+    });
+  });
+}
+canvas.addEventListener('pointerdown', event => {
+  const action = actionAt(event);
+  if (action && simulation.intervene(action.id)) view.sound.confirm();
+  canvas.focus();
+}, options);
+canvas.addEventListener('pointermove', event => { canvas.style.cursor = simulation.getState().phase === 'PLANNING' && actionAt(event) ? 'pointer' : 'default'; }, options);
+
+view.render(simulation.getState(), 0);
 engine.start();
-if (import.meta.hot) import.meta.hot.dispose(() => engine.stop());
+if (import.meta.hot) import.meta.hot.dispose(() => { listeners.abort(); engine.stop(); simulation.dispose(); });
