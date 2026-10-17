@@ -8,7 +8,6 @@ func _initialize() -> void: call_deferred("_run")
 
 func _run() -> void:
 	game = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
-	game.intro_enabled = false
 	(game.get_node("DisasterWaveManager") as DisasterWaveManager).autoplay = false
 	root.add_child(game)
 	if DisplayServer.get_name() != "headless":
@@ -37,7 +36,7 @@ func _fresh() -> void:
 	game.reset_game()
 	game.waves.autoplay = false
 	game.waves.start_next_wave()
-
+	game.waves.advance_wave(game.waves.intro_duration())
 	game.building.pacing_enabled = false
 	game.player.controls_locked = false
 	game.telegraphs.clear()
@@ -186,7 +185,7 @@ func _framing() -> void:
 	_fresh()
 	for boss: DisasterBoss in game.waves.bosses():
 		boss.set_active(true)
-		boss.set_active(true)
+		boss.transition_pose(1.0,false)
 		boss.cue_attack(1.0)
 		var fits: bool = true
 		# Step 4.9 HUD: the titan's crown may rise into the old header area, but never

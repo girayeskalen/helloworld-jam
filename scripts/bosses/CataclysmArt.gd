@@ -4,6 +4,7 @@ extends RefCounted
 ## back():   basalt body, storm-vortex left arm, rock right claw and tide base
 ##           (drawn behind the apartment, so only parts outside the facade show).
 ## front():  pauldrons, roaring basalt head and foam/lightning crown over the roof.
+## fusion(): the 2.8-second entry in which three energies collide.
 
 const INK: Color = Color("111518")
 const BASALT: Color = Color("4b504a")
@@ -20,7 +21,9 @@ const ELEMENTS: Array[Color] = [Color("8fd8ff"), Color("a4b2b5"), Color("55f2e2"
 ## Crown tips rise at most this far above the head centre (framing tests use it).
 const CROWN_TOP: float = 140.0
 const HEAD_SCALE: float = 1.35
+const FUSION_CENTER: Vector2 = Vector2(0, -600)
 ## Storm arrives from the left sky, quake from the right, flood from below.
+const FUSION_STARTS: Array[Vector2] = [Vector2(-1420, -1000), Vector2(1420, -330), Vector2(0, 180)]
 
 static func back(c: DisasterBoss, rig: Dictionary, root: Vector2) -> void:
 	var t: float = rig["time"]
@@ -320,12 +323,74 @@ static func _head(c: CanvasItem, rig: Dictionary, root: Vector2, t: float, flow:
 			c.draw_polyline(arc, Color("f4fbff"), 2.0, false)
 	c.draw_set_transform(root)
 
+# ---------------------------------------------------------------- fusion ----
+
+## Storm (top-left sky), fire (top-right sky), flood (left) and quake (right, from
+## the ground) are pulled into the facade, collide at 55% and feed the new body.
+static func fusion(c: Node2D, progress: float, clock: float) -> void:
+	var starts: Array[Vector2] = FUSION_STARTS
+	var order: Array[int] = [0, 1, 2]
+	var gather: float = clampf(progress / DisasterWaveManager.FUSION_IMPACT, 0.0, 1.0)
+	# Accelerating pull: the energies are dragged in, then slam together.
+	var e: float = pow(gather, 1.6)
+	if progress < .62:
+		for i: int in order:
+			var start: Vector2 = starts[i]
+			var control: Vector2 = start.lerp(FUSION_CENTER, .5) + Vector2(0, -280)
+			var color: Color = ELEMENTS[i]
+			for k: int in range(12):
+				var q: Vector2 = _bezier(start, control, FUSION_CENTER, maxf(0.0, e - k * .03))
+				c.draw_circle(q, 44.0 - k * 3.2, Color(color, .5 - k * .04))
+			var p: Vector2 = _bezier(start, control, FUSION_CENTER, e)
+			c.draw_circle(p, 78.0, Color(color, .14))
+			c.draw_circle(p, 58.0, Color(color, .22))
+			CelArt.ellipse(c, p, Vector2(40, 40), color.darkened(.35), 5.0)
+			c.draw_circle(p, 22.0, color.lightened(.55))
+			match i:
+				0: c.draw_arc(p, 20.0, clock * 9.0, clock * 9.0 + PI * 1.5, 16, Color("e8f9ff"), 3.0)
+				1: CelArt.poly(c, PackedVector2Array([p + Vector2(-16, -8), p + Vector2(4, -18), p + Vector2(18, -2), p + Vector2(6, 16), p + Vector2(-14, 10)]), Color("8f8370"), 2.0)
+				2: c.draw_arc(p + Vector2(0, 2), 19.0, PI, TAU, 12, Color("e9fff6"), 4.0)
+	# Sky bolts strike while the energies gather and at the impact.
+	if progress > .18 and progress < .8:
+		var frame: int = int(clock * 16.0)
+		for k: int in range(3):
+			var from: Vector2 = Vector2(-900 + k * 900 + sin(frame * 1.7 + k) * 160.0, -1380)
+			var to: Vector2 = FUSION_CENTER if progress > .5 else _bezier(starts[k], starts[k].lerp(FUSION_CENTER, .5) + Vector2(0, -280), FUSION_CENTER, e)
+			var bolt: PackedVector2Array = PackedVector2Array([from])
+			for step: int in range(1, 7):
+				bolt.append(from.lerp(to, step / 7.0) + Vector2(sin(frame * 3.3 + step * 2.1 + k) * 38.0, 0))
+			bolt.append(to)
+			c.draw_polyline(bolt, Color(.45, .7, 1.0, .35), 14.0, false)
+			c.draw_polyline(bolt, Color(.92, .98, 1.0, .95), 3.5, false)
+	if progress >= DisasterWaveManager.FUSION_IMPACT:
+		var q: float = clampf((progress - DisasterWaveManager.FUSION_IMPACT) / .3, 0.0, 1.0)
+		c.draw_circle(FUSION_CENTER, 140.0 + q * 1100.0, Color(1, .97, .9, .5 * (1.0 - q)))
+		for i: int in range(3):
+			c.draw_arc(FUSION_CENTER, 60.0 + q * (700.0 + i * 140.0), 0, TAU, 72, Color(INK, .5 * (1.0 - q)), 16.0)
+			c.draw_arc(FUSION_CENTER, 60.0 + q * (700.0 + i * 140.0), 0, TAU, 72, Color(ELEMENTS[i], 1.0 - q), 8.0)
+	if progress >= .6:
+		# Element streams feed the condensing anatomy: head, vortex, claw, tides.
+		var f: float = clampf((progress - .6) / .4, 0.0, 1.0)
+		var targets: Array[Vector2] = [Vector2(-1000, -470), Vector2(0, -1010), Vector2(-1010, -150), Vector2(1000, -470), Vector2(1010, -150)]
+		var tints: Array[Color] = [ELEMENTS[0], ELEMENTS[1], ELEMENTS[2], ELEMENTS[1], ELEMENTS[2]]
+
+		for i: int in range(targets.size()):
+			var stream: PackedVector2Array = PackedVector2Array()
+			for step: int in range(13):
+				var s: float = step / 12.0
+				stream.append(FUSION_CENTER.lerp(targets[i], s) + Vector2(0, sin(s * 9.0 + clock * 14.0 + i) * 26.0 * (1.0 - s)))
+			c.draw_polyline(stream, Color(tints[i], .35 * (1.0 - f)), 18.0 * (1.0 - f) + 2.0, false)
+			c.draw_polyline(stream, Color(tints[i].lightened(.4), 1.0 - f), 4.0, false)
+
 ## A curling jet with a foam crest, replacing every flame in the final anatomy.
 static func _spray(c: CanvasItem, p: Vector2, height: float, width: float, t: float, color: Color) -> void:
 	var curl: float = sin(t*.45)*width*.65
 	var shape: PackedVector2Array = PackedVector2Array([p+Vector2(-width,0),p+Vector2(-width*.6,-height*.6),p+Vector2(curl-width*.8,-height),p+Vector2(curl+width*.7,-height*.93),p+Vector2(curl+width*.3,-height*.68),p+Vector2(width*.65,-height*.3),p+Vector2(width,0)])
 	CelArt.poly(c,shape,Color("277d96"),2.5)
 	c.draw_polyline(PackedVector2Array([shape[1],shape[2],shape[3],shape[4]]),color.lightened(.25),3.0,true)
+
+static func _bezier(a: Vector2, b: Vector2, c: Vector2, t: float) -> Vector2:
+	return a.lerp(b, t).lerp(b.lerp(c, t), t)
 
 static func _rock(c: CanvasItem, center: Vector2, size: Vector2, color: Color) -> void:
 	CelArt.poly(c, PackedVector2Array([center + Vector2(-size.x, -size.y * .6), center + Vector2(-size.x * .5, -size.y), center + Vector2(size.x * .65, -size.y * .9), center + Vector2(size.x, -size.y * .1), center + Vector2(size.x * .73, size.y * .85), center + Vector2(-size.x * .65, size.y)]), color, 3.0)

@@ -84,7 +84,7 @@ func _physics_process(delta: float) -> void:
 	advance(delta)
 
 func advance(delta: float) -> void:
-	if building == null or (waves != null and (waves.intro_active or waves.failed or waves.victory or waves.upgrade_pending)):
+	if building == null or (waves != null and (waves.failed or waves.victory or waves.upgrade_pending)):
 		return
 	_clock += delta
 	# Age existing drops first: a newly spawned item starts at age zero this tick.

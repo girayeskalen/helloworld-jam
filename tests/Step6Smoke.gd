@@ -9,7 +9,6 @@ func _initialize() -> void:
 
 func _run() -> void:
 	game = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
-	game.intro_enabled = false
 	(game.get_node("DisasterWaveManager") as DisasterWaveManager).autoplay = false
 	root.add_child(game)
 	root.unfocusable = true
@@ -116,7 +115,7 @@ func _battle(mode: int) -> void:
 	game.reset_game()
 	game.waves.autoplay = false
 	game.waves.start_siege(mode as DisasterWaveManager.Mode,true)
-
+	game.waves.advance_wave(game.waves.intro_duration())
 	game.building.pacing_enabled = false
 
 func _tuning() -> void:

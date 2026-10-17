@@ -146,17 +146,3 @@ Araç: OpenAI Codex; mevcut Claude Adım 7 kodu üzerinde GDScript, özgün kod 
 | Swept collision / iki segment arası yakınlık | [Godot 4.3 Geometry2D](https://docs.godotengine.org/en/4.3/classes/class_geometry2d.html). Resmî API sayfası açılarak get_closest_points_between_segments ve segment_intersects_segment işlevleri incelendi; kaynak kod kopyalanmadı. |
 
 Bu taramada `www.afad.gov.tr/afet-ve-acil-durum-cantasi-nasil-hazirlanmali` ve `www.usgs.gov/programs/earthquake-hazards/science/early-warning` doğrudan açılışları hata döndürdü; bu iki başarısız bağlantı doğrulanmış kaynak sayılmadı. Yukarıdaki resmî arama sonuçları ve açılabilen Godot sayfası kullanıldı.
-
-## 18 Ekim 2026 — Adım 9 hikâye / kurgu ayrımı
-
-- [USGS: Can you predict earthquakes?](https://www.usgs.gov/faqs/can-you-predict-earthquakes): resmî sayfa açılıp incelendi. Belirli gün/saat, konum ve büyüklüğü önceden bilme iddiasını desteklemez. Bu nedenle TV'nin “3 gün” başlığı kurgusal bülten olarak gösterilir; deprem gününün önceden bilinemediği belirtilir.
-- [NOAA/NHC: Saffir-Simpson Hurricane Wind Scale](https://www.nhc.noaa.gov/aboutsshws.php?lv=true): resmî arama sonucu ölçeğin 1–5 olduğunu doğrular; düz sayfanın doğrudan açılışı hata verdi. “Kategori 6 Hiper-Kasırga” resmî bir sınıf gibi sunulmaz; kurgusal boss ultisi etiketlidir.
-
-Diploma, salon, kuşanma, ulti/kalkan/çöküş/gündüz görüntüleri ve üç yeni PCM ses tarifi proje için AI yardımıyla yazılmış özgün prosedürel içeriktir. Dış görsel, oyun kodu, kurum logosu, hazır diploma veya müzik eseri kopyalanmadı. Ekrandaki diploma bir oyun dekorudur; gerçek diploma olduğu iddia edilmez. Final kalkanı gerçek yapının sıfır kayıpla dayanacağına ilişkin mühendislik garantisi değildir.
-
-## 18 Ekim 2026 — video intro ve piksel font
-
-- [Godot 4.3: Playing videos](https://docs.godotengine.org/en/4.3/tutorials/animation/playing_videos.html) ve [VideoStreamPlayer API](https://docs.godotengine.org/en/4.3/classes/class_videostreamplayer.html): resmî rehber arama sonucu + API sayfası açılarak doğrulandı. Yerleşik format Ogg Theora/OGV; diğer formatlar GDExtension çözücüsü gerektirir. VideoStreamPlayer.finished, paused, expand, stream_position ve ses bus'ı kullanıldı. Theora uzunluğunun API'de 0 dönebilmesi nedeniyle sabit süre tahmini yapılmaz; gerçek bitiş sinyali izlenir.
-- **Press Start 2P**, The Press Start 2P Project Authors (2012), Reserved Font Name Press Start 2P; [TTF orijinali](https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/PressStart2P-Regular.ttf), [SIL OFL 1.1 orijinali](https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/OFL.txt). İki dosya HTTPS üzerinden Google Fonts resmî deposundan indirilip assets/fonts içine kaydedildi; değiştirilmedi. GitHub klasör sayfasının browser açılışı hata verdi, ham dosyalar başarıyla alındı. Türkçe harfler ve bullet glyph'i gerçek font kaynağıyla test edildi.
-
-Minimal bültendeki tahliye planı/afet çantası notları yukarıdaki AFAD hazırlık kaynaklarının kısa özgün özetidir. Kesin afet tarihi, gerçek yapı dayanımı veya kurum onayı iddiası yoktur. Gerçek video henüz sağlanmadı; testte kullanılan FFmpeg test deseni geçici klasördedir, teslim içeriği değildir. Önceki Adım 9'un çizimleri ve ilgili üretim kodları bu kullanıcı isteğiyle kaldırılmıştır; yukarıdaki kayıt tarihçedir.

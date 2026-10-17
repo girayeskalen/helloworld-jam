@@ -6,7 +6,7 @@ Doğal afet hazırlığı ve farkındalık temalı, Fallout Shelter esinli apart
 
 **Karakter ve ekipman:** Reflektörlü kurtarma uzmanı, ağırlıklı çanta/ceket animasyonu ve dört boss için üç tonlu yüzeyler; dört anlaşılır ekipman. Adım 8 ile dokuz aktif kart ve her seçimde solda bir hazırlık + iki aksiyon kartı.
 
-**Adım 5.5:** Dört faz, özgün ve kesintisiz Re minör oyun müziği, bossların doğrudan başlaması, alt ortada geniş boss HP/süre barı. `ESC/P` duraklatır, `M` sesi kapatır, `-/+` seviyeyi ayarlar.
+**Adım 5.5:** Dört faz, özgün ve kesintisiz Re minör oyun müziği, her bossa ayrı 2,5 sn sinematik giriş (final 2,8 sn), alt ortada geniş boss HP/süre barı. `ESC/P` duraklatır, `M` sesi kapatır, `-/+` seviyeyi ayarlar.
 
 **Adım 6:** Statik oda/eşya/gölge/güçlendirme/arka plan önbellekleri, 50 hava parçacığı, dört noktalı mermi izleri ve ortak mermi dokuları. Her kare canlı müzik sentezinin yerini ayrı −5 dB WAV döngüsü aldı. Yalnız finalde saldırı arası ×1,3; mermi adedi yaklaşık ×0,7 (tam sayıya yuvarlanır), hız ×0,8, oyuncu/bina hasarı ×0,7, uyarı +0,20 sn. Bu katsayılar beraber uygulanır; toplam insan zorluğunun tek başına tam %30 değiştiği iddia edilmez.
 
@@ -14,7 +14,7 @@ Doğal afet hazırlığı ve farkındalık temalı, Fallout Shelter esinli apart
 
 **Adım 7 — okunabilir hızlanan bullet-hell:** Fazlar 50 sn, kart sonrası inşaat 5 sn. Her savaş 0–15 sn 0,90× sakin ısınma, 15–35 sn 1,00×→1,25× doğrusal artış ve 35–50 sn 1,45× doruk temposuyla ilerler; dorukta müzik ~%5 hızlanır. Fırtınanın beş, depremin dört yeni geometrik koreografisi var; odalardan rastgele eşya fırlatılmaz. Mermiler siyah konturlu, boss neonlu ve beyaz çekirdekli; bütün olağan uyarılar tam 0,55 sn sürer ve son 0,12 sn beyaz parlar. Kuşatmada mobilyalar ~%25 kararır. Mermiye çok yakından değmeden geçmek (**sıyrılma**) +25 takla enerjisi verir.
 
-**Güncel HUD:** Sol üstte kalp/enerji/bina barları, sol altta üç ekipman slotu; boss adı ve 50 sn kuşatma barı alt ortadadır. Boss başlangıcında kamera ve kontroller değişmez. `1/2/3/4` doğrudan boss testi; `5/6` kaldırıldı.
+**Güncel HUD:** Sol üstte kalp/enerji/bina barları, sol altta üç ekipman slotu; boss adı ve 50 sn kuşatma barı alt ortadadır. Girişte sinematik siyah şeritler ve tek büyük boss adı görünür. `1/2/3/4` doğrudan boss testi; `5/6` kaldırıldı.
 
 Codex ile devam için önce [kısa devir notunu](CODEX_DEVIR.md), Claude için [Claude devir notunu](CLAUDE_DEVIR.md) oku.
 
@@ -26,7 +26,7 @@ Codex ile devam için önce [kısa devir notunu](CODEX_DEVIR.md), Claude için [
 
 Windows'ta **`Oyunu-Ac.cmd` dosyasına çift tıklayarak** da çalıştırabilirsin. Başlatıcı önce `GODOT_BIN` ortam değişkenine, ardından masaüstü/Downloads içindeki standart Godot klasörlerine bakar. Bulamazsa Godot'tan `project.godot` dosyasını aç.
 
-Linux terminalinde proje klasöründen `godot --path .` ile oynat, `godot --editor --path .` ile editörü aç (Godot komutu PATH içinde olmalı). Bu oturumdaki Windows doğrulamasının motor sürümleri STATUS.md'dedir.
+Linux terminalinde proje klasöründen `godot --path .` ile oynat, `godot --editor --path .` ile editörü aç (Godot komutu PATH içinde olmalı). Bu oturumun test motoru `/tmp/siege-tools/Godot_v4.3-stable_linux.x86_64` altındadır.
 
 Godot'un konsol sürümüyle terminalden:
 
@@ -35,14 +35,6 @@ Godot'un konsol sürümüyle terminalden:
 ```
 
 Yukarıdaki EXE yolunu kendi kurulumunla değiştir. Oyun artık yerel web sayfasından veya `npm run dev` ile açılmaz. Kaynak projeyi F5 ile çalıştırmak için export şablonu gerekmez; bağımsız EXE/web dağıtımı ayrı bir teslim işidir.
-
-## Video açılışı
-
-İlk açılışta tam ekran **VideoStreamPlayer** çalışır. Gerçek videonu [assets/cutscenes](assets/cutscenes/README.md) klasörüne **intro_cutscene.ogv** adıyla koyman yeterli. Video biterse veya **Space/Enter** ile geçersen 0,45 sn yumuşak fade'in ardından apartman ve tam 8 sn Fırtına hazırlığı açılır. R ile yeniden başlatmada intro beklenmez.
-
-**Şu anda gerçek hikâye videosu eklenmiş değil.** Bu durumda siyah arka planda gerçek piksel fontla ODTÜ / İnşaat Mühendisliği / Giray Eskalen isim kartı ve sakin bir acil durum bülteni gösterilir. Eski diploma/koltuk çizimleri, boss giriş/çıkış sinematikleri, ultiyle yıkılış ve güneşli zafer sahneleri silindi. I/V/K ön izlemeleri kaldırıldı. Bosslar özgün animasyon ve sesleriyle doğrudan savaşa girer; kartlar ve sonuç HUD'u beklemeden açılır.
-
-Standart Godot4 **OGV/Theora** oynatır. WebM ancak uygun bir çözücü eklentisi kuruluysa açılır; aksi durumda metin girişi devreye girer. Ek eklenti gerektirmeyen yol OGV'dir; dönüştürme komutu klasörün README dosyasındadır. [Resmî Godot video rehberi](https://docs.godotengine.org/en/4.3/tutorials/animation/playing_videos.html).
 
 ## Kontroller
 
@@ -64,12 +56,11 @@ Standart Godot4 **OGV/Theora** oynatır. WebM ancak uygun bir çözücü eklenti
 | F9 | Test modunu aç/kapat (yalnız `U` kart denemesi için gerekir) |
 | E | Kuşatmada yalnız `[!] ONAR [E]` görünen odada kolon kitiyle onarım veya sabitleme/barikat kurulumu; inşaat evresinde onarım veya bir güçlendirme kiti kurma |
 | U (F9 açıkken) | Kart + inşaat denemesi; normal kampanyada etkisiz |
-| R | Oyuncuyu, odaları, loot'u ve dalga döngüsünü başa al; giriş sinematiğini bekleme |
-| Space / Enter (girişte) | Giriş sinematiğini geç; Space oyuna dönünce yine takladır |
+| R | Oyuncuyu, odaları, loot'u ve dalga döngüsünü başa al |
 
 **Adım 3'te Space yeniden takladır** (kullanıcı isteği); zıplama W/↑'dır. A/D ile yatay, W/S ile dikey takla yönünü seç; örneğin W+D+Shift sağ üst çapraza atılır. Yön basmazsan bakış yönüne atılırsın. Havada bir takla ve bir ikinci zıplama hakkı vardır; yere inince yenilenir. Her takla 32 enerji tüketir; enerji kısa gecikmeden sonra dolar.
 
-**Minimal HUD (Adım 5.5):** Sol üstte can/enerji/bina barları; alt ortada 1020×22 px kalın siyah konturlu boss barı, üstünde yalnız boss adı, sağında kalan saniye ve yüzde. Sol alttaki KOLON / SABİTLE / GÜVENLİK slotlarıyla çakışmaz. Tab/H yardımı, E istemi ve sağ üst M/ESC ipuçları korunur. Boss başlangıcında HUD açıktır; letterbox ve kamera odağı yoktur.
+**Minimal HUD (Adım 5.5):** Sol üstte can/enerji/bina barları; alt ortada 1020×22 px kalın siyah konturlu boss barı, üstünde yalnız boss adı, sağında kalan saniye ve yüzde. Sol alttaki KOLON / SABİTLE / GÜVENLİK slotlarıyla çakışmaz. Tab/H yardımı, E istemi ve sağ üst M/ESC ipuçları korunur. Sinematik girişte HUD gizlenir; başlık ve letterbox görünür.
 
 **Merdiven yoktur.** Kat geçişi her X konumunda çalışır. **Yukarı (2x W, Adım 3-B):** karakter güçlü bir dikey hızla fırlar; yükselirken yalnızca üst katın döşemesi onu yok sayar (duvarlar çarpışmaya devam eder). Döşeme hizasında yapışmaz: yaklaşık 32 px daha yükselip tepe noktasına çıkar, orada dikey hızı sıfırlanır, döşeme çarpışması geri açılır ve normal yerçekimiyle alçalarak yumuşak bir basılma (squash) ve tozla iner. Tepeye varış ~0,35 sn sürer. **Aşağı (S):** 0,11 sn'lik ease-out fazlama döşemeden süzülür. Geçişte rüzgâr izi, hayalet iz ve döşeme tozu çıkar; yükselirken takla başlatılamaz, tepe noktasından sonra hava taklası kullanılabilir. A/D ile yatay kontrol sürer. Tek zıplama yerçekimi, değişken yükseklik, 0,1 sn coyote time ve kısa giriş tamponu kullanır; yukarı takla da tavanın altında durur.
 
@@ -172,14 +163,14 @@ Her eşyanın kimliği (`f<kat>_<ad>`), katı, durumu ve sprite atama yolu ayrı
 
 ## Kuşatma nasıl işler?
 
-Açılış videosu/metin girişi bittiğinde **8 saniyelik ilk hazırlık** başlar; F ile erken başlayabilirsin. Sonlu akış:
+Oyun **8 saniyelik ilk hazırlıkla** başlar; F ile erken başlayabilirsin. Sonlu akış şöyledir:
 
-1. **FIRTINA:** doğrudan 50 sn savaş.
-2. Kart seçimi + 5 sn inşaat (F ile erken bitir) → **DEPREM:** doğrudan 50 sn savaş.
-3. Kart + 5 sn inşaat → **SEL:** doğrudan 50 sn savaş.
-4. Son kart + 5 sn inşaat → **DEPREM • SEL • FIRTINA:** doğrudan 50 sn final → standart zafer HUD'u. Beşinci faz yoktur.
+1. **FIRTINA:** 2,5 sn rüzgâr/şimşek sinematiği → 50 sn savaş → 1 sn çıkış.
+2. Kart seçimi + 5 sn inşaat (F ile erken bitir) → **DEPREM:** 2,5 sn zemin çatlağı, yükselen kayalar ve iki yumruk sinematiği → 50 sn savaş.
+3. Kart + 5 sn inşaat → **SEL:** 2,5 sn yükselen köpüklü su ve iki cephe tsunami sinematiği → 50 sn savaş.
+4. Son kart + 5 sn inşaat → **DEPREM • SEL • FIRTINA:** 2,8 sn üç afetin birleşme sinematiği → 50 sn final → çıkış ve zafer. Beşinci faz yoktur.
 
-Bosslar özgün çok parçalı animasyon ve giriş sesiyle hemen görünür; giriş/çıkış beklemesi, sahneleme, kamera odağı ve letterbox yoktur. Her saldırının normal telgrafı ve wind-up/vuruş animasyonu korunur. Kart seçimi inşaat süresini tüketmez.
+Girişte oyuncu hareketi kilitlenir, saldırı veya hasar üretilmez; kamera hafif odaklanır, üst/alt siyah şeritler ve büyük boss adı görünür. Savaş başlayınca eski kadraj ve kontroller geri gelir. Giriş/çıkış 50 saniyeyi, kart seçimi 5 saniyeyi tüketmez.
 
 **Tempo rampası (Adım 7):** Her savaşın kendi saati vardır. 0–15 sn saldırı temposu **0,90×** (tek tek, net desenler); 15–35 sn **1,00× → 1,25×** doğrusal; 35–50 sn **1,45×** doruk. Geçişler 1 sn yumuşatılır, tempo kare içinde sıçramaz. Saldırı saati tempoyla çarpılır, bu yüzden dorukta boss desen değiştirmeyi ~1,6 kat sıklaştırır. Mermi hızı tempo fazlasının yarısı kadar artar (dorukta 1,225×) ve yolun uç noktası değişmez; ısınmada mermiler yazıldığı hızdadır. Final, Nova'sının üstüne rampanın yarısını alır. Dorukta BGM 1,05× oynar (yavaşça geçer, aynı WAV).
 
@@ -253,7 +244,7 @@ tests/Step3Smoke.gd      Ekrana sığma, fırtına bullet-hell paternleri, rüzg
 tests/Step27Smoke.gd     Karanlık atmosfer, ışıklar, sprite yükleyici, akıcı hareket, boss iskeletleri, 1920×1080 PNG
 tests/Step3LootSmoke.gd  2x W yayı, oda HP/durumları, çöküş, loot ve E onarımı, 1920×1080 PNG
 tests/CampaignSmoke.gd   4 sn ömür, inşaat, kart modal input, 4 faz, zafer, görsel kayıtlar
-tests/Step45Smoke.gd     50/5 sn, doğrudan boss başlangıcı, hasar sınırı, aktif kartlar ve görsel kayıtlar
+tests/Step45Smoke.gd     50/5 sn, giriş/çıkış (final 2,8 sn), hasar sınırı, aktif kartlar ve görsel kayıtlar
 scripts/combat/MarathonPatterns.gd Sel/yangın paternleri, kalıcı alanlar, ikincil saldırılar
 scripts/bosses/MarathonArt.gd Çok parçalı hidra/titan ve su/ateş çizimleri
 tests/MarathonSmoke.gd    Yeni paternler, sekmeler, alan hasarı, kartlar, hareket, cinnet, native PNG
@@ -261,8 +252,7 @@ tests/Step48Smoke.gd      Dört kit, yerel güvenlik, 9 aktif kart, 150 seçim v
 scripts/combat/CataclysmPatterns.gd Final Titan'ın beş birleşik yeteneği, buhar etkileşimi ve nova
 tests/Step49Smoke.gd      Minimal HUD, 50 sn, 1–4 kısayolları, birleşme girişi, beş yetenek, nova, gerçek 50 sn final ve native PNG
 tests/Step5Smoke.gd       Duraklatma (klavye/fare), M/-/+, sentez kalitesi, miks kuralları, olay sesleri (sıyrılma dahil), kesintisiz PCM müziği ve native PNG
-tests/Step55Smoke.gd      Dört faz, doğrudan bosslar, alt HUD, ateşsiz paternler ve müzik ölçümleri
-tests/VideoIntroSmoke.gd  Gerçek OGV, eksik/bozuk video, metin/fade/atlama/pause, dört doğrudan boss
+tests/Step55Smoke.gd      Dört faz, sinematikler, alt HUD, ateşsiz paternler ve müzik ölçümleri
 tests/Step6Smoke.gd       Statik önbellek, 128 havuz, final ayarı, BGM döngüsü/watchdog
 tests/Step8Smoke.gd       Deprem katsayıları, 9 gerçek mekanik, 300 kart seçimi, sıfırlama ve native kart/efekt/input kanıtı
 tests/Step7Smoke.gd       50/5 sn, tempo rampası, 5 fırtına + 4 deprem koreografisi (geometri ve gerçek kaçış), 0,55 sn uyarı/flash, mermi paleti, mobilya karartması, sıyrılma, BGM doruğu, dört gerçek 50 sn savaş ve native PNG
@@ -313,7 +303,7 @@ Step48 native testi 1920×1080 sabit render viewport'unda dört bossun bekleme/h
 
 Farklı Godot sürümleri arasında geçiş yaptıysan testten önce o sürümle `--editor --quit` çalıştır; aksi hâlde sınıf önbelleği eski kalabilir.
 
-Görsel kontrol için aynı test, `--headless` olmadan `-- --capture=C:/Temp/disaster-siege` ile çalıştırılabilir. Yalnızca gerçek renderer görüntü üretebilir. `Step27Smoke` ve `Step3Smoke` görüntü alırken exclusive fullscreen'e geçer ve tam 1920×1080 kare kaydeder (ekran 1080p ise). `MarathonSmoke` tüm bossların doğrudan başlangıç ve bitişlerini, yeni paternlerin uyarı/aktif hallerini, cinneti, iki yeni kartı ve dört faz zaferini kaydeder. 1920×1080 fullscreen ve ölçeklenmiş pencerede gerçek fare seçimi kontrol edilir. Adım4.8 [görsel kanıt dizini](captures/step48/README.md) yerel kopyada bulunur (Git dışında). Test veya görsel sonuçları [STATUS.md](STATUS.md) içinde gerçek motor sürümüyle kaydedilir.
+Görsel kontrol için aynı test, `--headless` olmadan `-- --capture=C:/Temp/disaster-siege` ile çalıştırılabilir. Yalnızca gerçek renderer görüntü üretebilir. `Step27Smoke` ve `Step3Smoke` görüntü alırken exclusive fullscreen'e geçer ve tam 1920×1080 kare kaydeder (ekran 1080p ise). `MarathonSmoke` tüm bossların giriş/çıkışlarını, yeni paternlerin uyarı/aktif hallerini, cinneti, iki yeni kartı ve dört faz zaferini kaydeder. 1920×1080 fullscreen ve ölçeklenmiş pencerede gerçek fare seçimi kontrol edilir. Adım4.8 [görsel kanıt dizini](captures/step48/README.md) yerel kopyada bulunur (Git dışında). Test veya görsel sonuçları [STATUS.md](STATUS.md) içinde gerçek motor sürümüyle kaydedilir.
 
 `--fixed-fps 60`, tam dalga testinde gerçek zamanı beklemeyi kaldırır; simülasyon yine 60 Hz adımlarla bütün dalgaları işler. Uzun testte oyuncu canı yalnızca test sahnesinde yükseltilir, böylece tüm saldırılar denetlenir. Test sürücüsü gerçek düşen malzemeleri toplar ve kazanılan kolon kitiyle onarım API'sini kullanır; insan refleksleri veya kaçınma zorluğunun kanıtı değildir. Normal oyunun can ayarı değişmez.
 
@@ -321,6 +311,6 @@ Güne başlamadan temiz çalışma ağacında `git fetch origin`, ardından gör
 
 Önceki ARTÇI web sürümü kullanıcı isteğiyle kaldırıldı; `2647179` commitinde geçmiş kaydı korunur. Yeni kaynaklar bu sürümle karıştırılmaz. [AI/kaynak beyanı](BEYAN.md), [kaynaklar](SOURCES.md), [teslim kontrolü](SUBMISSION.md).
 
-Adım 5.5 kontrolleri: `tests/Step55Smoke.gd` dört faz/doğrudan başlangıç/alt HUD ve gerçek BGM PCM ölçümlerini içerir. Native kanıt: `--script res://tests/Step55Smoke.gd -- --capture=C:/Temp/step55 --audio=C:/Temp/step55-music.wav` (headless olmadan). Müzik kodu `scripts/audio/MusicScore.gd`, açılış kodu `scripts/ui/IntroOverlay.gd`. Son test sonuçları STATUS.md içindedir.
+Adım 5.5 kontrolleri: `tests/Step55Smoke.gd` dört faz/sinematik/alt HUD ve gerçek BGM PCM ölçümlerini içerir. Native kanıt: `--script res://tests/Step55Smoke.gd -- --capture=C:/Temp/step55 --audio=C:/Temp/step55-music.wav` (headless olmadan). Müzik kodu `scripts/audio/MusicScore.gd`, sinematik kodu `scripts/ui/BossCinematic.gd`. Son test sonuçları STATUS.md içindedir.
 
 Adım 6: `tests/Step6Smoke.gd` önbellek yenileme/dormant havuz/uyarı geometrisi/final katsayıları/WAV watchdog'unu kontrol eder. Gerçek ses sürücüsünde iki döngü sınırı ve Master çıkış enerjisi: `--script res://tests/Step6Smoke.gd -- --audio-live --capture=C:/Temp/step6`. FPS karşılaştırması: **headless ve fixed-fps kullanmadan** `--script res://tests/PerformanceBench.gd -- --live --capture=C:/Temp/step6-perf`. Test gerçek makinenin kare süresi/p95/çizim çağrılarını raporlar; tüm bilgisayarlar için FPS garantisi vermez. Statik önbellekler `UPDATE_ONCE` sonrası kapanır; Compatibility/pixel_scale=2 korunur. Sonuçlar STATUS.md'dedir.

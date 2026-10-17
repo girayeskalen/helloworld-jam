@@ -31,7 +31,7 @@ const MIX: Dictionary = {
 	"storm_in": [-6.0, BUS_SFX, 0.3], "storm_out": [-7.0, BUS_SFX, 0.3], "quake_in": [-6.0, BUS_SFX, 0.3],
 	"quake_out": [-6.0, BUS_SFX, 0.3], "flood_in": [-6.0, BUS_SFX, 0.3], "flood_out": [-7.0, BUS_SFX, 0.3],
 	"fire_in": [-6.0, BUS_SFX, 0.3], "fire_out": [-8.0, BUS_SFX, 0.3], "titan_in": [-4.0, BUS_SFX, 0.3],
-	"titan_out": [-4.0, BUS_SFX, 0.3],
+	"titan_fuse": [-3.0, BUS_SFX, 0.3], "titan_out": [-4.0, BUS_SFX, 0.3],
 	"cast_storm": [SFX_REFERENCE_DB, BUS_SFX, 0.14], "cast_quake": [SFX_REFERENCE_DB, BUS_SFX, 0.14],
 	"cast_flood": [SFX_REFERENCE_DB, BUS_SFX, 0.14], "cast_fire": [SFX_REFERENCE_DB, BUS_SFX, 0.14],
 	"whoosh": [PROJECTILE_DB, BUS_SFX, 0.12],
@@ -78,6 +78,7 @@ var _mutex: Mutex = Mutex.new()
 var _baked: Array = []
 var _cancel: bool = false
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var _last_state: int = -1
 var _was_failed: bool = false
 var _was_victory: bool = false
 
@@ -133,8 +134,8 @@ func configure(owner_game: MainGame) -> void:
 	var w: DisasterWaveManager = game.waves
 	w.phase_changed.connect(_on_phase)
 	w.attack_launched.connect(_on_launch)
-	w.siege_started.connect(_on_siege_started)
-	w.wave_completed.connect(_on_wave_completed)
+	w.fusion_burst.connect(func() -> void: play("titan_fuse"))
+	w.intro_beat.connect(_on_intro_beat)
 	w.grazed.connect(func(_point: Vector2) -> void: play("graze"))
 	game.projectiles.projectile_impacted.connect(_on_impact)
 	game.projectiles.dodged.connect(func(_point: Vector2) -> void: play("dodge"))
@@ -154,6 +155,7 @@ func configure(owner_game: MainGame) -> void:
 		room.state_changed.connect(_on_room_state)
 	for boss: DisasterBoss in w.bosses():
 		boss.cued.connect(func(_seconds: float) -> void: play("warn"))
+	_last_state = w.state
 
 # --------------------------------------------------------------- baking ----
 
@@ -330,7 +332,7 @@ func _update_music(delta: float, frozen: bool) -> void:
 	# Step 7 climax (last 15 s): the score runs a touch faster; eased, never a jump.
 	if bgm_player != null and not frozen:
 		bgm_player.pitch_scale = move_toward(bgm_player.pitch_scale, CLIMAX_PITCH if w.is_climax() else 1.0, delta * 0.12)
-	music_target["rain"] = -60.0 if game.waves.intro_active else -31.0
+	music_target["rain"] = -31.0
 	music_target["drone"] = -60.0
 	music_target["siege_pad"] = -60.0
 	for key: String in music:
@@ -345,15 +347,23 @@ func _on_phase() -> void:
 	var w: DisasterWaveManager = game.waves
 	if w.failed and not _was_failed:
 		play("collapse_building" if w.fail_reason == DisasterWaveManager.FailReason.BUILDING else "defeat")
-	if w.victory and not _was_victory: play("victory")
+	if w.victory and not _was_victory:
+		play("victory")
+	if w.state == DisasterWaveManager.State.WAVE_INTRO:
+		for key: String in INTROS[w.mode]: play(key)
+	elif w.state == DisasterWaveManager.State.WAVE_OUTRO and _last_state != DisasterWaveManager.State.WAVE_OUTRO:
+		for key: String in OUTROS[w.mode]: play(key)
 	_was_failed = w.failed
 	_was_victory = w.victory
+	_last_state = w.state
 
-func _on_siege_started(mode_id: int) -> void:
-	for key: String in INTROS[mode_id]: play(key)
-
-func _on_wave_completed(mode_id: int) -> void:
-	for key: String in OUTROS[mode_id]: play(key)
+func _on_intro_beat(mode_id: int, beat: int) -> void:
+	match mode_id:
+		DisasterWaveManager.Mode.STORM: play("storm_in", -5.0)
+		DisasterWaveManager.Mode.EARTHQUAKE: play("cast_quake", -3.0 if beat == 0 else 0.0)
+		DisasterWaveManager.Mode.FLOOD: play("cast_flood", -3.0)
+		DisasterWaveManager.Mode.CATACLYSM:
+			for key: String in ["cast_storm","cast_quake","cast_flood"]: play(key,-6.0)
 
 func _on_launch(attack: HazardAttack) -> void:
 	play(CASTS[clampi(attack.source, 0, 3)])

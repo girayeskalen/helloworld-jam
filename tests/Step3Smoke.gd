@@ -14,7 +14,6 @@ func _initialize() -> void:
 
 func _run() -> void:
 	game = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
-	game.intro_enabled = false
 	(game.get_node("DisasterWaveManager") as DisasterWaveManager).autoplay = false
 	root.add_child(game)
 	await _frames(4)
@@ -43,7 +42,7 @@ func _run() -> void:
 	_check(absf(backdrop.ground_y - (b.global_position.y + b.floor_count * b.floor_height + 37)) < 1.0, "Backdrop ground meets the building plinth")
 	# --- Storm cycle: new patterns are in rotation, labels and density.
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
 	var labels: Dictionary = {}
 	var total: int = 0
@@ -62,7 +61,7 @@ func _run() -> void:
 	_check(density > 4.0 and density < 9.0 and density * DisasterWaveManager.CLIMAX_TEMPO < 12.0, "Storm bullet density is dense but bounded, also at the climax (%.2f shots/s)" % density)
 	# --- Earthquake difficulty untouched.
 	w.start_siege(DisasterWaveManager.Mode.EARTHQUAKE, true)
-
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
 	var quake_labels: Array = []
 	var beats: float = 0.0
@@ -75,7 +74,7 @@ func _run() -> void:
 	_check(quake_labels == Array(BossPatterns.QUAKE_LABELS) and beats / 4.0 > 1.7 and beats / 4.0 < 2.5, "Seismic golem runs its four Step 7 choreographies in order (mean beat %.2f s)" % (beats / 4.0))
 	# --- a) Vortex ring.
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
 	p.current_floor = 1
 	p.global_position = Vector2(b.global_position.x + 200, b.floor_y(1) - .5)
@@ -118,7 +117,7 @@ func _run() -> void:
 	_check(launched.size() == 12, "Vortex launches the complete ring after its 0.55 s warning")
 	# --- b) Crossfire X.
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
 	BossPatterns.crossfire(w, 2, 0)
 	var cross: Array[HazardAttack] = game.telegraphs.pending.duplicate()
@@ -157,7 +156,7 @@ func _run() -> void:
 	_check(rising and falling, "Alternate crossfire mirrors the X from rising to diving")
 	# --- c) Corridor sweep + jump waves on the escape floors.
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
 	p.reset_player()
 	p.current_floor = 1
@@ -197,7 +196,7 @@ func _run() -> void:
 	probe.deactivate()
 	_check(debris_launched, "Rolling debris was launched on the escape floor")
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
 	p.current_floor = 2
 	p.global_position = Vector2(b.center_x(), b.floor_y(2) - .5)
@@ -210,7 +209,7 @@ func _run() -> void:
 	_check(p.health == p.max_health, "Escaping by S avoids the corridor sweep")
 	# --- d) Telegraphed wind gust.
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
 	p.current_floor = 0
 	p.global_position = Vector2(b.center_x() - 300, b.floor_y(0) - .5)
@@ -245,7 +244,7 @@ func _run() -> void:
 	_check(absf(p.wind_velocity) < .001 and game.telegraphs.gust_warning_left == 0 and game.telegraphs.gust_active_left == 0, "R clears an active gust")
 	# --- Full storm beat-cycle keeps every shot warned and the pool bounded.
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
 	p.max_health = 10000
 	p.health = 10000
@@ -286,7 +285,7 @@ func _capture(directory: String) -> void:
 	await _frames(4)
 	await _save(directory, "apartment-4x4.png")
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
 	game.player.global_position.x += 500
 	BossPatterns.vortex(w, 0, 0, 12)
@@ -295,7 +294,7 @@ func _capture(directory: String) -> void:
 	await _frames(40)
 	await _save(directory, "vortex-ring.png")
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
 	BossPatterns.crossfire(w, 1, 0)
 	await _frames(28)
@@ -303,7 +302,7 @@ func _capture(directory: String) -> void:
 	await _frames(50)
 	await _save(directory, "crossfire.png")
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
 	BossPatterns.corridor(w, 0, 0)
 	await _frames(40)
@@ -311,7 +310,7 @@ func _capture(directory: String) -> void:
 	await _frames(32)
 	await _save(directory, "corridor-sweep.png")
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
 	w.storm_gust()
 	BossPatterns.fan(w, 1, 0)
@@ -320,7 +319,7 @@ func _capture(directory: String) -> void:
 	await _frames(40)
 	await _save(directory, "gust-active.png")
 	w.start_siege(DisasterWaveManager.Mode.CATACLYSM, true)
-
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
 	w.storm_burst()
 	w.quake_burst()

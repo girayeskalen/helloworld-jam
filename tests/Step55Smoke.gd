@@ -1,6 +1,6 @@
 extends SceneTree
-## Four-phase campaign, real continuous music, direct boss starts and
-## native bottom-HUD screenshots. Complements the full campaign soak.
+## Four-phase campaign, real continuous music, harmless cinematic framing and
+## native bottom-HUD/intro screenshots. Complements the full campaign soak.
 var game: MainGame
 var checks: int = 0
 var failures: int = 0
@@ -11,7 +11,6 @@ func _initialize() -> void:
 
 func _run() -> void:
 	game = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
-	game.intro_enabled = false
 	(game.get_node("DisasterWaveManager") as DisasterWaveManager).autoplay = false
 	root.add_child(game)
 	if DisplayServer.get_name() != "headless":
@@ -41,11 +40,15 @@ func _phases() -> void:
 		w.autoplay = false
 		w.start_siege(mode as DisasterWaveManager.Mode,true)
 		_check(w.boss_name() == NAMES[mode] and w.wave_number == mode+1,"Exact boss name/number for phase %d" % (mode+1))
-		_check(w.state == DisasterWaveManager.State.SIEGE_PHASE and not game.player.controls_locked,"Boss starts without a cinematic state or input lock")
-		_check(game.game_camera.zoom == Vector2.ONE*game.base_zoom/game.pixel_scale and game.game_camera.offset == Vector2.ZERO,"No boss camera focus or letterbox remains")
+		_check(w.intro_duration() >= 2.2 and w.intro_duration() <= 2.8 and game.player.controls_locked,"Cinematic intro lasts 2.2–2.8s and locks gameplay")
 		w.plan_attack(w._attack(HazardAttack.Kind.GLASS,0,Vector2.ZERO,Vector2.RIGHT))
-		_check(game.telegraphs.pending.size() == 1 and game.projectiles.active_count() == 0 and w.siege_remaining == 50,"Direct start still warns before any actual hazard")
-		game.telegraphs.clear()
+		w.advance_wave(w.intro_duration()*.5)
+		game.cinematic._process(0)
+		_check(game.cinematic.letterbox > .99 and game.game_camera.cinematic_offset.length() > 1 and game.game_camera.zoom.x > game.base_zoom/game.pixel_scale,"Mid-intro letterbox and gentle camera focus are active")
+		_check(game.telegraphs.pending.is_empty() and game.projectiles.active_count() == 0 and w.siege_remaining == 50 and game.player.health == 100,"Intro cannot launch hazards or spend player HP/fight seconds")
+		w.advance_wave(w.transition_remaining)
+		game.cinematic._process(0)
+		_check(w.state == DisasterWaveManager.State.SIEGE_PHASE and not game.player.controls_locked and game.cinematic.letterbox == 0 and game.game_camera.cinematic_offset == Vector2.ZERO,"Battle starts once, restores input/framing and removes cinema bars")
 		await _rendered()
 		var title_found: bool = false
 		var top_clear: bool = true
@@ -79,7 +82,7 @@ func _phases() -> void:
 	game.reset_game()
 	for key: int in range(KEY_1,KEY_4+1):
 		await _tap(key)
-		_check(w.mode == key-KEY_1 and w.state == DisasterWaveManager.State.SIEGE_PHASE,"Physical shortcut %d selects its correct phase" % (key-KEY_1+1))
+		_check(w.mode == key-KEY_1 and w.state == DisasterWaveManager.State.WAVE_INTRO,"Physical shortcut %d selects its correct phase" % (key-KEY_1+1))
 	var saved: int = w.mode
 	await _tap(KEY_5)
 	await _tap(KEY_6)
@@ -110,7 +113,7 @@ func _music() -> void:
 	var stream_id: int = wav.get_instance_id()
 	for mode: int in range(4):
 		game.waves.start_siege(mode as DisasterWaveManager.Mode,true)
-
+		game.waves.advance_wave(game.waves.intro_duration())
 		sound.advance(.1)
 		_check(sound.bgm_player.playing and sound.bgm_player.stream.get_instance_id() == stream_id,"Phase %d preserves the same playing PCM loop" % (mode+1))
 	game.reset_game()
@@ -157,6 +160,12 @@ func _capture(directory: String) -> void:
 		game.reset_game()
 		game.waves.autoplay = false
 		game.waves.start_siege(mode as DisasterWaveManager.Mode,true)
+		for p: float in [.25,.55,.78]:
+			game.waves.transition_remaining = game.waves.intro_duration()*(1.0-p)
+			game.waves.advance_wave(0)
+			game.cinematic._process(0)
+			await _save(directory,"intro-%d-%02d.png" % [mode+1,int(p*100)])
+		game.waves.advance_wave(game.waves.transition_remaining)
 		game.waves.bosses()[mode].advance(.4)
 		await _save(directory,"battle-%d-bottom-hud.png" % (mode+1))
 	game.pause_menu.set_open(true)

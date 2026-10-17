@@ -2,8 +2,6 @@ class_name MainGame
 extends Node2D
 
 @export var art_assets: SiegeArtAssets
-## Only the first launch owns an intro; restart goes straight to preparation.
-@export var intro_enabled: bool = true
 ## The world renders into a low-resolution SubViewport and is upscaled with nearest
 ## filtering, so the procedural art lands on a real pixel grid. 1 disables it.
 @export_range(1, 4) var pixel_scale: int = 2
@@ -33,9 +31,9 @@ extends Node2D
 @onready var loot: LootSystem = $World/Viewport/LootSystem
 @onready var flood: DisasterBoss = $World/Viewport/FloodBoss
 @onready var titan: DisasterBoss = $World/Viewport/CataclysmBoss
-## Four direct boss shortcuts in DisasterWaveManager.Mode order.
+## Keys 1-6 in DisasterWaveManager.Mode order.
 const BOSS_SHORTCUTS: Array[StringName] = [&"storm_test", &"quake_test", &"flood_test", &"final_test"]
-@onready var intro: IntroOverlay = $IntroOverlay
+var cinematic: BossCinematic
 var sprite_overrides: Dictionary = {}
 var sound: SoundManager
 var pause_menu: PauseMenu
@@ -81,6 +79,7 @@ func _ready() -> void:
 	hud.loot = loot
 	labels.configure(self)
 	waves.configure(building, player, game_camera, telegraphs, projectiles, storm, earthquake, flood, titan)
+	waves.fusion_burst.connect(Callable(self, "_on_fusion_burst"))
 	loot.configure(building, player, waves)
 	upgrades = SiegeUpgrades.new()
 	upgrades.name = "SiegeUpgrades"
@@ -97,6 +96,10 @@ func _ready() -> void:
 	upgrade_overlay.name = "UpgradeOverlay"
 	$Interface.add_child(upgrade_overlay)
 	upgrade_overlay.configure(upgrades)
+	cinematic = BossCinematic.new()
+	cinematic.name = "BossCinematic"
+	$Interface.add_child(cinematic)
+	cinematic.configure(self)
 	sound = SoundManager.new()
 	sound.name = "SoundManager"
 	add_child(sound)
@@ -118,22 +121,9 @@ func _ready() -> void:
 		backdrop.queue_redraw()
 	sprite_overrides = AssetRegistry.apply(self, AssetRegistry.load_textures(sprite_directory))
 	_apply_atmosphere()
-	intro.finished.connect(_on_intro_finished)
-	if intro_enabled:
-		waves.intro_active = true
-		player.controls_locked = true
-		world_container.process_mode = Node.PROCESS_MODE_DISABLED
-		intro.begin(sound)
-	else:
-		intro.cancel()
 
-func _on_intro_finished() -> void:
-	waves.intro_active = false
-	world_container.process_mode = Node.PROCESS_MODE_INHERIT
-	player.controls_locked = false
-	Input.action_release("dash")
-
-## Clip original boss artwork at the ground; keep its feet above the HUD.
+## The ground occludes entering/retreating bosses instead of letting their legs
+## slide across the HUD. Only boss art is clipped; room/player physics are untouched.
 func _clip_bosses_at_ground() -> void:
 	var mask: Control = Control.new()
 	mask.name = "BossGroundMask"
@@ -160,10 +150,10 @@ func _process(_delta: float) -> void:
 
 func _apply_atmosphere() -> void:
 	weather.inferno = 0.0
-	weather.storminess = 1.0 if storm.visible else 0.0
+	weather.storminess = 1.0 - storm.retreat if storm.visible else 0.0
 	if titan.visible:
 		# The amalgam brings both the ember sky and the storm deck.
-		weather.storminess = .85
+		weather.storminess = (1.0 - titan.retreat) * .85
 	var ambient: Color = night_tint
 	building.set_darkness(ambient.lerp(flash_tint, weather.flash * 0.6))
 	building.lighting.tremor = clampf((game_camera.shake_strength() - 3.0) / 10.0, 0.0, 1.0)
@@ -186,15 +176,6 @@ func _bind_action(action: StringName, keys: Array[int], mouse_button: int = 0) -
 			InputMap.action_add_event(action, mouse_event)
 
 func _input(event: InputEvent) -> void:
-	if intro.active():
-		if event.is_action_pressed("pause_toggle") or event.is_action_pressed("mute_toggle") or (event is InputEventKey and PauseMenu._volume_step(event) != 0):
-			return
-		if event.is_action_pressed("reset_player"):
-			reset_game()
-		elif event is InputEventKey and event.pressed and not event.echo and event.physical_keycode in [KEY_SPACE,KEY_ENTER,KEY_KP_ENTER]:
-			intro.skip()
-		get_viewport().set_input_as_handled()
-		return
 	if upgrades == null or not upgrades.pending or not event is InputEventKey:
 		return
 	if event.is_pressed() and not event.is_echo():
@@ -207,8 +188,6 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 func reset_game() -> void:
-	intro.cancel()
-	_on_intro_finished()
 	waves.reset_cycle()
 	player.reset_player()
 	feedback.clear()
@@ -229,12 +208,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("start_wave"):
 		waves.start_next_wave()
 	else:
-		# 1-4 jump straight to a boss with a fresh world. Inside the card
+		# Step 4.9: 1-6 jump straight to a boss with a fresh world. Inside the card
 		# modal _input has already consumed 1/2/3 as card choices.
 		for mode: int in range(BOSS_SHORTCUTS.size()):
 			if event.is_action_pressed(BOSS_SHORTCUTS[mode]):
 				waves.start_siege(mode as DisasterWaveManager.Mode, true)
 				return
+
+func _on_fusion_burst() -> void:
+	weather.trigger_flash(1.0)
 
 func _on_dash_started() -> void:
 	game_camera.apply_shake(2.0, 0.09)

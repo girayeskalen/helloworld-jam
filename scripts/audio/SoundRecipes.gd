@@ -8,7 +8,7 @@ const ORDER: Array[String] = [
 	"rain", "drone", "siege_pad", "kick", "tick", "clank", "warn",
 	"ui_open", "ui_confirm", "ui_pause", "ui_resume", "ui_toggle",
 	"storm_in", "storm_out", "quake_in", "quake_out", "flood_in", "flood_out",
-	"fire_in", "fire_out", "titan_in", "titan_out",
+	"fire_in", "fire_out", "titan_in", "titan_fuse", "titan_out",
 	"cast_storm", "cast_quake", "cast_flood", "cast_fire",
 	"whoosh", "impact_glass", "impact_wood", "impact_stone", "impact_metal", "impact_water", "impact_fire", "block",
 	"jump", "floor_up", "drop_land", "dash", "dodge", "graze", "hurt", "heartbeat",
@@ -117,6 +117,12 @@ static func all() -> Dictionary:
 			{"type": "noise", "color": "brown", "f0": 1200.0, "f1": 150.0, "start": 0.3, "dur": 1.1, "gain": 0.8, "env": [0.005, 0.6, 0.3, 0.3]},
 			{"type": "crackle", "rate": 150.0, "decay": 0.008, "f_lp": 2400.0, "start": 0.3, "dur": 0.25, "gain": 0.45, "env": [0.003, 0.15, 0.2, 0.08]},
 			{"type": "noise", "color": "pink", "filter": "bp", "f0": 400.0, "f1": 1200.0, "q": 0.5, "gain": 0.35, "env": [1.0, 0.5, 0.5, 0.6]},
+		]},
+		"titan_fuse": {"length": 1.7, "peak": 0.92, "lp": 2400.0, "layers": [
+			{"type": "tone", "f0": 72.0, "f1": 30.0, "glide": 0.5, "gain": 1.0, "env": [0.003, 0.9, 0.0, 0.5]},
+			{"type": "noise", "color": "brown", "f0": 1500.0, "f1": 120.0, "gain": 0.9, "env": [0.002, 0.8, 0.2, 0.5]},
+			{"type": "crackle", "rate": 200.0, "decay": 0.01, "f_lp": 2800.0, "dur": 0.45, "gain": 0.5, "env": [0.002, 0.3, 0.2, 0.1]},
+			{"type": "tone", "wave": "horn", "f0": 82.5, "lp": 800.0, "dur": 0.9, "gain": 0.3, "env": [0.02, 0.5, 0.2, 0.3]},
 		]},
 		"titan_out": {"length": 2.7, "peak": 0.88, "lp": 1800.0, "layers": [
 			{"type": "thuds", "count": 14, "fa": 55.0, "fb": 120.0, "dur": 2.1, "gain": 0.85},

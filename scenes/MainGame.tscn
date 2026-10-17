@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://scripts/MainGame.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/art/WorldBackdrop.gd" id="2_world"]
@@ -15,13 +15,10 @@
 [ext_resource type="Script" path="res://scripts/art/NightWeather.gd" id="13_weather"]
 [ext_resource type="Script" path="res://scripts/ui/WorldLabels.gd" id="14_labels"]
 [ext_resource type="Script" path="res://scripts/loot/LootSystem.gd" id="15_loot"]
-[ext_resource type="PackedScene" path="res://scenes/IntroOverlay.tscn" id="16_intro"]
 
 [node name="MainGame" type="Node2D"]
 script = ExtResource("1_main")
 art_assets = ExtResource("7_assets")
-
-[node name="IntroOverlay" parent="." instance=ExtResource("16_intro")]
 
 [node name="World" type="SubViewportContainer" parent="."]
 texture_filter = 1

@@ -210,24 +210,3 @@ Claude'un commit edilmemiş Adım 7 çalışması korunarak kullanıcı tasarım
 - Kontrol: motor içi otomatik davranış testleri ve native renderer PNG incelemesi. Gerçek sonuçlar STATUS.md'dedir; otomatik sürücü, insan eğlence/zorluk veya kulakla dinleme deneyi sayılmaz.
 
 Harici kod/asset/font/ses paketi ya da bağımlılık indirilmedi. Godot/MIT ve önceki kaynak bildirimleri korunur. Eski kartların değişen tasarımına ait testler yeni davranışlara uyarlandı; hareket, 16 oda, 4 faz, uyarı/havuz ve kit regresyonu korunur. Bu görevde commit/push yapılmadı.
-
-## 18 Ekim 2026 — Adım 9 (OpenAI Codex)
-
-Kullanıcının Giray Eskalen/ODTÜ diploma, TV uyarısı, kurtarma kıyafetini kuşanma, dört bossa özel yıkım ve güneşli zafer senaryosu AI yardımıyla GDScript olarak uygulandı. Araç: OpenAI Codex/GPT ailesi. Yeni CutsceneDirector, OpeningStoryArt, FinaleStoryArt, Step9Smoke; mevcut MainGame/faz/ses/loot kilit bağlantıları ve belgeler bu kapsamdadır. Önceden commit edilmemiş Adım 7–8 çalışması korunmuştur.
-
-- Görseller: özgün prosedürel salon, ahşap/altın diploma çerçevesi, dekoratif mühür/imza, TV, dolap kapakları, ev kıyafeti, mevcut kurtarma karakterinin animasyonu; hortum/şimşek, kaya yumrukları, tsunami köpükleri, dört parçalı kat çöküşü, parçacıklar, kalkan, güneş/ışın/ağaç/kuş/çiçek. Mevcut oda çiziminin tek kare kopyası yalnız çalışma belleğinde çöküş animasyonuna dönüşür. Resim üretim servisi, harici sprite veya resmî ODTÜ diploma/logo görseli kullanılmadı.
-- Ses: üç yeni özgün SoundSynth tarifi (alarm, kuşanma, Re majör umut melodisi); mevcut WAV BGM, bus/havuz/mute/seviye sistemi korunur. Hazır beste veya ses örneği alınmadı. Objektif PCM testleri insan kulakla dinleme sayılmaz.
-- Metin: diploma/isim/başlıklar kullanıcının isteğidir. Üç günlük haber ve Kategori 6 ulti kurgu olarak etiketlendi; gerçek tahmin veya yapı güvenliği garantisi değildir. USGS/NHC kontrol kapsamı SOURCES.md'dedir. Oyun bitişindeki sıfır hasar kalkanı yalnız sinematik bir oyun sonucudur.
-- Test: mevcut regresyon paketleri hikâyeyi açıkça kapatarak kendi mekaniklerini sınar; yeni Step9Smoke normal hikâyeli açılışı ve sonları ayrıca doğrular. Sonuç, native PNG ve ölçüm sınırları STATUS.md'dedir.
-
-Harici asset, font, ses dosyası, kod paketi veya yeni bağımlılık eklenmedi. Bu görevde commit/push yapılmadı.
-
-## 18 Ekim 2026 — video intro ve kesin sinematik temizliği (OpenAI Codex)
-
-Son kullanıcı isteğiyle önceki Adım 9'un diploma/salon/kuşanma/yıkılış/gündüz çizimleri, CutsceneDirector ve eski BossCinematic kaldırıldı. Boss giriş/çıkış fazları, fusion/retreat görsel yolları, I/V/K ön izlemeleri ve dört kullanılmayan sinematik ses tarifi silindi. Normal boss anatomisi/saldırı wind-up/vuruşları, 9 aktif mekanik, 2x W, oda/loot/uyarı/havuz, 50/5 sn ve özgün WAV BGM korunur.
-
-AI kullanımı: OpenAI Codex; IntroOverlay GDScript/TSCN, VideoStreamPlayer bağlantıları, minimalist Türkçe isim kartı/bülten/fade, faz/ses sadeleştirmesi, VideoIntroSmoke ve değişen sinematik beklentilerinin yeni testleri, belgeler. Resim/video üretim servisi kullanılmadı. Gerçek hikâye videosu eklenmedi; gerçek OGV çözme ve bitiş deneyi için yalnız %TEMP% altında FFmpeg testsrc ile özgün test deseni üretildi. Test videosu ve FFmpeg aracı projeye/oyuna eklenmedi.
-
-Yeni hazır kaynak: **Press Start 2P Regular**, Copyright 2012 The Press Start 2P Project Authors (cody@zone38.net), SIL Open Font License 1.1; Google Fonts resmî deposundan orijinal TTF ve OFL.txt alındı. Font değiştirilmedi; gerçek Türkçe karakter desteği test edildi. Fontun isim/lisans dosyaları assets/fonts içinde tutulur ve dağıtımda korunmalıdır. Bağlantılar SOURCES.md'dedir. Dış müzik/kod/oyun sprite paketi alınmadı. WebM'in standart Godot4'te desteklenmediği açıkça belgelendi; ek çözücü yoksa güvenli metin girişi kullanılır.
-
-Nihai motor/test/görüntü sonuçları STATUS.md'nin en üstündedir. Bu görevde commit/push yapılmadı.

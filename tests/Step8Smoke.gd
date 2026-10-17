@@ -11,7 +11,6 @@ func _initialize() -> void: call_deferred("_run")
 
 func _run() -> void:
 	game = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
-	game.intro_enabled = false
 	(game.get_node("DisasterWaveManager") as DisasterWaveManager).autoplay = false
 	root.add_child(game)
 	if DisplayServer.get_name() != "headless":
@@ -46,7 +45,7 @@ func _run() -> void:
 func _fresh(id: int = -1, mode: int = 0) -> void:
 	game.reset_game()
 	game.waves.start_siege(mode as DisasterWaveManager.Mode,true)
-
+	game.waves.advance_wave(game.waves.intro_duration())
 	game.waves.autoplay = false
 	game.building.pacing_enabled = false
 	p.controls_locked = false
@@ -366,11 +365,13 @@ func _capture(directory: String) -> void:
 	m.queue_redraw()
 	await _save(directory,"active-modules.png")
 	var camera_position: Vector2 = game.game_camera.position
+	game.cinematic.set_process(false)
 	game.game_camera.zoom = Vector2.ONE*1.8
 	game.game_camera.position = p.global_position+Vector2(0,-50)
 	await _save(directory,"active-modules-close.png")
 	game.game_camera.zoom = Vector2.ONE*game.base_zoom/game.pixel_scale
 	game.game_camera.position = camera_position
+	game.cinematic.set_process(true)
 	_fresh(SiegeUpgrades.Kind.REMOTE_CRANE)
 	game.building.rooms[15].hp = 20
 	game.building.rooms[10].hp = 30

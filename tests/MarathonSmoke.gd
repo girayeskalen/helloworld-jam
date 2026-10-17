@@ -10,7 +10,6 @@ func _initialize() -> void:
 
 func _run() -> void:
 	game = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
-	game.intro_enabled = false
 	(game.get_node("DisasterWaveManager") as DisasterWaveManager).autoplay = false
 	root.add_child(game)
 	if DisplayServer.get_name() != "headless":
@@ -38,7 +37,7 @@ func _fresh(mode: DisasterWaveManager.Mode = DisasterWaveManager.Mode.FLOOD) -> 
 	game.reset_game()
 	game.waves.autoplay = false
 	game.waves.start_siege(mode,true)
-
+	game.waves.advance_wave(game.waves.intro_duration())
 	game.building.pacing_enabled = false
 	game.loot.set_physics_process(false)
 	game.mechanics.set_physics_process(false)
@@ -194,7 +193,7 @@ func _movement() -> void:
 	# The final titan is anchored around the building; it is covered by Step49Smoke.
 	for boss: DisasterBoss in [game.storm,game.earthquake,game.flood]:
 		boss.set_active(true)
-		boss.set_active(true)
+		boss.transition_pose(1.0,false)
 		var initial: Vector2 = boss.position
 		boss.reposition(game.waves,0,3)
 		for i: int in range(60): boss.advance(1.0/60)
@@ -227,7 +226,7 @@ func _controls_and_enrage() -> void:
 	await _tap(KEY_5)
 	_check(game.waves.mode == DisasterWaveManager.Mode.FLOOD,"Removed key 5 cannot launch a fire phase")
 	await _tap(KEY_4)
-
+	game.waves.advance_wave(game.waves.intro_duration())
 	game.waves.siege_remaining = 15.01
 	game.waves.advance_wave(.02,.02)
 	_check(game.waves.nova and game.titan.enraged,"Final combined boss keeps its last-fifteen-second overload")
@@ -246,11 +245,13 @@ func _capture(directory: String) -> void:
 	await _frames(10)
 	for mode: int in range(4):
 		_fresh(mode as DisasterWaveManager.Mode)
+		game.waves.state = DisasterWaveManager.State.WAVE_INTRO
+		game.waves.transition_remaining = game.waves.intro_duration()
 		for boss: DisasterBoss in game.waves.bosses():
 			boss.set_process(false)
-			if boss.visible: boss.advance(.5)
-		await _save(directory,"direct-start-%d.png" % (mode+1))
-
+			if boss.visible: boss.transition_pose(.5,false)
+		await _save(directory,"intro-%d.png" % (mode+1))
+		game.waves.advance_wave(game.waves.intro_duration())
 		if mode < 2:
 			if mode == 0: game.waves.storm_burst()
 			elif mode == 1: game.waves.quake_burst()

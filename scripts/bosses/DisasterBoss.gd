@@ -19,7 +19,10 @@ var enraged: bool = false
 var _combat_motion: bool = false
 var _target: Vector2
 var _target_scale: float = 1.0
+var _exit_origin: Vector2
+var _exit_scale: Vector2 = Vector2.ONE
 var _relocate: float = 0.0
+var retreat: float = 0.0
 var _home: Vector2
 var pattern_label: String = ""
 ## Seconds until the next choreography at tempo 1.0 (the wave manager divides it by
@@ -36,20 +39,27 @@ var _clock: float = 0.0
 var _charge_left: float = 0.0
 var _charge_total: float = 0.7
 var _slam_left: float = 0.0
+var _arrival: float = 0.0
 var _smoke_clock: float = 0.0
 var _particles: Array[Dictionary] = []
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
-## The head/pauldron layer belongs to the original final boss anatomy.
+## Kataklizma Titanı: 0..1 fusion entry progress (1 = fully formed).
+var fusion: float = 1.0
+## Head/pauldron layer drawn in front of the roof line, and the fusion FX layer.
 var front_layer: Node2D
+var fusion_layer: Node2D
 var _final_rig: Dictionary = {}
 var _rig_clock: float = -1.0
 var _rig_charge: float = -1.0
 var _rig_slam: float = -1.0
+var _rig_retreat: float = -1.0
 var _rig_position: Vector2 = Vector2.INF
 var _rig_enraged: bool = false
+var _rig_fusion: float = -1.0
 ## The titan stands behind the apartment; only its head leans over the roof.
 const BEHIND_Z: int = -1
 const FRONT_Z: int = 7
+const FUSION_Z: int = 26
 
 # Grimdark palettes.
 const INK: Color = Color("111518")
@@ -69,6 +79,7 @@ func _ready() -> void:
 	_rng.seed = 4401 + kind * 17
 	if kind == Kind.CATACLYSM:
 		front_layer = _layer("TitanFront", FRONT_Z, _draw_front)
+		fusion_layer = _layer("FusionFX", FUSION_Z, _draw_fusion)
 		_place_behind()
 
 func _layer(layer_name: String, layer_z: int, painter: Callable) -> Node2D:
@@ -127,7 +138,7 @@ func set_active(value: bool) -> void:
 	visible = value
 	z_as_relative = true
 	z_index = 0
-	_combat_motion = value
+	_combat_motion = false
 	_target = _home
 	_target_scale = 1.0
 	_relocate = 0.0
@@ -136,19 +147,70 @@ func set_active(value: bool) -> void:
 	position = _home
 	scale = Vector2.ONE
 	modulate = Color.WHITE
+	retreat = 0.0
 	_charge_left = 0.0
 	_slam_left = 0.0
+	_arrival = 0.0
 	_particles.clear()
 	focus = 0.0
 	_focus_target = 0.0
 	_swoop = 0.0
 	next_delay = 0.0
 	safe_floors.clear()
+	fusion = 1.0
 	if kind == Kind.CATACLYSM:
 		_place_behind()
 		self_modulate = Color.WHITE
 		front_layer.self_modulate = Color.WHITE
 		front_layer.z_index = FRONT_Z
+
+## Wave manager owns transition time: the full combat clock starts after entry.
+func transition_pose(progress: float, exiting: bool) -> void:
+	var t: float = smoothstep(0.0, 1.0, clampf(progress, 0.0, 1.0))
+	_combat_motion = not exiting and progress >= 1.0
+	if exiting and progress == 0.0:
+		_exit_origin = position
+		_exit_scale = scale
+	if kind == Kind.CATACLYSM:
+		_titan_transition(progress, t, exiting)
+		return
+	_arrival = 1.0
+	retreat = t if exiting else 0.0
+	var displaced: float = t if exiting else 1.0 - t
+	var origin: Vector2 = _exit_origin if exiting else _home
+	var extent: float = -850.0 if kind == Kind.STORM else 650.0
+	position = origin + Vector2(0, extent * displaced)
+	rotation = sin(displaced * TAU) * .24 * displaced if kind == Kind.STORM else 0.0
+	var shape: Vector2 = Vector2.ONE
+	if kind == Kind.STORM: shape = Vector2(1.0-displaced*.85, 1.0+displaced*.18)
+	if kind == Kind.FLOOD: shape = Vector2(1.0+displaced*.5, 1.0-displaced*.8)
+	scale = shape * (_exit_scale if exiting else Vector2.ONE)
+	modulate = Color.WHITE
+	modulate.a = 1.0 - smoothstep(0.65,1.0,displaced)
+	if kind == Kind.EARTHQUAKE:
+		position.x += sin(progress*95.0)*12.0*displaced
+	queue_redraw()
+
+## Fusion entry: four energies collide, then the body condenses behind the roof.
+## Retreat: the amalgam sinks into its own tide and fades.
+func _titan_transition(progress: float, t: float, exiting: bool) -> void:
+	_arrival = 1.0
+	retreat = t if exiting else 0.0
+	fusion = 1.0 if exiting else clampf(progress, 0.0, 1.0)
+	var form: float = smoothstep(0.55, 0.95, fusion)
+	position = (_exit_origin + Vector2(0, 560.0 * t)) if exiting else _home + Vector2(0, 90.0 * (1.0 - form))
+	scale = Vector2.ONE
+	rotation = 0.0
+	modulate = Color.WHITE
+	var alpha: float = (1.0 - smoothstep(0.3, 1.0, t)) if exiting else form
+	self_modulate = Color(1, 1, 1, alpha)
+	front_layer.self_modulate = Color(1, 1, 1, alpha)
+	# While sinking, the head drops behind the facade instead of over the rooms.
+	front_layer.z_index = BEHIND_Z if exiting else FRONT_Z
+	if exiting: _charge_left = 0.0
+	queue_redraw()
+	front_layer.queue_redraw()
+	fusion_layer.queue_redraw()
 
 ## Target pose belongs only to boss art. Warning paths are already independent data.
 func reposition(waves: DisasterWaveManager, serial: int, floor_index: int) -> void:
@@ -232,6 +294,7 @@ func _process(delta: float) -> void:
 
 func advance(delta: float) -> void:
 	_clock += delta
+	_arrival = minf(1.0, _arrival + delta * 3.0)
 	_charge_left = maxf(0.0, _charge_left - delta)
 	_slam_left = maxf(0.0, _slam_left - delta)
 	if _combat_motion:
@@ -251,12 +314,11 @@ func advance(delta: float) -> void:
 			position = position.lerp(_target+push+Vector2(0,sin(_clock*1.7)*9),1.0-exp(-delta*6))
 		scale = scale.lerp(Vector2.ONE*_target_scale,1.0-exp(-delta*15))
 		focus = move_toward(focus, _focus_target, delta * 4.5)
-		# Idle breathing must not lower the authored feet into the ground/HUD.
-		position.y = minf(position.y,_home.y)
 	_update_particles(delta)
 	if kind == Kind.CATACLYSM:
 		_titan_particles(delta)
 		front_layer.queue_redraw()
+		if fusion < 1.0: fusion_layer.queue_redraw()
 	if kind == Kind.EARTHQUAKE:
 		var rig: Dictionary = golem_rig()
 		_smoke_clock -= delta
@@ -280,7 +342,7 @@ func _update_particles(delta: float) -> void:
 
 func _titan_particles(delta: float) -> void:
 	_smoke_clock -= delta
-	if _smoke_clock > 0.0: return
+	if _smoke_clock > 0.0 or fusion < 0.6: return
 	_smoke_clock = .085
 	var rig: Dictionary = cataclysm_rig()
 	var head: Vector2 = rig["head"]
@@ -356,6 +418,11 @@ func golem_rig() -> Dictionary:
 	# Raised arms stay nearly straight (no wide elbow flare); the body lean sells the pull-back.
 	hand_l = hand_l.lerp(shoulder_l + Vector2(25, -262), lift).lerp(Vector2(-200, -36), plant)
 	hand_r = hand_r.lerp(shoulder_r + Vector2(-25, -262), lift).lerp(Vector2(-60, -44), plant)
+	head += Vector2(40, -110) * retreat
+	shoulder_l += Vector2(-90, 35) * retreat
+	shoulder_r += Vector2(90, 35) * retreat
+	hand_l += Vector2(-100, 60) * retreat
+	hand_r += Vector2(100, 60) * retreat
 	var arm_l: Array[Vector2] = _ik(shoulder_l, hand_l, 140.0, 135.0, -1.0)
 	var arm_r: Array[Vector2] = _ik(shoulder_r, hand_r, 140.0, 135.0, 1.0)
 	# Intermediate wind-up can flare farther than either endpoint. Keep the outer
@@ -455,12 +522,16 @@ func pose_bounds() -> Rect2:
 			var c: Vector2 = ring["center"]
 			var w: float = ring["width"]
 			box = box.expand(c + Vector2(-w - 22, -60)).expand(c + Vector2(w + 22, 30))
+	box.position.y += (1.0 - _arrival) * 80.0
 	return box
 
 # -------------------------------------------------------------- drawing ----
 
+func _root() -> Vector2:
+	return Vector2(0, (1.0 - _arrival) * 80.0)
+
 func _draw() -> void:
-	var root: Vector2 = Vector2.ZERO
+	var root: Vector2 = _root()
 	var texture: Texture2D = boss_sprite if boss_sprite != null else custom_sprite
 	if texture != null:
 		_draw_sprite(texture, root)
@@ -700,28 +771,34 @@ func _rock(center: Vector2, size: Vector2, color: Color) -> void:
 func hydra_rig() -> Dictionary:
 	var heads: Array[Vector2] = []
 	for i: int in range(3):
-		heads.append(Vector2((i-1)*94+sin(_clock*2+i)*22,-350-i%2*140+sin(_clock*2.6+i)*18))
-	return {"heads":heads,"time":_clock,"charge":charge_progress(),"strike":maxf(0.0,slam_progress())}
+		heads.append(Vector2((i-1)*94+sin(_clock*2+i)*22,-350-i%2*140+sin(_clock*2.6+i)*18)*(1.0-retreat*.45))
+	return {"heads":heads,"time":_clock,"charge":charge_progress(),"retreat":retreat,"strike":maxf(0.0,slam_progress())}
 
 func _draw_front() -> void:
-	if (boss_sprite != null or custom_sprite != null): return
-	CataclysmArt.front(front_layer, cataclysm_rig(), Vector2.ZERO)
+	if (boss_sprite != null or custom_sprite != null) or fusion < 0.5: return
+	CataclysmArt.front(front_layer, cataclysm_rig(), _root())
+
+func _draw_fusion() -> void:
+	if fusion >= 1.0 or retreat > 0.0: return
+	CataclysmArt.fusion(fusion_layer, fusion, _clock)
 
 ## Kataklizma Titanı skeleton (local space, origin = ground under the facade centre):
 ## basalt head over the roof, storm vortex left arm, magma right claw, tide base.
 func cataclysm_rig() -> Dictionary:
-	if not _final_rig.is_empty() and _rig_clock == _clock and _rig_charge == _charge_left and _rig_slam == _slam_left and _rig_position == position and _rig_enraged == enraged: return _final_rig
+	if not _final_rig.is_empty() and _rig_clock == _clock and _rig_charge == _charge_left and _rig_slam == _slam_left and _rig_retreat == retreat and _rig_position == position and _rig_enraged == enraged and _rig_fusion == fusion: return _final_rig
 	_rig_clock = _clock
 	_rig_charge = _charge_left
 	_rig_slam = _slam_left
+	_rig_retreat = retreat
 	_rig_position = position
 	_rig_enraged = enraged
+	_rig_fusion = fusion
 	var t: float = _clock
 	var wind: float = smoothstep(0.0, 1.0, charge_progress())
 	var s: float = slam_progress()
 	var roar: float = sin(clampf(s, 0.0, 1.0) * PI) if s >= 0.0 else 0.0
 	var breath: float = sin(t * 1.4)
-	var head: Vector2 = Vector2(sin(t * .9) * 8.0, -1005.0 + breath * 5.0 - wind * 8.0 + roar * 6.0)
+	var head: Vector2 = Vector2(sin(t * .9) * 8.0, -1005.0 + breath * 5.0 - wind * 8.0 + roar * 6.0) + Vector2(0, 150) * retreat
 	var jaw: float = clampf(.3 + .25 * maxf(0.0, sin(t * .8)) + .45 * wind + roar, 0.0, 1.0)
 	var shoulder_l: Vector2 = Vector2(-690, -952 + sin(t * 1.4 + .6) * 6.0 - wind * 10.0)
 	var shoulder_r: Vector2 = Vector2(690, -952 + sin(t * 1.4 + 1.2) * 6.0 - wind * 10.0)
@@ -745,6 +822,7 @@ func cataclysm_rig() -> Dictionary:
 	_final_rig = {"time": t, "head": head, "jaw": jaw, "wind": wind, "roar": roar, "breath": breath,
 		"shoulder_l": shoulder_l, "shoulder_r": shoulder_r, "tip": tip, "vortex": vortex,
 		"claw": claw, "elbow": elbow, "flow": lava, "crests": crests, "overload": 1.0 if enraged else 0.0,
+		"retreat": retreat, "fusion": fusion,
 		# The tide belongs to the building: it stays put while the body blinks around.
 		"anchor": Vector2(_home.x - position.x, 0)}
 	return _final_rig
@@ -754,4 +832,4 @@ func titan_rig() -> Dictionary:
 	for i: int in range(4):
 		var side: float = -1.0 if i%2 == 0 else 1.0
 		arms.append(Vector2(side*(120+sin(_clock*2+i)*25),-250-(i/2)*140+sin(_clock*3+i)*22))
-	return {"arms":arms,"time":_clock,"charge":charge_progress(),"enrage":enraged,"strike":maxf(0.0,slam_progress()),"helix":pattern_label.begins_with("ÇİFT SARMAL")}
+	return {"arms":arms,"time":_clock,"charge":charge_progress(),"retreat":retreat,"enrage":enraged,"strike":maxf(0.0,slam_progress()),"helix":pattern_label.begins_with("ÇİFT SARMAL")}

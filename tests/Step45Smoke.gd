@@ -8,7 +8,6 @@ func _initialize() -> void:
 
 func _run() -> void:
 	game = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
-	game.intro_enabled = false
 	(game.get_node("DisasterWaveManager") as DisasterWaveManager).autoplay = false
 	root.add_child(game)
 	if DisplayServer.get_name() != "headless":
@@ -37,45 +36,61 @@ func _fresh(battle: bool = true) -> void:
 	game.loot.set_physics_process(false)
 	if battle:
 		game.waves.start_next_wave()
-
+		game.waves.advance_wave(game.waves.intro_duration())
 	game.building.pacing_enabled = false
 
 func _timing() -> void:
 	_fresh(false)
 	var w: DisasterWaveManager = game.waves
-	_check(game.earthquake.get_parent() is Control and game.earthquake.get_parent().clip_contents,"Original boss artwork remains clipped at the ground")
-	_check(w.siege_duration == 50.0 and w.build_duration == 5.0,"Exact 50s battle / 5s construction")
+	_check(game.earthquake.get_parent() is Control and game.earthquake.get_parent().clip_contents and game.earthquake.get_parent().size.y == game.backdrop.ground_y, "Boss entrance/retreat is occluded below the actual ground line")
+	_check(w.siege_duration == 50.0 and w.build_duration == 5.0, "Exact 50s battle / 5s construction defaults (Step 7)")
 	for wave: int in range(4):
 		w.start_next_wave()
-		var boss: DisasterBoss = w.bosses()[wave]
-		_check(w.wave_number == wave+1 and w.mode == wave and w.state == DisasterWaveManager.State.SIEGE_PHASE,"Campaign order %d starts immediately in combat" % (wave+1))
-		_check(boss.visible and boss.position.is_equal_approx(boss._home) and boss.scale == Vector2.ONE,"Boss starts fully formed at its authored position")
-		_check(not game.player.controls_locked and w.siege_remaining == 50 and game.projectiles.active_count() == 0,"Immediate start preserves input, the full timer and telegraph safety")
+		_check(w.wave_number == wave+1 and w.mode == wave and w.state == DisasterWaveManager.State.WAVE_INTRO, "Campaign has locked boss order %d and a distinct entry phase" % (wave+1))
+		var boss: DisasterBoss = [game.storm,game.earthquake,game.flood,game.titan][wave]
+		var intro: float = w.intro_duration()
+		var entry_y: float = boss.position.y
+		w.advance_wave(.6)
+		# The titan does not rise: its entry is the visible four-element fusion.
+		var moved: bool = boss.fusion > 0.0 if wave == 3 else boss.position.y != entry_y
+		_check(moved and w.siege_remaining == 50 and game.projectiles.active_count() == 0, "Entry visibly moves boss without spending fight time or attacking")
+		w.advance_wave(intro - .601)
+		_check(w.state == DisasterWaveManager.State.WAVE_INTRO, "Entry cannot finish before %.1fs" % intro)
+		w.advance_wave(.001)
+		_check(w.state == DisasterWaveManager.State.SIEGE_PHASE and boss.position.is_equal_approx(boss._home), "Entry lands exactly on authored boss rig position")
 		w.start_siege(DisasterWaveManager.Mode.STORM)
 		w.test_upgrades()
-		_check(w.mode == wave and not game.upgrades.pending,"Normal API / U cannot rewind an active wave")
+		_check(w.mode == wave and not game.upgrades.pending, "Normal API / U cannot restart or rewind active wave")
 		w.damage_boss_endurance(100)
-		_check(w.boss_endurance == 100,"Debug endurance cannot end normal combat early")
+		_check(w.boss_endurance == 100 and w.state == DisasterWaveManager.State.SIEGE_PHASE, "Normal combat cannot end early through a debug endurance shortcut")
 		w.advance_wave(49.999)
-		_check(w.state == DisasterWaveManager.State.SIEGE_PHASE,"Battle remains active until 50 seconds")
-		var shot: HazardProjectile = _shot(Vector2(500,600),Vector2.ZERO)
+		_check(w.state == DisasterWaveManager.State.SIEGE_PHASE, "Battle remains active until 50 seconds")
+		var shot: HazardProjectile = _shot(Vector2(500,600), Vector2.ZERO)
 		w.advance_wave(.001)
-		_check(not shot.active and not boss.visible and game.telegraphs.pending.is_empty(),"Wave completion immediately clears hazards and removes the boss")
+		_check(w.state == DisasterWaveManager.State.WAVE_OUTRO and not shot.active and game.mechanics.particles.size() > 0, "50s starts outro and dissolves bullets into visible particles")
+		_check(boss.visible and not game.upgrades.pending and w.phase_label().begins_with("AFET DALGASI PÜSKÜRTÜLDÜ"), "Retreat keeps boss visible, defers cards and shows defeat heading")
+		w.advance_wave(.5)
+		_check(boss.retreat > 0.4 and (boss.scale.x < .7 if wave == 0 else boss.position.y > boss._home.y), "Retreat narrows/ascends storm or sinks the other bosses")
+		w.advance_wave(.499)
+		_check(w.state == DisasterWaveManager.State.WAVE_OUTRO and not game.upgrades.pending, "Outro remains uninterrupted for 1.0s")
+		w.advance_wave(.001)
 		if wave < 3:
-			_check(w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE and game.upgrades.pending,"Cards open immediately, without a retreat phase")
+			_check(game.upgrades.pending and not boss.visible and game.upgrade_overlay.modulate.a == 0, "Cards begin fade-in only after boss exits")
 			game.upgrade_overlay._process(.175)
-			_check(game.upgrade_overlay.modulate.a > 0 and game.upgrade_overlay.modulate.a < 1,"Existing card fade remains smooth")
+			_check(game.upgrade_overlay.modulate.a > 0 and game.upgrade_overlay.modulate.a < 1, "Card opacity fades instead of popping")
 			w.advance_wave(200)
-			_check(w.preparation_remaining == 5,"Card selection does not consume construction time")
+			_check(w.preparation_remaining == 5, "Selection does not consume the 5-second construction window")
 			game.upgrades.offers.assign([wave,wave+1,wave+2])
 			game.upgrades.choose(0)
 			w.advance_wave(4.999)
-			_check(w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE,"Construction lasts its full five seconds")
+			_check(w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE, "Build window remains usable at 4.999 seconds")
 			w.advance_wave(.001)
-			_check(w.state == DisasterWaveManager.State.SIEGE_PHASE and w.mode == wave+1,"The next boss starts immediately at five seconds")
+			_check(w.state == DisasterWaveManager.State.WAVE_INTRO and w.mode == wave+1, "Exactly 5 seconds triggers the next boss once")
+			# Next loop continues the already-started entry, F is deliberately idempotent.
 		else:
-			_check(w.victory and w.completed_waves == 4 and not game.upgrades.pending,"Final deadline goes directly to the existing victory HUD")
+			_check(w.victory and w.completed_waves == 4 and not game.upgrades.pending, "Fourth outro ends in victory, no fifth wave or card")
 			w.start_next_wave()
+			_check(w.victory and w.wave_number == 4, "Victory cannot loop back to storm")
 
 func _pacing() -> void:
 	_fresh()
@@ -181,12 +196,13 @@ func _capture(directory: String) -> void:
 	game.upgrade_overlay.hide()
 	game.waves.start_siege(DisasterWaveManager.Mode.EARTHQUAKE,true)
 	game.waves.advance_wave(.75)
-	await _save(directory,"04-golem-direct-start.png")
+	await _save(directory,"04-golem-entry.png")
 	game.waves.advance_wave(.75)
 	game.waves.finish_wave()
 	game.waves.advance_wave(1.1)
+	game.mechanics.retreat_dust(.1)
 	game.mechanics.advance(.35,.35)
-	await _save(directory,"05-direct-card-selection.png")
+	await _save(directory,"05-golem-retreat.png")
 
 func _save(directory: String, name: String) -> void:
 	await process_frame

@@ -116,7 +116,6 @@ func set_open(value: bool) -> void:
 	visible = value
 	get_tree().paused = value
 	sound.set_paused_view(value)
-	if game.intro.active(): game.intro.video.paused = value or game.intro.state == IntroOverlay.State.FADING
 	_refresh()
 	if value: (buttons["resume"] as Button).grab_focus()
 

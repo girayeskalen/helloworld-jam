@@ -29,6 +29,7 @@ var floor_guard: bool = false
 var landing_target: int = -1
 var slow_remaining: float = 0.0 # Compatibility: global slow motion is no longer used.
 var _clock: float = 0.0
+var _dust_clock: float = 0.0
 var _was_dashing: bool = false
 var _wave_token: int = -1
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -54,7 +55,7 @@ func has_card(id: int) -> bool:
 	return game != null and game.upgrades.has_upgrade(id)
 
 func active_battle() -> bool:
-	return game != null and not game.waves.intro_active and game.waves.state == DisasterWaveManager.State.SIEGE_PHASE and not game.waves.failed and not game.waves.victory and not game.upgrades.pending
+	return game != null and game.waves.state == DisasterWaveManager.State.SIEGE_PHASE and not game.waves.failed and not game.waves.victory and not game.upgrades.pending
 
 func reset() -> void:
 	cancel_time_slow()
@@ -113,7 +114,7 @@ func advance(delta: float, _real_delta: float) -> void:
 	_animate_fx(delta)
 	game.player.energy_regen_multiplier = 1.0
 	if not active_battle():
-		# The card modal and startup intro freeze module clocks. Phase cleanup clears transient FX.
+		# The modal/cinematics freeze module clocks. Phase cleanup clears transient FX.
 		queue_redraw()
 		return
 	time_remaining = maxf(0.0,time_remaining-delta)
@@ -296,6 +297,24 @@ func ring(point: Vector2, color: Color) -> void:
 	if rings.size() >= 24: rings.pop_front()
 	rings.append({"p":point,"life":.7,"color":color})
 
+func retreat_dust(delta: float) -> void:
+	_dust_clock -= delta
+	if _dust_clock > 0.0: return
+	_dust_clock = 0.06
+	if game.earthquake.visible:
+		burst(game.earthquake._home + Vector2(sin(_clock*17)*170,-20), Color("968475"), 10)
+		for i: int in range(4):
+			particles.append({"p": game.earthquake._home + Vector2(-150+i*90,-15), "v": Vector2(-55+i*35,-65), "life": 1.1, "color": Color("817e76"), "size": 18.0+i*3.0, "dust": true})
+	if game.storm.visible:
+		burst(game.storm.global_position + Vector2(cos(_clock*11)*90,-350), Color("8eafc1"), 5)
+	if game.titan.visible:
+		# The amalgam sinks into its own tide: four element sprays at once.
+		for i: int in range(4):
+			burst(game.titan.global_position + Vector2((i - 1.5) * 520.0 + sin(_clock*13+i)*60.0, -180.0 - (i % 2) * 520.0), CataclysmArt.ELEMENTS[i % 3], 5)
+	for boss: DisasterBoss in [game.flood]:
+		if not boss.visible: continue
+		var color: Color = Color("72e9d7") if boss.kind == DisasterBoss.Kind.FLOOD else Color("ff8b43")
+		burst(boss.global_position + Vector2(sin(_clock*13)*110,-150),color,10)
 
 func burst(point: Vector2, color: Color, count: int) -> void:
 	for i: int in range(count):

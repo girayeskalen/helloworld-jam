@@ -16,7 +16,6 @@ func _initialize() -> void:
 
 func _run() -> void:
 	game = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
-	game.intro_enabled = false
 	(game.get_node("DisasterWaveManager") as DisasterWaveManager).autoplay = false
 	root.add_child(game)
 	root.unfocusable = true
@@ -53,7 +52,7 @@ func _battle(mode: int, floor_index: int = 1, x: float = 1000.0) -> DisasterWave
 	var w: DisasterWaveManager = game.waves
 	w.autoplay = false
 	w.start_siege(mode as DisasterWaveManager.Mode, true)
-
+	w.advance_wave(w.intro_duration())
 	game.building.pacing_enabled = false
 	game.telegraphs.clear()
 	game.projectiles.clear()
@@ -594,7 +593,7 @@ func _fight(mode: int) -> void:
 		game.telegraphs._physics_process(DT)
 		game.projectiles._physics_process(DT)
 		ticks += 1
-	_check(not w.failed and w.state == (DisasterWaveManager.State.VICTORY if mode == 3 else DisasterWaveManager.State.BUILD_PREPARATION_PHASE) and absi(ticks - 3000) <= 2, "%s: the real fight lasts exactly 50 s (%d ticks)" % [title, ticks])
+	_check(not w.failed and w.state == DisasterWaveManager.State.WAVE_OUTRO and absi(ticks - 3000) <= 2, "%s: the real fight lasts exactly 50 s (%d ticks)" % [title, ticks])
 	var early: Array[float] = []
 	var late: Array[float] = []
 	for cue: Dictionary in cues:

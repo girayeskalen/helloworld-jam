@@ -13,7 +13,6 @@ func _initialize() -> void:
 
 func _run() -> void:
 	_game = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
-	_game.intro_enabled = false
 	root.add_child(_game)
 	_game.player.max_health = 10000
 	_game.player.health = 10000

@@ -52,6 +52,8 @@ func _draw() -> void:
 		draw_texture_rect(custom_sprite, Rect2(0, 0, 1920, 1080), false)
 	if hit_flash > 0:
 		draw_rect(Rect2(0, 0, 1920, 1080), Color(0.85, 0.16, 0.10, hit_flash * 0.75))
+	if waves != null and waves.state == DisasterWaveManager.State.WAVE_INTRO and not waves.failed:
+		return # Cinema owns the frame; no half-hidden health bar under letterbox.
 	_draw_status()
 	_draw_boss_strip()
 	_draw_slots()
@@ -91,6 +93,7 @@ func _draw_boss_strip() -> void:
 	if waves == null:
 		return
 	var preparing: bool = waves.state in [DisasterWaveManager.State.PREPARATION_PHASE, DisasterWaveManager.State.BUILD_PREPARATION_PHASE]
+	var transition: bool = waves.state in [DisasterWaveManager.State.WAVE_INTRO, DisasterWaveManager.State.WAVE_OUTRO]
 	var wave: int = mini(waves.completed_waves + 1, DisasterWaveManager.TOTAL_WAVES) if preparing else waves.wave_number
 	var title: String = waves.boss_name()
 	var ratio: float = waves.boss_endurance / 100.0
@@ -101,11 +104,16 @@ func _draw_boss_strip() -> void:
 		seconds = waves.preparation_remaining
 		ratio = waves.preparation_remaining / duration
 		accent = Color("4fd6c4")
+	elif transition:
+		var outro: bool = waves.state == DisasterWaveManager.State.WAVE_OUTRO
+		seconds = waves.siege_remaining if not outro else 0.0
+		ratio = 1.0 - waves.transition_remaining / (DisasterWaveManager.OUTRO_DURATION if outro else waves.intro_duration()) if not outro else 0.0
 	if waves.nova:
 		accent = Color("ff4a3a").lerp(Color("fff1d0"), .5 + .5 * sin(_clock * 14.0))
 	if waves.victory:
 		title = "%d/%d DALGA • ZAFER" % [DisasterWaveManager.TOTAL_WAVES, DisasterWaveManager.TOTAL_WAVES]
 		ratio = 0.0
+	if waves.state == DisasterWaveManager.State.WAVE_INTRO: return
 	_text(Vector2(BOSS_BAR.get_center().x, BOSS_BAR.position.y-19), title, 26, CelArt.PAPER, HORIZONTAL_ALIGNMENT_CENTER)
 	_bar(BOSS_BAR, ratio, accent)
 	if not waves.victory:
@@ -170,11 +178,15 @@ func _draw_corner_hints() -> void:
 
 # -------------------------------------------------------------- banners ----
 
-## Only the active final-wave warning uses a centred banner.
+## Short centred titles: wave entry, the final fusion reveal, nova and retreat.
 func _draw_banner() -> void:
 	if waves == null or waves.failed or waves.victory:
 		return
-	if waves.nova and waves.siege_remaining > DisasterWaveManager.NOVA_WINDOW - 1.6:
+	if waves.state == DisasterWaveManager.State.WAVE_INTRO:
+		return # BossCinematic owns the single intro title and letterbox.
+	elif waves.state == DisasterWaveManager.State.WAVE_OUTRO:
+		_text(Vector2(960, 540), "DALGA %02d PÜSKÜRTÜLDÜ" % waves.wave_number, 40, Color(Color("b0f1c7"), 1.0 - smoothstep(.6, 1.0, 1.0 - waves.transition_remaining / DisasterWaveManager.OUTRO_DURATION)), HORIZONTAL_ALIGNMENT_CENTER)
+	elif waves.nova and waves.siege_remaining > DisasterWaveManager.NOVA_WINDOW - 1.6:
 		var pulse: float = .7 + .3 * sin(_clock * 18.0)
 		_text(Vector2(960, 540), "NOVA", 56, Color(Color("d7fff5"), pulse), HORIZONTAL_ALIGNMENT_CENTER)
 		_text(Vector2(960, 580), "SON 15 SANİYE • ACİL YARDIM DÜŞÜYOR", 18, Color(Color("8fd8ff"), pulse), HORIZONTAL_ALIGNMENT_CENTER)

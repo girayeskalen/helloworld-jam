@@ -16,7 +16,6 @@ func _run() -> void:
 	for arg: String in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture="): capture_dir = arg.trim_prefix("--capture=")
 	game = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
-	game.intro_enabled = false
 	(game.get_node("DisasterWaveManager") as DisasterWaveManager).autoplay = false
 	root.add_child(game)
 	game.sound.bake_all_now()
@@ -27,7 +26,7 @@ func _run() -> void:
 	game.projectiles.set_physics_process(false)
 	await _measure("preparation")
 	game.waves.start_siege(DisasterWaveManager.Mode.CATACLYSM,true)
-
+	game.waves.advance_wave(game.waves.intro_duration())
 	for i: int in range(3): game.building.rooms[i].apply_damage(42)
 	for i: int in range(64):
 		var f: int = i % 4
@@ -47,7 +46,7 @@ func _run() -> void:
 	await _measure("final_64shots_24warnings")
 	if OS.get_cmdline_user_args().has("--live"):
 		game.waves.start_siege(DisasterWaveManager.Mode.CATACLYSM,true)
-
+		game.waves.advance_wave(game.waves.intro_duration())
 		game.waves.autoplay = true
 		game.player.max_health = 10000
 		game.player.health = 10000
