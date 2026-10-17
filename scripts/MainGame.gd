@@ -2,6 +2,9 @@ class_name MainGame
 extends Node2D
 
 @export var art_assets: SiegeArtAssets
+@export var show_main_menu: bool = false
+var menu_settings_path: String = "user://siege-settings.cfg"
+var front_end: SiegeFrontEnd
 ## The world renders into a low-resolution SubViewport and is upscaled with nearest
 ## filtering, so the procedural art lands on a real pixel grid. 1 disables it.
 @export_range(1, 4) var pixel_scale: int = 2
@@ -121,6 +124,32 @@ func _ready() -> void:
 		backdrop.queue_redraw()
 	sprite_overrides = AssetRegistry.apply(self, AssetRegistry.load_textures(sprite_directory))
 	_apply_atmosphere()
+	if show_main_menu:
+		front_end = SiegeFrontEnd.new()
+		front_end.name = "FrontEnd"
+		add_child(front_end)
+		front_end.configure(self,menu_settings_path)
+
+func set_frontend_active(active: bool) -> void:
+	# Freeze simulation and gameplay input without freezing rain, room lamps or BGM.
+	for node: Node in [player,waves,loot,mechanics,projectiles,telegraphs]:
+		node.set_physics_process(not active)
+	player.controls_locked = active
+	player.set_process_input(not active)
+	player.set_process_unhandled_input(not active)
+	set_process_input(not active)
+	set_process_unhandled_input(not active)
+	pause_menu.set_process_input(not active)
+	hud.visible = not active
+	labels.visible = not active
+	cinematic.visible = not active
+	cinematic.set_process(not active)
+	game_camera.set_process(not active)
+	game_camera.cinematic_offset = Vector2(-470,0) if active else Vector2.ZERO
+	game_camera.zoom = Vector2.ONE*base_zoom/float(pixel_scale)*(.82 if active else 1.0)
+	game_camera.clear_shake()
+	game_camera.offset = game_camera.cinematic_offset
+	game_camera.force_update_scroll()
 
 ## The ground occludes entering/retreating bosses instead of letting their legs
 ## slide across the HUD. Only boss art is clipped; room/player physics are untouched.

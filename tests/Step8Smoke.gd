@@ -344,7 +344,9 @@ func _capture(directory: String) -> void:
 			for child: Node in card.get_children():
 				if child is UpgradeIcon: icons += 1
 				if child is Label:
-					fits = fits and child.get_line_count()*child.get_line_height() <= child.size.y and child.position.y+child.size.y <= card.size.y and child.get_minimum_size().y <= child.size.y
+					fits = fits and child.get_visible_line_count() == child.get_line_count()
+					fits = fits and child.position.y+child.size.y <= card.size.y and child.position.x+child.size.x <= card.size.x
+					fits = fits and child.get_minimum_size().y <= child.size.y
 			fits = fits and icons == 1
 		_check(fits,"Native card group %d has one large icon and unclipped text" % group)
 	var chosen: int = game.upgrades.offers[2]

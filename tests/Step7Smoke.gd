@@ -111,7 +111,7 @@ func _hits(attack: HazardAttack, lift: float) -> bool:
 
 func _ramp() -> void:
 	var w: DisasterWaveManager = game.waves
-	_check(w.siege_duration == 50.0 and w.build_duration == 5.0 and w.preparation_duration == 8.0 and DisasterWaveManager.TOTAL_WAVES == 4, "Four 50-second phases, 5-second construction, 8-second first preparation")
+	_check(w.siege_duration == 50.0 and w.build_duration == 4.0 and w.preparation_duration == 4.0 and DisasterWaveManager.TOTAL_WAVES == 4, "Four 50-second phases, 4-second construction, 4-second first preparation")
 	_check(is_equal_approx(DisasterWaveManager.tempo_at(0.0), .9) and is_equal_approx(DisasterWaveManager.tempo_at(13.9), .9), "0-15 s warm-up runs at 0.90x")
 	_check(is_equal_approx(DisasterWaveManager.tempo_at(15.0), 1.0) and is_equal_approx(DisasterWaveManager.tempo_at(25.0), 1.125) and absf(DisasterWaveManager.tempo_at(33.99) - 1.2374) < .002, "15-35 s rises linearly from 1.00x toward 1.25x")
 	_check(is_equal_approx(DisasterWaveManager.tempo_at(35.0), 1.45) and is_equal_approx(DisasterWaveManager.tempo_at(49.99), 1.45), "35-50 s climax holds 1.45x")

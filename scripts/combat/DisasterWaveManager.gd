@@ -25,8 +25,8 @@ const ROOM_DAMAGE: Dictionary = {
 	HazardAttack.Kind.CONCRETE: 6.0, HazardAttack.Kind.CHANDELIER: 6.0, HazardAttack.Kind.WARDROBE: 6.0,
 	HazardAttack.Kind.ROW_SWEEP: 4.0,
 }
-@export var preparation_duration: float = 8.0
-@export var build_duration: float = 5.0
+@export var preparation_duration: float = 4.0
+@export var build_duration: float = 4.0
 @export var secondary_damage_rate: float = 0.15
 @export var siege_duration: float = 50.0
 @export var autoplay: bool = true
@@ -72,7 +72,7 @@ var state: State = State.PREPARATION_PHASE
 var fail_reason: FailReason = FailReason.NONE
 var mode: Mode = Mode.STORM
 var wave_number: int = 0
-var preparation_remaining: float = 8.0
+var preparation_remaining: float = 4.0
 var siege_remaining: float = 50.0
 var boss_endurance: float = 100.0
 var failed: bool = false

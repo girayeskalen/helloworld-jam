@@ -52,7 +52,7 @@ func _run() -> void:
 	_check(_game.waves.completed_waves == 4 and _game.waves.victory and not _game.waves.failed, "All four full 50-second battles complete with earned-resource repairs")
 	_check(max_alerts <= 3, "Real attack scheduling never exceeds three simultaneous repair alerts")
 	_check(abs(int(phase_ticks.get(DisasterWaveManager.State.SIEGE_PHASE,0))-12000) <= 3, "Four battles contain exactly 200 seconds of simulated fight time")
-	_check(abs(int(phase_ticks.get(DisasterWaveManager.State.BUILD_PREPARATION_PHASE,0))-900) <= 3, "Three construction windows contain 15 seconds total")
+	_check(abs(int(phase_ticks.get(DisasterWaveManager.State.BUILD_PREPARATION_PHASE,0))-720) <= 3, "Three construction windows contain 12 seconds total")
 	_check(_game.building.integrity < 100 and _game.building.integrity > 0 and repairs > 0, "Visible wear is managed with real collected supplies")
 	print("SOAK_DRIVER ticks=%d repairs=%d collected=%d max_alerts=%d phases=%s" % [ticks,repairs,supplies_collected,max_alerts,phase_ticks])
 	var fire_free: bool = true

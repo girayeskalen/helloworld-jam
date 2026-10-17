@@ -66,7 +66,7 @@ func _hud() -> void:
 	var removed: bool = true
 	for text: String in REMOVED_HUD: removed = removed and not hud.drawn_texts.has(text)
 	_check(removed, "Old title, right-hand status box and bottom control table are gone")
-	for text: String in ["100/100", "%100", "FIRTINA", "8s", "KOLON", "SABİTLE", "GÜVENLİK", "x0"]:
+	for text: String in ["100/100", "%100", "FIRTINA", "4s", "KOLON", "SABİTLE", "GÜVENLİK", "x0"]:
 		_check(hud.drawn_texts.has(text), "Minimal HUD draws %s" % text)
 	var clean: bool = true
 	for rect: Rect2 in hud.drawn_rects:
@@ -102,7 +102,7 @@ func _hud() -> void:
 
 func _timing() -> void:
 	var w: DisasterWaveManager = game.waves
-	_check(w.siege_duration == 50.0 and w.build_duration == 5.0 and DisasterWaveManager.TOTAL_WAVES == 4 and DisasterWaveManager.Mode.size() == 4, "Four phases of 50 seconds, with five-second construction")
+	_check(w.siege_duration == 50.0 and w.build_duration == 4.0 and DisasterWaveManager.TOTAL_WAVES == 4 and DisasterWaveManager.Mode.size() == 4, "Four phases of 50 seconds, with four-second construction")
 	game.reset_game()
 	_quiet()
 	var flashes: int = game.weather.flash_count

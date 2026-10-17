@@ -23,7 +23,7 @@ func _run() -> void:
 	var waves: DisasterWaveManager = game.waves
 	var pool: ProjectilePool = game.projectiles
 	var player: SiegePlayer = game.player
-	_check(waves.state == DisasterWaveManager.State.PREPARATION_PHASE and waves.preparation_remaining == 8, "Starts with 8-second preparation")
+	_check(waves.state == DisasterWaveManager.State.PREPARATION_PHASE and waves.preparation_remaining == 4, "Starts with 4-second preparation")
 	_check(pool.entries.size() == 128 and pool.active_count() == 0, "128 inactive preallocated projectiles")
 	var first_pool_id: int = pool.entries[0].get_instance_id()
 	var unwarned: HazardAttack = HazardAttack.new()
@@ -150,7 +150,7 @@ func _run() -> void:
 	_check(_minimum_warning >= 0.55 - 0.00001 and _maximum_warning <= 0.75 + 0.017, "Every launched pattern had a full 0.55–0.75 second warning")
 	waves.reset_cycle()
 	player.reset_player()
-	waves.advance_wave(7.9)
+	waves.advance_wave(3.9)
 	_check(waves.state == DisasterWaveManager.State.PREPARATION_PHASE, "Preparation does not end early")
 	waves.advance_wave(0.11)
 	_check(waves.mode == DisasterWaveManager.Mode.STORM and waves.siege_remaining == 50, "Automatic first wave is a 50-second storm")

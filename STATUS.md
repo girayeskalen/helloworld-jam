@@ -1,5 +1,18 @@
 # AFET KUŞATMASI — proje durumu
 
+## Güncel — Ana menü ve saha ikmali (18 Ekim 2026, Codex)
+
+Adım 8'e geri dönülmüş çalışma ağacı üzerinde kullanıcının yeni arayüz/tempo isteği uygulandı. Adım 8 geri dönüşü `2f045cc` commitinde ayrı kaydedildi. Kullanıcı 18 Ekim 2026'da menü/kart değişikliklerinin de commit edilip `feat/disaster-siege-step1` dalına gönderilmesini istedi.
+
+- **Ana menü:** Normal giriş `scenes/Launch.tscn`: Sahaya Gir / Ayarlar / Çıkış. Aynı apartman dioraması, yağmur ve sıcak oda lambaları; karanlık pencere/metal/kağıt tonları, sınırlı çizik/doku ve klavye odağı. Menüde oyuncu, dalga, loot, mermiler, mekanikler ve oynanış girdisi durur; hava/ışık/müzik sürer. Başlatınca kadraj/HUD/girdi geri gelir. Pause ekranında Ana Menü mevcut koşuyu sıfırlar.
+- **Tempo:** İlk hazırlık ve üç dalga arası inşaat artık **4 sn**. Kart seçimi/hazırlık saati birbirini tüketmez. Boss girişleri 2,5 sn (final 2,8), savaşlar 50 sn ve önceki giriş/çıkış/birleşme sinematikleri korunur.
+- **Ayarlar:** Master ses sürgüsü, M sessiz, pencere/tam ekran, ESC geri; tercih `user://siege-settings.cfg` içinde saklanır. Testte ayrı geçici dosya kullanılır. Çıkış, ses mikserinin kaynak bırakmasını bekleyerek kapanır.
+- **Saha ikmali:** Düz parlak kartların yerine teknik çizim alanlı, kesik köşeli ekipman dosyaları; tamamlanan afete göre başlık, kısa giriş hareketi, sakin yeşil/mavi/mor vurgu. Dokuz kartın etkileri, A/B/B seçimi, kaynaklı bilgi cümleleri ve 1–3/fare seçimi korunur. Metinler küçültülmeden alanına sarılır; farkındalık notu en çok iki satırda tam görünür.
+- **Kontrol — Linux / Godot 4.3.stable.official.77dcf97d8:** Import/parse ve **18 paket / 1.297 kontrol**, sıfır başarısız kontrol/betik hatası/son koşu uyarısı. Önceki 17 paket 1.271; yeni FrontEndSmoke 26. Eski 8/5 sn sınırları ilgili testlerde 4/4 sn'ye uyarlandı; regresyon kapsamı kaldırılmadı. Tam dört 50 sn savaş + üç 4 sn inşaat sürücüsü geçer. Native FrontEndSmoke **32/32**, Step8Smoke **103/103**; **11 adet 1920×1080 PNG**. Dokuz kartın gerçek görünür satırları/yatay sınırı; ses/ekran/kalıcılık, menüde girdi izolasyonu, klavye/fare, ölçekli 1280×720 fare, gerçek boss çıkışından kart ve çıkış sınandı. Tekrarlı üç headless kapanış da temizdir.
+- **Koruma:** Eski web worktree'sindeki 22 değişiklik ve Godot'un önceki geri dönüşünün içeriği ayrı committe korunur. Yeni harici asset/font/ses/bağımlılık yok. AI katkısı BEYAN.md'de kayıtlıdır. Normal testler doğrudan MainGame.tscn kullanmaya devam eder.
+- **Kanıtlar:** [Yerel görseller ve rapor](captures/menu-20261018/README.md) (Git dışında). İnsan beğeni/zorluk/işitsel kalite, Windows, başka GPU ve yeni export bu oturumda değerlendirilmedi.
+
+
 ## Güncel — Adım 8 (18 Ekim 2026, Codex)
 
 Claude'un çalışma ağacındaki Adım 7 değişiklikleri korunarak yeni istek uygulandı. Godot 4.3+ Compatibility, 4×4 gece dioraması, 2x W fizik yayı, mevcut tuşlar, dört adet 50 sn savaş, üç adet 5 sn hazırlık, Fırtına/Sel/Final paternleri ve WAV BGM korunur. Aşağıdaki 19 kart ve eski aktif modüllerle ilgili kayıtlar tarihçedir.

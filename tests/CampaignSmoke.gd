@@ -169,13 +169,13 @@ func _campaign() -> void:
 	w.advance_wave(90)
 	await _tap(KEY_D)
 	await _tap(KEY_F)
-	_check(w.preparation_remaining == 5 and up.pending and game.player.global_position == saved_position, "Card choice freezes timer and movement; F cannot bypass selection")
+	_check(w.preparation_remaining == 4 and up.pending and game.player.global_position == saved_position, "Card choice freezes timer and movement; F cannot bypass selection")
 	var chosen: int = up.offers[0]
 	await _tap(KEY_1)
 	_check(up.has_upgrade(chosen) and not up.pending and w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE and w.wave_number == 1, "Key 1 chooses a card without launching the storm debug shortcut")
 	_check(game.loot.column_kits == 2 and game.building.rooms[0].hp >= 80, "Resources and room damage carry across the wave boundary")
-	w.advance_wave(4.9)
-	_check(w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE, "Construction remains available for the full 5 seconds")
+	w.advance_wave(3.9)
+	_check(w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE, "Construction remains available for the full 4 seconds")
 	w.advance_wave(.11)
 	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false

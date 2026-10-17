@@ -210,3 +210,21 @@ Claude'un commit edilmemiş Adım 7 çalışması korunarak kullanıcı tasarım
 - Kontrol: motor içi otomatik davranış testleri ve native renderer PNG incelemesi. Gerçek sonuçlar STATUS.md'dedir; otomatik sürücü, insan eğlence/zorluk veya kulakla dinleme deneyi sayılmaz.
 
 Harici kod/asset/font/ses paketi ya da bağımlılık indirilmedi. Godot/MIT ve önceki kaynak bildirimleri korunur. Eski kartların değişen tasarımına ait testler yeni davranışlara uyarlandı; hareket, 16 oda, 4 faz, uyarı/havuz ve kit regresyonu korunur. Bu görevde commit/push yapılmadı.
+
+
+## 18 Ekim 2026 — Ana menü, dört saniye hazırlık ve saha ikmal arayüzü
+
+Araç: **OpenAI Codex (GPT-6 tabanlı kodlama ajanı)**. Kullanıcı tasarım kararlarını bu görevde Codex'e bıraktı; ana menü, kasvetli atmosfer, yaklaşık dört saniye hazırlık ve daha tematik kart seçimi istedi. Önceki Adım 8 geri dönüşü esas alındı; geri dönüş ayrı committe, eski web klasöründeki çalışmalar ise kendi çalışma ağacında korunur.
+
+- Görsel — Kullanıldı: AI destekli GDScript çizimiyle mevcut apartman/gece görsellerinin menü kompozisyonu, yağmurlu pencere izi, boyalı metal/kağıt tonları, sınırlı doku/aşınma, dosya köşeleri, rivet/çizim ızgarası ve kart giriş hareketi. `scripts/ui/FrontEnd.gd`, `FieldUI.gd`, `UpgradeDossier.gd`, `UpgradeOverlay.gd`. Raster görsel üretim servisi veya başka oyundan görsel alınmadı.
+- Ses — Kullanıldı (önceki katkının yeniden kullanımı): mevcut AI destekli prosedürel müzik/ortam/UI sesleri menüde de çalışır; yeni beste, ses kaydı veya sentez tarifi eklenmedi. Ana ses ve sessiz ayarı mevcut SoundManager'a bağlandı.
+- Kod — Kullanıldı: Launch sahnesi, menü/simülasyon/girdi ayrımı, oynatma/ayar/çıkış, pause'tan menüye dönüş, ConfigFile ile tercih kalıcılığı ve ses mikserini boşaltarak temiz çıkış; ilk ve dalga arası hazırlık 4 sn. MainGame, DisasterWaveManager, PauseMenu, proje girişi ve ilgili testler güncellendi.
+- Metin — Kullanıldı: özgün kısa Türkçe menü, kart ekranı başlıkları, README/STATUS/AGENTS ve bu kayıt. Dokuz kartın mevcut farkındalık notları ve mekanikleri korunur.
+- Diğer — Kullanıldı: tasarım kararları, otomatik akış/girdi testleri ve gerçek renderer görüntü incelemesi. Testte kullanıcı ayarları yerine ayrı geçici ConfigFile kullanılır.
+
+Hazır kaynaklar: yeni görsel/ses/font/metin paketi veya bağımlılık kullanılmadı; mevcut Godot/MIT ve motor sistem fontu kullanılır. AI görsel/metin/kod katkısı bu kayıtta açıkça beyan edilir. Gerçek kontroller ve sınırlamalar STATUS.md'dedir; otomatik testler insan estetik beğenisi veya eğlence/zorluk onayı sayılmaz.
+
+
+## 18 Ekim 2026 — Geri dönüş ve menü Git teslimi
+
+Kullanıcının açık push isteği üzerine OpenAI Codex, Adım 8 geri dönüşünü ve sonraki ana menü/saha arayüzü çalışmasını ayrı commitler olarak kaydetti. STATUS ve devir belgelerindeki güncel giriş/süre/teslim bilgileri düzenlendi. Bu aşamada yeni oyun kodu, görsel veya ses üretilmedi; önceki 18 paket / 1.297 kontrol ve native sonuçlarının kayıtları ile değişikliklerin aynı olduğu kontrol edildi. Eski web worktree'sindeki 22 yerel değişiklik teslimin dışındadır. Yeni araç/bağımlılık eklenmedi; önceki Git/GitHub CLI geliştirme aracı beyanı geçerlidir.

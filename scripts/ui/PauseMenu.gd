@@ -85,6 +85,10 @@ func _button(id: String, text: String, rect: Rect2, action: Callable) -> void:
 	board.add_child(button)
 	buttons[id] = button
 
+func add_main_menu_action(action: Callable) -> void:
+	_button("home","ANA MENÜ",Rect2(874,38,202,44),action)
+	(buttons["home"] as Button).add_theme_font_size_override("font_size",16)
+
 func _input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return

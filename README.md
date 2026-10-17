@@ -2,6 +2,8 @@
 
 Doğal afet hazırlığı ve farkındalık temalı, Fallout Shelter esinli apartman kesitini bullet-hell hareketiyle birleştiren Godot oyunu. 4 kat × 4 oda = 16 benzersiz odalı apartmanda merdivensiz dolaş: çift zıplamayla üst kata süzül, S ile alt kata in, sekiz yönlü takla at, **FIRTINA → DEPREM → SEL → DEPREM • SEL • FIRTINA** sırasındaki dört bossun paternlerinden kaçın.
 
+**18 Ekim — ana menü ve saha ikmali:** F5/normal açılışta canlı yağmurlu apartman üstünde **Sahaya Gir / Ayarlar / Çıkış** menüsü gelir. Menüde savaş/oyuncu durur; hava, oda ışıkları ve müzik sürer. Başlangıç ve kart sonrası hazırlık **4 saniyedir**; 2,5 sn boss girişleri (final 2,8) ayrıca korunur. Kartlar saha dosyası görünümünde, dokuz mevcut mekanik ve A/B/B seçimiyle sunulur. Ayarlarda ana ses, sessiz ve pencere/tam ekran; tuşlar, Enter/fare seçimi ve ESC geri dönüşü vardır. Ayarlar `user://siege-settings.cfg` içinde saklanır. Pause ekranındaki **Ana Menü** mevcut koşuyu sıfırlayıp açılışa döner.
+
 **Adım 2.7 — karanlık afet gecesi:** Oyun artık kasvetli bir pixel-art gecesinde geçer. Yağmur, kül ve soğuk şimşekler; elektrik kesintisinde karanlık odalar, titreyen amber/acil kırmızı lambalar, baret feneri, yazısız sade bina, çok parçalı canlı bosslar, neon parlayan mermiler ve daha hızlı, tok bir karakter hareketi.
 
 **Karakter ve ekipman:** Reflektörlü kurtarma uzmanı, ağırlıklı çanta/ceket animasyonu ve dört boss için üç tonlu yüzeyler; dört anlaşılır ekipman. Adım 8 ile dokuz aktif kart ve her seçimde solda bir hazırlık + iki aksiyon kartı.
@@ -12,7 +14,7 @@ Doğal afet hazırlığı ve farkındalık temalı, Fallout Shelter esinli apart
 
 **Adım 8:** Dokuz aktif mekanik ve ikon odaklı kısa kartlar; yalnız depremde bekleme/kaçış boşluğu +%10, hareketli mermi hızı −%10. [Yeni kart etkileri](#afet-hazırlık-bülteni-9-aktif-mekanik-adım-8) aşağıda.
 
-**Adım 7 — okunabilir hızlanan bullet-hell:** Fazlar 50 sn, kart sonrası inşaat 5 sn. Her savaş 0–15 sn 0,90× sakin ısınma, 15–35 sn 1,00×→1,25× doğrusal artış ve 35–50 sn 1,45× doruk temposuyla ilerler; dorukta müzik ~%5 hızlanır. Fırtınanın beş, depremin dört yeni geometrik koreografisi var; odalardan rastgele eşya fırlatılmaz. Mermiler siyah konturlu, boss neonlu ve beyaz çekirdekli; bütün olağan uyarılar tam 0,55 sn sürer ve son 0,12 sn beyaz parlar. Kuşatmada mobilyalar ~%25 kararır. Mermiye çok yakından değmeden geçmek (**sıyrılma**) +25 takla enerjisi verir.
+**Adım 7 — okunabilir hızlanan bullet-hell:** Fazlar 50 sn, kart sonrası inşaat artık 4 sn (18 Ekim menü revizyonu). Her savaş 0–15 sn 0,90× sakin ısınma, 15–35 sn 1,00×→1,25× doğrusal artış ve 35–50 sn 1,45× doruk temposuyla ilerler; dorukta müzik ~%5 hızlanır. Fırtınanın beş, depremin dört yeni geometrik koreografisi var; odalardan rastgele eşya fırlatılmaz. Mermiler siyah konturlu, boss neonlu ve beyaz çekirdekli; bütün olağan uyarılar tam 0,55 sn sürer ve son 0,12 sn beyaz parlar. Kuşatmada mobilyalar ~%25 kararır. Mermiye çok yakından değmeden geçmek (**sıyrılma**) +25 takla enerjisi verir.
 
 **Güncel HUD:** Sol üstte kalp/enerji/bina barları, sol altta üç ekipman slotu; boss adı ve 50 sn kuşatma barı alt ortadadır. Girişte sinematik siyah şeritler ve tek büyük boss adı görünür. `1/2/3/4` doğrudan boss testi; `5/6` kaldırıldı.
 
@@ -99,7 +101,7 @@ Sol alttaki **KOLON / SABİTLE / GÜVENLİK** slotları adetleri gösterir. Çan
 
 ## Afet hazırlık bülteni: 9 aktif mekanik (Adım 8)
 
-İlk üç faz sonunda solda **yeşil bir hazırlık kartı**, orta ve sağda **mavi/mor iki farklı aksiyon kartı** sunulur. Alınmış kart tekrar gelmez. **1/2/3 veya fare** ile birini seç; seçimde süre ve hareket durur. Kartlarda büyük özgün piksel ikon, kısa başlık, en fazla 12 kelimelik mekanik açıklama ve tek satırlık kaynaklı bilgi vardır. Sayısal ayrıntılar aşağıdadır; kart yüzünde uzun istatistik listeleri yoktur.
+İlk üç faz sonunda solda **yeşil bir hazırlık kartı**, orta ve sağda **mavi/mor iki farklı aksiyon kartı** sunulur. Alınmış kart tekrar gelmez. **1/2/3 veya fare** ile birini seç; seçimde süre ve hareket durur. Kartlarda büyük özgün piksel ikon, kısa başlık, en fazla 12 kelimelik mekanik açıklama ve tek cümlelik kaynaklı bilgi (en çok iki satır) vardır. Sayısal ayrıntılar aşağıdadır; kart yüzünde uzun istatistik listeleri yoktur.
 
 | Grup | Kart | Gerçek oyun etkisi |
 | --- | --- | --- |
@@ -163,14 +165,14 @@ Her eşyanın kimliği (`f<kat>_<ad>`), katı, durumu ve sprite atama yolu ayrı
 
 ## Kuşatma nasıl işler?
 
-Oyun **8 saniyelik ilk hazırlıkla** başlar; F ile erken başlayabilirsin. Sonlu akış şöyledir:
+Menüde Sahaya Gir seçildiğinde oyun **4 saniyelik ilk hazırlıkla** başlar; F ile erken başlayabilirsin. Sonlu akış şöyledir:
 
 1. **FIRTINA:** 2,5 sn rüzgâr/şimşek sinematiği → 50 sn savaş → 1 sn çıkış.
-2. Kart seçimi + 5 sn inşaat (F ile erken bitir) → **DEPREM:** 2,5 sn zemin çatlağı, yükselen kayalar ve iki yumruk sinematiği → 50 sn savaş.
-3. Kart + 5 sn inşaat → **SEL:** 2,5 sn yükselen köpüklü su ve iki cephe tsunami sinematiği → 50 sn savaş.
-4. Son kart + 5 sn inşaat → **DEPREM • SEL • FIRTINA:** 2,8 sn üç afetin birleşme sinematiği → 50 sn final → çıkış ve zafer. Beşinci faz yoktur.
+2. Kart seçimi + 4 sn inşaat (F ile erken bitir) → **DEPREM:** 2,5 sn zemin çatlağı, yükselen kayalar ve iki yumruk sinematiği → 50 sn savaş.
+3. Kart + 4 sn inşaat → **SEL:** 2,5 sn yükselen köpüklü su ve iki cephe tsunami sinematiği → 50 sn savaş.
+4. Son kart + 4 sn inşaat → **DEPREM • SEL • FIRTINA:** 2,8 sn üç afetin birleşme sinematiği → 50 sn final → çıkış ve zafer. Beşinci faz yoktur.
 
-Girişte oyuncu hareketi kilitlenir, saldırı veya hasar üretilmez; kamera hafif odaklanır, üst/alt siyah şeritler ve büyük boss adı görünür. Savaş başlayınca eski kadraj ve kontroller geri gelir. Giriş/çıkış 50 saniyeyi, kart seçimi 5 saniyeyi tüketmez.
+Girişte oyuncu hareketi kilitlenir, saldırı veya hasar üretilmez; kamera hafif odaklanır, üst/alt siyah şeritler ve büyük boss adı görünür. Savaş başlayınca eski kadraj ve kontroller geri gelir. Giriş/çıkış 50 saniyeyi, kart seçimi 4 saniyeyi tüketmez.
 
 **Tempo rampası (Adım 7):** Her savaşın kendi saati vardır. 0–15 sn saldırı temposu **0,90×** (tek tek, net desenler); 15–35 sn **1,00× → 1,25×** doğrusal; 35–50 sn **1,45×** doruk. Geçişler 1 sn yumuşatılır, tempo kare içinde sıçramaz. Saldırı saati tempoyla çarpılır, bu yüzden dorukta boss desen değiştirmeyi ~1,6 kat sıklaştırır. Mermi hızı tempo fazlasının yarısı kadar artar (dorukta 1,225×) ve yolun uç noktası değişmez; ısınmada mermiler yazıldığı hızdadır. Final, Nova'sının üstüne rampanın yarısını alır. Dorukta BGM 1,05× oynar (yavaşça geçer, aynı WAV).
 
@@ -214,7 +216,8 @@ Kasırga kategorisi, 7.4 golem etiketi, dört afetin tek canavarda birleşmesi, 
 
 ```text
 project.godot
-scenes/MainGame.tscn
+scenes/Launch.tscn       Ana menülü normal giriş
+scenes/MainGame.tscn     Menü atlanan oynanış/test sahnesi
 scripts/MainGame.gd
 scripts/art/             Ortak cel çizimi, karakter (mont/çanta/eklem animasyonu), gece arka planı
 scripts/art/NightWeather.gd   Yağmur, kül/köz ve şimşek; odaları aydınlatan flaş
@@ -236,15 +239,16 @@ scripts/audio/            SoundManager (olaylar/miks), SoundSynth/SoundRecipes (
 scripts/combat/BossPatterns.gd Adım 7 fırtına (5) ve deprem (4) koreografileri; eski yardımcılar uyumluluk testleri için
 scripts/art/FurnitureArt.gd 16 odaya özgü detaylı prosedürel mobilya çizimleri
 resources/VisualAssets.tres Kalıcı sprite atama alanları
+tests/FrontEndSmoke.gd   Normal giriş, menü/ayarlar/kalıcılık, gerçek GUI, 4 sn, ara kart ve çıkış
 tests/Step1Smoke.gd      Godot içinde giriş/fizik/durum kontrolleri
 tests/Step2Smoke.gd      Kuşatma/uyarı/çarpışma/havuz kontrolleri ve görsel yakalama
-tests/Step2Soak.gd       Dört tam 50 sn savaş, üç 5 sn ara, gerçek malzeme/onarım
+tests/Step2Soak.gd       Dört tam 50 sn savaş, üç 4 sn ara, gerçek malzeme/onarım
 tests/Step25Smoke.gd     16 oda, gerçek jump/2x W/S/air-dash, paternler ve PNG kaydı
 tests/Step3Smoke.gd      Ekrana sığma, fırtına bullet-hell paternleri, rüzgâr ve PNG kaydı
 tests/Step27Smoke.gd     Karanlık atmosfer, ışıklar, sprite yükleyici, akıcı hareket, boss iskeletleri, 1920×1080 PNG
 tests/Step3LootSmoke.gd  2x W yayı, oda HP/durumları, çöküş, loot ve E onarımı, 1920×1080 PNG
 tests/CampaignSmoke.gd   4 sn ömür, inşaat, kart modal input, 4 faz, zafer, görsel kayıtlar
-tests/Step45Smoke.gd     50/5 sn, giriş/çıkış (final 2,8 sn), hasar sınırı, aktif kartlar ve görsel kayıtlar
+tests/Step45Smoke.gd     50/4 sn, giriş/çıkış (final 2,8 sn), hasar sınırı, aktif kartlar ve görsel kayıtlar
 scripts/combat/MarathonPatterns.gd Sel/yangın paternleri, kalıcı alanlar, ikincil saldırılar
 scripts/bosses/MarathonArt.gd Çok parçalı hidra/titan ve su/ateş çizimleri
 tests/MarathonSmoke.gd    Yeni paternler, sekmeler, alan hasarı, kartlar, hareket, cinnet, native PNG
@@ -255,7 +259,7 @@ tests/Step5Smoke.gd       Duraklatma (klavye/fare), M/-/+, sentez kalitesi, miks
 tests/Step55Smoke.gd      Dört faz, sinematikler, alt HUD, ateşsiz paternler ve müzik ölçümleri
 tests/Step6Smoke.gd       Statik önbellek, 128 havuz, final ayarı, BGM döngüsü/watchdog
 tests/Step8Smoke.gd       Deprem katsayıları, 9 gerçek mekanik, 300 kart seçimi, sıfırlama ve native kart/efekt/input kanıtı
-tests/Step7Smoke.gd       50/5 sn, tempo rampası, 5 fırtına + 4 deprem koreografisi (geometri ve gerçek kaçış), 0,55 sn uyarı/flash, mermi paleti, mobilya karartması, sıyrılma, BGM doruğu, dört gerçek 50 sn savaş ve native PNG
+tests/Step7Smoke.gd       50/4 sn, tempo rampası, 5 fırtına + 4 deprem koreografisi (geometri ve gerçek kaçış), 0,55 sn uyarı/flash, mermi paleti, mobilya karartması, sıyrılma, BGM doruğu, dört gerçek 50 sn savaş ve native PNG
 ```
 
 Görünür bileşenlerde Inspector'daki **Custom Sprite** alanına Texture2D sürüklenebilir; atanmazsa detaylı prosedürel çizim kullanılır. Bina bütünü için sprite atanırsa oda/eşya çizimleri gizlenir, fizik ve durum verisi korunur. Eşyalar `UNSECURED`, `REINFORCED`, `DAMAGED` durumlarını tutar; oda durumu değişince pencere kırılır/kepenk alır, eşyalar eğilir veya L-demirle sabitlenir; R yazılmış ilk durumlara döndürür.
@@ -290,7 +294,7 @@ Linux'ta tüm paketler (kurulumuna göre `godot` yerine motor dosyasını yaz):
 
 ```sh
 godot --headless --editor --path . --import --quit
-for suite in Step1Smoke Step2Smoke Step25Smoke Step3Smoke Step27Smoke Step3LootSmoke CampaignSmoke Step45Smoke MarathonSmoke Step48Smoke Step49Smoke Step5Smoke Step55Smoke Step6Smoke Step2Soak; do
+for suite in FrontEndSmoke Step8Smoke Step7Smoke Step1Smoke Step2Smoke Step25Smoke Step3Smoke Step27Smoke Step3LootSmoke CampaignSmoke Step45Smoke MarathonSmoke Step48Smoke Step49Smoke Step5Smoke Step55Smoke Step6Smoke Step2Soak; do
   godot --headless --fixed-fps 60 --path . --script "res://tests/$suite.gd" || break
 done
 godot --path . --script res://tests/Step48Smoke.gd -- --capture=/tmp/siege48-captures
@@ -314,3 +318,5 @@ Güne başlamadan temiz çalışma ağacında `git fetch origin`, ardından gör
 Adım 5.5 kontrolleri: `tests/Step55Smoke.gd` dört faz/sinematik/alt HUD ve gerçek BGM PCM ölçümlerini içerir. Native kanıt: `--script res://tests/Step55Smoke.gd -- --capture=C:/Temp/step55 --audio=C:/Temp/step55-music.wav` (headless olmadan). Müzik kodu `scripts/audio/MusicScore.gd`, sinematik kodu `scripts/ui/BossCinematic.gd`. Son test sonuçları STATUS.md içindedir.
 
 Adım 6: `tests/Step6Smoke.gd` önbellek yenileme/dormant havuz/uyarı geometrisi/final katsayıları/WAV watchdog'unu kontrol eder. Gerçek ses sürücüsünde iki döngü sınırı ve Master çıkış enerjisi: `--script res://tests/Step6Smoke.gd -- --audio-live --capture=C:/Temp/step6`. FPS karşılaştırması: **headless ve fixed-fps kullanmadan** `--script res://tests/PerformanceBench.gd -- --live --capture=C:/Temp/step6-perf`. Test gerçek makinenin kare süresi/p95/çizim çağrılarını raporlar; tüm bilgisayarlar için FPS garantisi vermez. Statik önbellekler `UPDATE_ONCE` sonrası kapanır; Compatibility/pixel_scale=2 korunur. Sonuçlar STATUS.md'dedir.
+
+Ana menü ve gerçek ara kart native kontrolü: `godot --path . --fixed-fps 60 --script res://tests/FrontEndSmoke.gd -- --capture=/tmp/siege-menu-native`. Dokuz kartın tamamı: `godot --path . --fixed-fps 60 --script res://tests/Step8Smoke.gd -- --capture=/tmp/siege-cards-native`. Menü testi geçici ayrı ayar dosyası kullanır; kullanıcının ses/ekran tercihlerini değiştirmez.

@@ -1,4 +1,6 @@
-# Claude için devir — AFET KUŞATMASI / Adım 4.8
+# Claude için devir — AFET KUŞATMASI
+
+> **Güncel — 18 Ekim 2026: ana menü ve saha ikmali.** Önce STATUS.md'nin en üst bölümünü ve AGENTS.md'yi oku. Normal giriş `scenes/Launch.tscn`; Sahaya Gir / Ayarlar / Çıkış, kalıcı ses/ekran tercihleri ve pause'tan ana menüye dönüş var. Başlangıç ve kart sonrası hazırlık **4/4 sn**, savaşlar **50 sn**. Adım 8'in dokuz aktif kartı yeni dosya görünümünde; eski boss giriş/çıkışı ve final birleşmesi korunur. Adım 9 hikâye/video açılışı geri alındı. Linux Godot 4.3: **18 paket / 1.297 kontrol**, native FrontEnd 32 ve Step8 103 geçti. Dal `feat/disaster-siege-step1`; geri dönüş commit'i `2f045cc`, menü teslimi onun üzerindedir. Aşağıdaki eski süre, Git durumu ve “commit/push yapılmadı” ifadeleri tarihsel kayıtlardır. Yeni özellik veya kullanıcı görevi varsayma.
 
 > **18 Ekim 2026 — Adım 8 (Codex) günceldir.** Eski19 kart yerine9 aktif mekanik ve kısa ikonlu A/B/B seçim; yalnız deprem cooldown×1,1/hız×0,9/boşluk×1,1. 50/5sn, dört faz, 2xW, gece cache ve BGM korunur. `STATUS.md` en üstte gerçek sonuç/kanıt ve sınırları içerir; `tests/Step8Smoke.gd` yeni davranışları sınar. Claude Adım7 değişiklikleriyle birlikte çalışma ağacındadır; bu görevde commit/push yapılmadı. Eski kart/12sn drone/tümkat iniş temizliği/global bullet-time maddeleri tarihçedir.
 

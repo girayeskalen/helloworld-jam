@@ -43,7 +43,7 @@ func _timing() -> void:
 	_fresh(false)
 	var w: DisasterWaveManager = game.waves
 	_check(game.earthquake.get_parent() is Control and game.earthquake.get_parent().clip_contents and game.earthquake.get_parent().size.y == game.backdrop.ground_y, "Boss entrance/retreat is occluded below the actual ground line")
-	_check(w.siege_duration == 50.0 and w.build_duration == 5.0, "Exact 50s battle / 5s construction defaults (Step 7)")
+	_check(w.siege_duration == 50.0 and w.build_duration == 4.0, "Exact 50s battle / 4s construction defaults")
 	for wave: int in range(4):
 		w.start_next_wave()
 		_check(w.wave_number == wave+1 and w.mode == wave and w.state == DisasterWaveManager.State.WAVE_INTRO, "Campaign has locked boss order %d and a distinct entry phase" % (wave+1))
@@ -79,13 +79,13 @@ func _timing() -> void:
 			game.upgrade_overlay._process(.175)
 			_check(game.upgrade_overlay.modulate.a > 0 and game.upgrade_overlay.modulate.a < 1, "Card opacity fades instead of popping")
 			w.advance_wave(200)
-			_check(w.preparation_remaining == 5, "Selection does not consume the 5-second construction window")
+			_check(w.preparation_remaining == 4, "Selection does not consume the 4-second construction window")
 			game.upgrades.offers.assign([wave,wave+1,wave+2])
 			game.upgrades.choose(0)
-			w.advance_wave(4.999)
-			_check(w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE, "Build window remains usable at 4.999 seconds")
+			w.advance_wave(3.999)
+			_check(w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE, "Build window remains usable at 3.999 seconds")
 			w.advance_wave(.001)
-			_check(w.state == DisasterWaveManager.State.WAVE_INTRO and w.mode == wave+1, "Exactly 5 seconds triggers the next boss once")
+			_check(w.state == DisasterWaveManager.State.WAVE_INTRO and w.mode == wave+1, "Exactly 4 seconds triggers the next boss once")
 			# Next loop continues the already-started entry, F is deliberately idempotent.
 		else:
 			_check(w.victory and w.completed_waves == 4 and not game.upgrades.pending, "Fourth outro ends in victory, no fifth wave or card")
