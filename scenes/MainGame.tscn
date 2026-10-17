@@ -1,0 +1,103 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://scripts/MainGame.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/art/WorldBackdrop.gd" id="2_world"]
+[ext_resource type="Script" path="res://scripts/building/ApartmentBuilding.gd" id="3_building"]
+[ext_resource type="Script" path="res://scripts/player/Player.gd" id="4_player"]
+[ext_resource type="Script" path="res://scripts/camera/GameCamera.gd" id="5_camera"]
+[ext_resource type="Script" path="res://scripts/ui/GameHUD.gd" id="6_hud"]
+[ext_resource type="Resource" path="res://resources/VisualAssets.tres" id="7_assets"]
+[ext_resource type="Script" path="res://scripts/bosses/DisasterBoss.gd" id="8_boss"]
+[ext_resource type="Script" path="res://scripts/combat/TelegraphSystem.gd" id="9_warning"]
+[ext_resource type="Script" path="res://scripts/combat/ProjectilePool.gd" id="10_pool"]
+[ext_resource type="Script" path="res://scripts/combat/DisasterWaveManager.gd" id="11_wave"]
+[ext_resource type="Script" path="res://scripts/combat/CombatFeedback.gd" id="12_feedback"]
+[ext_resource type="Script" path="res://scripts/art/NightWeather.gd" id="13_weather"]
+[ext_resource type="Script" path="res://scripts/ui/WorldLabels.gd" id="14_labels"]
+[ext_resource type="Script" path="res://scripts/loot/LootSystem.gd" id="15_loot"]
+
+[node name="MainGame" type="Node2D"]
+script = ExtResource("1_main")
+art_assets = ExtResource("7_assets")
+
+[node name="World" type="SubViewportContainer" parent="."]
+texture_filter = 1
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
+stretch = true
+stretch_shrink = 2
+
+[node name="Viewport" type="SubViewport" parent="World"]
+handle_input_locally = false
+canvas_item_default_texture_filter = 0
+render_target_update_mode = 4
+
+[node name="WorldBackdrop" type="Node2D" parent="World/Viewport"]
+z_index = -20
+script = ExtResource("2_world")
+view_size = Vector2(2461.54, 1384.62)
+ground_y = 1247.0
+
+[node name="NightWeather" type="Node2D" parent="World/Viewport"]
+z_index = -19
+script = ExtResource("13_weather")
+view_size = Vector2(2461.54, 1384.62)
+ground_y = 1247.0
+
+[node name="ApartmentBuilding" type="Node2D" parent="World/Viewport"]
+position = Vector2(431, 330)
+script = ExtResource("3_building")
+art_assets = ExtResource("7_assets")
+
+[node name="Player" type="CharacterBody2D" parent="World/Viewport"]
+z_index = 10
+position = Vector2(1001, 1194.5)
+script = ExtResource("4_player")
+
+[node name="StormBoss" type="Node2D" parent="World/Viewport"]
+visible = false
+z_index = 5
+position = Vector2(179, 1232)
+script = ExtResource("8_boss")
+
+[node name="EarthquakeBoss" type="Node2D" parent="World/Viewport"]
+visible = false
+z_index = 5
+position = Vector2(2240, 1232)
+script = ExtResource("8_boss")
+kind = 1
+
+[node name="LootSystem" type="Node2D" parent="World/Viewport"]
+z_index = 9
+script = ExtResource("15_loot")
+
+[node name="TelegraphSystem" type="Node2D" parent="World/Viewport"]
+z_index = 8
+script = ExtResource("9_warning")
+
+[node name="ProjectilePool" type="Node2D" parent="World/Viewport"]
+z_index = 18
+script = ExtResource("10_pool")
+
+[node name="CombatFeedback" type="Node2D" parent="World/Viewport"]
+z_index = 30
+script = ExtResource("12_feedback")
+
+[node name="GameCamera" type="Camera2D" parent="World/Viewport"]
+position = Vector2(1230.77, 692.31)
+zoom = Vector2(0.39, 0.39)
+position_smoothing_enabled = false
+script = ExtResource("5_camera")
+
+[node name="DisasterWaveManager" type="Node" parent="."]
+script = ExtResource("11_wave")
+
+[node name="Interface" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="WorldLabels" type="Node2D" parent="Interface"]
+script = ExtResource("14_labels")
+
+[node name="GameHUD" type="Node2D" parent="Interface"]
+script = ExtResource("6_hud")

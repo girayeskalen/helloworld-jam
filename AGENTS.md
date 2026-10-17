@@ -1,129 +1,21 @@
-# OYUN VİZYONU VE KALİTE STANDARTLARI (MASTER DESIGN DOC)
+# AFET KUŞATMASI — çalışma kuralları
 
-Bu bölüm ARTÇI'nın kalıcı hedef tasarımıdır. Buradaki özellikler, mevcut prototipte tamamlandıkları anlamına gelmez. Matter.js, yeni müdahaleler, aktif tutunma, zıplama, çanta toplama ve Canvas içine taşınmış HUD gibi hedeflerin mevcut durumu koddan ayrıca doğrulanır; uygulanmamış bir özellik varmış gibi raporlanmaz.
-
-Bu vizyon, görsel dalın belge görevinde kaydedildi. Sonraki görevlerde vizyonu esas al, yalnızca aktif kullanıcı isteğinin kapsamını uygula. Güncel uygulama durumu `STATUS.md` içindedir: v0.2 fiziği ve aktif kontroller hazır; çanta toplama ve Canvas içine taşınmış tam HUD henüz yok. Süreler bölüm verisinden okunur; v0.2 referans sahnesi 8 saniye öngörü ve 1,8 saniye geri sarma kullanır.
-
-## 1. Etkinlik, hedef ve kalite çıtası
-
-- **Etkinlik:** CIVIL GAME JAM 2026 — İnşaat Mühendisleri Odası ve ODTÜ Kuzey Kıbrıs Kampüsü.
-- **Tema:** Afete hazırlık ve farkındalık.
-- **Hedef:** Birincilik için yarışabilecek, jürinin bizzat oynadığında mekanik derinliğini ve özenini görebileceği bir oyun. Derece garantisi verme.
-- **Değerlendirme:** Temayla ilişki 25, oynanabilirlik 25, yaratıcılık 20, görsel/işitsel bütünlük 15, teknik bütünlük 15 puan. Mühendislik ve farkındalık, yalnızca metinde değil oyuncunun kararlarında ve sonuçlarında görünmelidir.
-- **Kırmızı çizgi:** Beş dakikada üretilmiş özensiz bir AI web demosu görünümü ve durağan, sıkıcı bilgi ekranları kabul edilmez. Gerçek neden-sonuç ilişkileri, okunabilir tehlikeler, anlamlı seçimler ve tutarlı sanat yönetimi hedeflenir. Bu görsel kalite hedefi, AI katkısını gizleme gerekçesi değildir; gerçek kullanım beyan edilir.
-- **İlham:** Into the Breach'in taktiksel öngörüsü, Katana ZERO'nun geri sarma hissi, This War of Mine / Fallout Shelter'ın yandan kesitli mimari atmosferi ve Broforce / Angry Birds'ün fiziksel yıkımı. Bunlar tasarım referansıdır; bu oyunların kodu, görselleri veya sesleri kopyalanmaz.
-
-## 2. Oyun kimliği ve dört fazlı ana döngü
-
-**ARTÇI / AFTERSHOCK: Tactical Rewind**, bir binanın **2D yandan kesitinde** geçen **Matter.js tabanlı gerçek 2D rijit cisim fiziği + zaman geri sarma + aktif hayatta kalma** oyunudur. Fizik ve müdahaleler dekoratif animasyonlardan ibaret olmamalı; nesnelerin etkileşimi ve oyuncunun tercihleri sonucu değiştirmelidir.
-
-### FAZ 1 — FORESIGHT / Öngörü: 4 saniye
-
-- Bölüm açılır açılmaz deprem yaşanır. Oyuncu önce müdahale edilmemiş felaket zincirini izler ve öğrenir.
-- Sabitlenmemiş ağır dolaplar devrilir, zayıf masaları kırabilir; tavan lambaları kopar, gaz tesisatında hasar ve ateşleme birleştiğinde patlama/yangın oluşabilir, merdiven boşluğu çökebilir.
-- NPC'ler panikle merdiven, balkon veya kapı kirişi gibi senaryoda yanlış seçilmiş noktalara yönelip enkaz altında kalabilir. Her bölüm bütün tehlikeleri aynı anda kullanmak zorunda değildir; görülen sonuçlar bölümün fiziksel düzeninden doğmalıdır.
-
-### FAZ 2 — REWIND / Taktiksel geri sarma: 1,5 saniye
-
-- Felaketin ardından görüntü ve ses, VHS kaset hissiyle **T = 0** anına geri sarılır.
-- Nesneler ve NPC'ler gerçekten kaydedilmiş zaman çizelgesindeki durumları üzerinden geri döner. Yalnızca ekran efekti oynatıp sahneyi sıfırlamak bu hedefi karşılamaz.
-- Başlangıca dönüş; konum, açı, hız, bağlantılar, kırılma/yangın ve karakter durumları gibi simülasyonu etkileyen verileri kapsamalıdır. İlk izleme ile tekrar oynatma aynı başlangıç koşullarını kullanmalı; sonuç farkı müdahalelerden ve izin verilen oyuncu girdilerinden doğmalıdır.
-
-### FAZ 3 — PLANNING / Taktiksel mühendislik ve farkındalık
-
-- Zaman durur. Tehlike yayları ve işaretleri (**telegraphing**), hangi eşyanın nereye devrileceğini, hangi bölgenin çökeceğini ve NPC'nin hangi rotaya yöneleceğini anlaşılır biçimde gösterir.
-- Oyuncunun sınırlı **Aksiyon Puanı (AP / bütçe)** vardır; her şeyi düzeltemez. Asıl bulmaca fiziksel domino zincirini doğru müdahalelerle kesmektir.
-- **Sabitleme / L-demir:** Gardırop veya kitaplık duvara fiziksel `Constraint` ile bağlanır → devrilme engellenir → altındaki masa kırılmaktan korunabilir.
-- **Yapısal güçlendirme:** Zayıf kolon veya masa, oyun modelinde çelik çaprazla desteklenir → belirli yük ve moloz senaryolarına dayanımı artar → korunabilecek bir sığınma alanı oluşabilir. Kullanıcının bu alan için önerdiği **“Hayat Üçgeni / Safe Triangle”** adı, aşağıdaki farkındalık doğruluğu kuralına tabidir; gerçek dünyada garantili güvenli boşluk iddiası değildir.
-- **Tesisat kesici:** Gaz vanasına sismik kesici eklenir → gaz akışı durur → gaz ve kıvılcımın birlikte oluşturacağı patlama/yangın zinciri kesilir.
-- **Farkındalık komutu:** Panikle merdivene/asansöre yönelen NPC'ye, doğrulanmış güvenlik içeriğine uygun sığınma davranışı ve noktası gösterilir. Oyunda önerilen sığınma alanı ile Çök-Kapan-Tutun kavramları birbirine yanlış biçimde eşitlenmez.
-
-### FAZ 4 — EXECUTION & EVACUATION / Aktif sarsıntı ve tahliye
-
-- Oyuncu **Space** ile depremi tekrar başlatır. Bu faz yalnızca sonucu seyretmekten ibaret değildir.
-- **SHAKING — Aktif tutunma / grip-balance:** Karakter uygun sığınma noktasında Çök-Kapan-Tutun animasyonu yaparken oyuncu sismik denge göstergesini tuş girdileriyle kontrol eder ve oyun içindeki savrulmayı azaltır.
-- **EVACUATION — 12 saniyelik oyun penceresi:** Ana sarsıntı durduktan sonra, kurgusal artçı öncesi **12 saniyelik bölüm sayacı** başlar. Bu tasarımda “altın pencere” adı bir oyun süresini ifade eder; gerçek bir afet zamanlaması değildir.
-- Oyuncu karakteri **WASD / yön tuşları ve zıplama** ile doğrudan yönetir; devrilmiş eşyaların arasından geçer, deprem çantasını alır ve bina çıkış kapısına ulaşmaya çalışır. Sarsıntı sürerken tahliye başlamaz.
-- **REPORT — Sonuç:** Bölüm sonunda **S / A / B / C** derecesi ve oyuncunun müdahaleleri ile sonuçlarına göre değişen **Mühendislik ve Farkındalık Karnesi** gösterilir. Geri bildirim, hangi tercihin hangi zinciri değiştirdiğini açıklamalı; durağan bilgi duvarına dönüşmemelidir.
-
-## 3. Sanat yönetimi ve görsel/işitsel standartlar
-
-- **Mimari diorama:** Bina, yaşanmışlık hissi olan bir kesit maketi gibi görünür. Sıcak beton, tuğla, ahşap parke ve duvar kâğıdı; tutarlı ışık, gölge, malzeme ve ölçekle bir arada kullanılır.
-- **Ayrıntı:** Raflardaki kitaplar, dolap kapakları, L-demir ve vidaları, vana çarkları gibi işlevsel ayrıntılar detaylı, estetik **prosedürel Canvas 2D** çizimleriyle görünür olmalıdır. Ana sahneyi düz renkli dikdörtgen kutularla veya siyah zemin üstü ucuz neon çizgilerle temsil etmek nihai kaliteyi karşılamaz.
-- **Karakterler:** İnsanlar eklemli çizilir; koşma ve Çök-Kapan-Tutun gibi davranışlar okunabilir animasyonlarla anlatılır.
-- **Canvas içinde oyun arayüzü:** Nihai HUD, modern taktiksel kartlar, klavye kısayolları ve sismografla oyun penceresine entegre edilir. Amatör web sayfası görünümündeki HTML butonları/tabloları nihai tasarım değildir. Mevcut DOM HUD, sonraki teknik görevde ele alınacak geçiş durumudur; bu belge güncellemesi sırasında değiştirilmez.
-- **Ses ve görüntü bütünlüğü:** Sarsıntı, fiziksel darbe, kırılma, geri sarma ve oyuncu müdahalelerinin sesleri aynı olaylarla uyumlu olmalı; tehlikeleri anlamayı desteklemelidir. VHS etkisi, parçacık ve kamera hareketi taktiksel okunabilirliği örtmemelidir.
-
-## 4. İki kişilik iş bölümü ve çakışmayı önleme
-
-- **Kişi 1 — Core Physics, Simulation & Gameplay:** Core oyun geliştirme alanı `src/core/` dosyalarıdır; bu birleştirmede ortak sözleşme ve entegrasyon yazarı da Kişi 1’dir (aşağıdaki tablo). `Engine.ts`, `SimulationManager.ts`, `PhysicsHazardSystem.ts`, `TimelineRewind.ts` kapsamındaki Matter.js simülasyonu, fiziksel tehlikeler, zaman çizelgesi/snapshot ve aktif karakter kontrolünden sorumludur. Bu adlar hedef sorumlulukları tanımlar; eksik dosyaların mevcut olduğu varsayılmaz.
-- **Kişi 2 — Art Direction, Renderer, UI/HUD, Audio & Levels:** Oyun geliştirme alanı yalnızca `src/ui_vfx/`, `src/levels/` ve `index.html` dosyalarıdır. `Renderer.ts`, `TacticalHUD.ts`, `SoundSynth.ts`, `ParticleSystem.ts` ve ilgili sunum dosyaları bu alandadır.
-- **Ortak veri sözleşmesi:** `src/types/game.ts`, iki kişinin mutabakatıyla, önceden belirlenmiş tek yazar tarafından değiştirilir. Paralel görevler sırasında sözleşme dondurulur; yeni fizik/karakter/HUD verileri ortak arayüzden aktarılır.
-- Birbirinin klasörüne girerek düzeltme yapma. Ortak giriş dosyası, paket/lock dosyası, test veya belge değişikliği gerekiyorsa bunu ayrı bir entegrasyon işi olarak belirt ve tek yazarı önceden belirle. Bu istisna iki tarafa sınırsız düzenleme yetkisi vermez.
-- Amaç Git çakışmalarını önlemektir; mutlak **“sıfır Git çakışması” garantisi** verilmez. Ayrı dallar, dosya sahipliği ve ortak sözleşme üzerinde anlaşma esastır.
-
-## 5. Farkındalık bilgisinin doğruluğu
-
-- **“Hayat üçgeni” ile Çök-Kapan-Tutun aynı yöntem olarak sunulmaz.** Önerilen “Safe Triangle” etiketi içerik doğrulaması bekleyen bir oyun tasarımı adıdır; oyuncuya gerçek hayatta uygulanacak genel bir güvenlik önerisi olarak öğretilmez. Yerel AFAD/ilgili yetkili rehberleriyle doğrulanmış sığınma davranışları esas alınır. Kavram ayrımı için: [USGS — deprem sırasında davranış ve ilgili Triangle of Life açıklaması](https://www.usgs.gov/faqs/what-should-i-do-during-earthquake).
-- Kolon/masa desteği, oyunun basitleştirilmiş modelidir; gerçek yapı güçlendirme talimatı, yapı güvenliği belgesi veya enkaz altında hayatta kalma garantisi değildir.
-- **12 saniye**, zıplamalı tahliye, tutunma göstergesi ve geri sarma oyun mekanikleridir. Gerçek artçıların kesin zamanı veya herkes için geçerli bir “güvenli tahliye süresi” olarak aktarılmaz. Kaynak: [USGS — artçı tahminlerinin olasılıksal niteliği](https://earthquake.usgs.gov/data/oaf/overview.php).
-
-
----
-
-# Codex çalışma kuralları — ARTÇI v0.2
-
-- İşe başlamadan ilgili dosyaları, `README.md`, `STATUS.md`, `BEYAN.md` ve `git status` çıktısını incele.
-- Ekip arkadaşının ve kullanıcının mevcut değişikliklerini koru. Görev dışı değişiklikleri silme, geri alma veya kendi commitine katma. Aynı dosyada çakışan işler varsa durumu açıkla ve değişiklikleri koruyarak ilerle.
-- Teknoloji kararı: **Vite + TypeScript + Matter.js + HTML5 Canvas 2D + Web Audio API**. Çözünürlük 1280×720; grafik ve ses kodla prosedürel üretilir. Yeni oyun motoru, framework, görsel/ses/font dosyası veya bağımlılığı görev gerektirmedikçe ekleme.
-- Yalnızca istenen kapsamda çalış. Kullanıcıya sonuçları, kontrolleri ve kalan sorunları anlaşılır Türkçeyle bildir.
-- Commit ve push yalnızca kullanıcı istediğinde yapılır. Force push veya kullanıcı açıkça istemedikçe değişiklik kaybettiren Git komutları kullanma.
-
-## İki kişilik paralel geliştirme
-
-| Alan | Tek yazma sorumlusu | Sınır |
-| --- | --- | --- |
-| `src/core/**` | Kişi 1 — Core Physics, Simulation & Gameplay | Simülasyon, AP, deterministik fizik, geri sarma, tahliye, skor. |
-| `src/ui_vfx/**` | Kişi 2 — Tactical UI, Audio, VFX & Levels | Çizim, DOM HUD, sentez, parçacıklar, stiller. |
-| `src/levels/**` | Kişi 2 | `LevelData` uyumlu saf veri; core dosyalarını değiştirme. |
-| `src/types/game.ts` | Kişi 1, iki kişinin mutabakatıyla | Ortak sözleşme; paralel çalışma sırasında dondurulur. |
-| `index.html` | Kişi 2 | Sayfa giriş yapısı; ortak sözleşme/giriş değişikliği entegrasyon yazarıyla koordine edilir. |
-| `src/main.ts`, `src/integration/**`, `index.html` dışındaki kök yapılandırmalar, `package-lock.json`, `tests/**` | Kişi 1 — entegrasyon | Bağlantılar ve ortak kontroller; eşzamanlı ikinci yazar olmaz. |
-| `README.md`, `STATUS.md`, `AGENTS.md`, `BEYAN.md` | Kişi 1 — entegrasyon | Kişi 2 görev/AI/kaynak notlarını kendi PR açıklamasında iletir; birleştirirken Kişi 1 kaydeder. |
-
-- Gerçek kişi adları henüz bildirilmedi; Kişi 1 / Kişi 2 rol etiketleridir. İsim uydurma.
-- `main` entegrasyon dalıdır. İki kişi aynı başlangıçtan ayrı `feat/core-*` / `feat/ui-*` dallarında çalışır; kendi alanındaki dosyaları değiştirir.
-- İki taraf yalnızca `src/types/game.ts` sözleşmesine bağlanır. UI, core sınıflarını doğrudan import etmez; `GameController` ve `GamePresentation` kullanılır. Core, UI veya bölüm modülü import etmez; `LevelData` constructor'a verilir.
-- Sunum `DeepReadonly<GameState>` alır ve durumu değiştirmez. Olaylara verilen tepkiler yalnızca sunumda kalır. Ses/çizim rastgeleliği fizik sonucunu etkileyemez.
-- Yeni ortak alan veya bağımlılık gerekiyorsa Kişi 2 bunu kendi PR açıklamasında belirtir; Kişi 1 tek bir entegrasyon değişikliği yapar. İki kişi aynı anda lock dosyası veya ortak belgeleri düzenlemez.
-- Aynı dosyaya dokunmamak çakışmayı önleme yöntemidir; Git için mutlak sıfır çakışma garantisi verme. Sözleşme değiştiğinde iki dal da güncel sözleşmeye göre kontrol edilir.
-
-## Teknik sözleşme ve kontroller
-
-- `Phase`: `FORESIGHT → REWIND → PLANNING → EXECUTION`. Son fazda `SHAKING → EVACUATION → REPORT` adımları vardır.
-- `Engine` 60 Hz oynanış, Matter dünyası 120 Hz alt adım kullanır. `SimulationManager` durumun tek sahibidir. `TimelineRewind`, her ikinci adımda (30 Hz) izole veri snapshot'ı alır; Matter gövdelerini/bağlarını doğrudan serialize etme. Kopan bağ ve parçaları da geri yükle. `Engine.clear` sonrasında broadphase listesini yeniden kur.
-- P/S bileşenli temel hareketi ve kat kuvvetleri deterministik olmalı; duvar/floor kinematiği ile eşya kuvvetlerini çizim animasyonuna indirgeme. Birimlerin oyun ölçeğinde olduğunu belirt.
-- NPC tutunması fiziksel bağdır; grip göstergesi bağın açılmasını/kapanmasını etkiler. Tahliyede yerçekimi, grounded/coyote ve yükselen kenarda zıplama kullan.
-- Ortak v0.2 sözleşmesine göre `physicsBodies.parts` dünya köşeleri, `x/y` kütle merkezi, `angle` radyandır. Yeni görünümün referans entegrasyonu `src/integration/` içindedir; Kişi 2’nin `SceneArt` malzemeleri/sahnesi ve ParticleSystem efektlerini kullanır. Ayrıntılı Renderer/HUD’un fizik sözleşmesine geçişi takip işidir; Kişi 2 dosyalarını otomatik taşıma veya silme.
-- AP yalnızca planlamada düşer; aynı müdahale iki kez uygulanmaz. Sarsıntı sırasında hareket girişi tahliye başlatmaz. Gizli sekmede süre durur.
-- Kod değişikliğinde `npm run build` çalıştır. Faz, AP, snapshot, tehlike zinciri veya kontroller değişirse ilgili `npm test` senaryolarını da çalıştır. Gerekirse `npx playwright install chromium` ile test tarayıcısını kur.
-- UI değişikliğinde normal/ölçeklenmiş ekranda tıklama, klavye, görsel yerleşim ve konsol hatalarını denetle. Dokümantasyonda içerik, bağlantılar ve `git diff --check` kontrol edilir. Yapılamayan kontrolleri gerekçeleriyle bildir.
-- İş tamamlanınca entegrasyon sorumlusu `STATUS.md` görev ve sorun kayıtlarını günceller. Tamamlanmamış işi tamamlandı gösterme.
-
-## CIVIL GAME JAM 2026 — AI ve hazır kaynak beyanı
-
-Kaynak: [resmî kural kitapçığı v09](https://game.ktimo.com.tr/assets/CIVIL_GAME_JAM_Kural_Kitapcigi_v09.pdf), özellikle 3.3–3.7 ve 4.1–4.4; 16 Ekim 2026 tarihinde doğrulandı.
-
-- AI ve hazır kaynak kayıtları `BEYAN.md` içinde **ayrı** tutulur. Her ikisinde **görsel, ses, kod, metin, diğer** kategorilerinin tamamı Kullanıldı/Kullanılmadı olarak doldurulur.
-- AI için kullanılan araç/model, amaç, üretilen veya dolaylı yararlanılan çıktı ve etkilenen dosyalar açıklanır. Prosedürel çizim/ses kodunu AI üretmişse görsel/işitsel katkıyı da açıkla; dosya asseti olmaması AI kullanılmadığı anlamına gelmez.
-- Hazır kaynak için ad, üretici/sağlayıcı, kaynak bağlantısı, lisans ve kullanım yeri yazılır. Değiştirilmiş ve küçük miktardaki kullanımlar da kaydedilir. Kaynak göstermek kullanım izninin yerini almaz.
-- Üçüncü taraf lisans bildirimlerini koru; yeniden dağıtım hakkı olmayan ham dosyaları repoya koyma. Hazır kod kütüphaneleri ile geliştirme/test araçlarını da kaydet.
-- AI için resmî bir oran sınırı veya otomatik puan kesintisi uydurma. Yanlış veya eksik beyan diskalifiye sebebidir; teslim öncesi ekip gerçek kullanımını kontrol edip formdaki karşılıklarına aktarır.
-- Farkındalık metinleri güvenilir kaynağa bağlanır. Oyundaki geri sarma, basitleştirilmiş fizik ve artçı sayacı gerçek dünyaya ilişkin öngörü ya da güvenlik garantisi gibi sunulmaz.
-
-## Korunan hazırlık ve teslim kayıtları
-
-- Oyuna özgü üretim, resmî tema açıklamasından sonraki 48 saatlik etkinlik süresinde yapılır; başlangıç 16 Ekim 2026, 18.00 (UTC+3). Etkinlik öncesi eğitim dosyalarını yarışma oyununa taşıma.
-- `ENGINE_DECISION.md` ve `PREPARATION.md` içindeki Godot yönergeleri tarihli arşivdir; kullanıcı ARTÇI için Vite/TypeScript kararını vermiştir. Arşivdeki motor kararını güncel görev gibi uygulama.
-- Önceki AI/araştırma kayıtlarını `SOURCES.md` içinde koru; ARTÇI üretim kayıtları `BEYAN.md` içindedir. Teslim beyanında ikisini birlikte dikkate al.
-- Jam tesliminde `SUBMISSION.md` taslağını, public repo erişimini ve gerçek oynanabilir sürümü kontrol et; kaynak, lisans veya sonuç uydurma.
+- Kullanıcı 16 Ekim 2026'da ARTÇI web projesinin kaldırılıp yeni bir Godot oyununa başlanmasını istedi. Eski teknoloji, mekanik ve dosya sahipliği kuralları artık aktif değildir. Eski kaynaklar Git geçmişindeki `2647179` sürümünde bulunabilir.
+- Aktif proje **AFET KUŞATMASI / Disaster Siege**. Godot **4.3+ GDScript**, Compatibility renderer, 1920×1080 tasarım alanı ve ölçeklenebilir pencere kullan. Godot 3 sözdizimi kullanma. Kurulu motorun gerçek sürümünü ayrıca doğrula.
+- İşe başlamadan ilgili dosyaları, README, STATUS, BEYAN ve `git status` çıktısını incele. Kullanıcının ve ekip arkadaşının görev dışındaki değişikliklerini koru; mevcut açık onay olmadan değişiklik kaybettiren işlemler yapma.
+- Sanat yönü: Fallout Shelter esinli 2.5D apartman kesiti, 2–3 px `#111518` dış kontur, perspektifli oda yüzeyleri, köşe gölgeleri, iki tonlu cel shading ve ayrıntılı prosedürel mobilya/karakter. Başka oyunlardan kod veya asset kopyalama. Ana sahneyi düz geometrik yer tutucularla bitirme.
+- Adım 2.7 (17 Ekim 2026) kullanıcı isteğiyle **karanlık/kasvetli pixel-art afet gecesi** yönünü getirdi: gökyüzü `#0b0e14`–`#141923`, yağmur/kül/şimşek (`NightWeather`), odalar boyalı parlaklığın ~%50'si (`MainGame.night_tint` → `ApartmentBuilding.set_darkness`), additive lamba konileri (`RoomLighting`, amber + acil kırmızı, sarsıntıda sallanma/titreme), oda köşe AO/vinyet/dither (`RoomDiorama` Shade katmanı), baret feneri (`Player` HelmetBeam). Dünya `World/Viewport` SubViewport'unda `pixel_scale = 2` ile 960×540 çizilip nearest büyütülür; `pixel_scale = 1` kapatır. Bina/oda üstünde **yazı, tabela veya kat levhası yok**; dünya içi metni (`CelArt.label`) yalnız `scripts/ui/WorldLabels.gd` ekran katmanında çiz.
+- Her görünür bileşende `@export var custom_sprite: Texture2D` yolu bulunur; atanırsa prosedürel karşılığının yerine onu çiz. `res://assets/sprites/` içindeki `player.png`, `boss_storm.png`, `boss_quake.png`, `tileset.png` dosyaları `AssetRegistry` ile otomatik yüklenir ve VisualAssets.tres'ten önceliklidir. Taşıyıcı, pencere ve eşya durumlarını ayrı veride tut.
+- `scenes/MainGame.tscn` giriş sahnesidir. `scripts/building/` bina ve objeler; `scripts/player/` hareket/dash; `scripts/art/` ortak çizim; `scripts/camera/` kamera; `scripts/ui/` HUD; `scripts/bosses/` boss çizimleri; `scripts/combat/` dalga, uyarı, havuz ve geri bildirimdir. Ortak dosyaya iki kişinin eşzamanlı yazmasını önlemek için görev başında sorumluluk paylaş.
+- Adım 3 (17 Ekim 2026) kullanıcı isteğiyle kontrolleri ve haritayı değiştirdi; Adım 2.5'teki "Space = zıplama" kuralının yerini aldı: A/D koşu; W/↑ katın içinde zıplama (tavanın altında kalır, kat değiştirmez); havada ikinci W/↑ herhangi bir X'te bir **üst kata** zıplatır (Adım 3-B: fizik yayı; yükselirken yalnız üst katın döşemesi çarpışma istisnasıdır, duvarlar çarpışır; yay döşemenin ~32 px üstünde tepe yapar, tepe noktasında hız sıfırlanıp döşeme çarpışması geri açılır, normal yerçekimiyle inilir — yapıştırma/ışınlama yapma) (Kat 03'te yalnız hava zıplaması); S/↓ herhangi bir X'te bir **alt kata** fazlar (Kat 00'da havadaysa fast-fall); **Shift/Space/sağ tık** sekiz yönlü I-frame dash. Merdiven, kenara tutunma ve collision-exception drop-through kaldırıldı; kat geçişi collider'ları geçici kapatan kısa betikli fazdır, sonunda zemine hizalanıp collider'ı geri açar. 0,1 sn coyote, değişken jump ve inişte yenilenen tek hava dash/tek hava zıplama hakkını koru. Adım 2.7 ayarları: koşu 403 px/s (+%30), ivme 9000 / dönüş 16000 px/s², üst kat yayı ~0,35 sn'de tepe (`floor_jump_apex` 32 px, `floor_jump_gravity` 4200), alt kat fazı 0,11 sn (ease-out), dash 1150 px/s ve 0,304 sn bekleme; squash & stretch, eğilme, hava pozu ve pelerin yalnız görseldir, hitbox'ı değiştirmez.
+- Harita 4 kat × 4 oda = **16 benzersiz oda** (`RoomDiorama.Kind`, indeks = kat×4+sütun). Oda listesi README'dedir; her odanın duvar rengi, duvar/zemin deseni ve mobilya seti ayrıdır. Kamera `base_zoom` 0,78 / `pixel_scale` ile bina, iki boss (golem x=2240) ve HUD barları 1920×1080'e sığar; ekran konumu için `MainGame.world_to_screen` kullan. `Step3Smoke.gd` ve `Step27Smoke.gd` bossların gerçek poz sınırlarını (`pose_bounds`) denetler.
+- Bosslar çok parçalıdır: `golem_rig()` (kalça, nefes alan gövde, omuzlar, dışa bükülen IK kollar, yumruklar, baş, ayrı çene, yörüngede kayalar) ve `storm_rig()` (12 halkalı S-omurga). Wind-up süresi saldırının uyarı süresine eşittir (`cue_attack`); vuruş/patlama mermi gerçekten çıktığında `strike()` ile oynar. Boss sprite'ı atanırsa da nefes/wind-up/vuruş dönüşümleri uygulanır.
+- Adım 4.5 kampanyası: 8 sn ilk hazırlık → 1,5 sn WAVE_INTRO → 90 sn fırtına → 2,5 sn WAVE_OUTRO → kart + 15 sn BUILD_PREPARATION_PHASE → aynı giriş/90 sn deprem/çıkış → kart + 15 sn inşaat → giriş/90 sn çift boss/çıkış → VICTORY. Sıra completed_waves ile kilitlidir. F yalnız hazırlığı erken bitirir. Kart seçimi süre tüketmez; 0,35 sn fade-in vardır. 1/2/3 kart seçer; boss testleri ve U yalnız F9 debug_enabled açıkken çalışır. R kart/loot/oda/oyuncu/zaman ölçeğini sıfırlar. Giriş/çıkış savaş süresini tüketmez; savaş sayacı bullet-time sırasında da gerçek saniyedir. BossGroundMask zeminin altına gömülen boss çizimini kırpar; çok parçalı rig korunur.
+- Güncel oda/loot kuralı: RoomDiorama.needs_repair yalnız DAMAGED/CRITICAL (HP oranı <0,70 ve >0) içindir; LootSystem.repair_alert hem dünya işaretinin hem kuşatma E izninin tek kaynağıdır. Sağlam odada E sessizdir; kuşatmada çimento +45 HP onarır, güçlendirme vermez. Yıkık oda kurulamaz; 4 yıkık oda veya %0 bina kayıptır. Loot yalnız kuşatmada 5,5–6,5 sn aralıkla, kesinlikle oyuncunun olmadığı uygun odaya düşer; max 3, yere indikten sonra tam 4 sn ömür, son 1,5 sn blink. Beş tür: çimento/çelik/sabitleme/kepenk/+25 HP medkit. İnşaatta E önce mevcut çimentoyla eksik HP onarır, sonra eldeki eksik bir bileşeni kurar (çelik → kepenk → sabitleme önceliği). Üç farklı bileşen üç kademedir; tekrar satın alınmaz. Her güçlendirilmiş oda %55 az hasar alır; ANCHOR varsa avize dahil eşya mermisi asla çıkmaz. Büyük görsel X-kiriş/kepenk/barikat/kemer/LED detaylarını koru. Oda max_hp değişkendir; bina barını oranlarla hesapla. Tüm hasar RoomDiorama.damage_limiter → ApartmentBuilding.limit_damage üzerinden geçer: kuşatmada max 3 gerçek hasarlı/kritik oda; yeni uyarıya 10 sn koruma, sonra 1,3 HP/sn bütçe. Baseline HP testleri pacing'i kapatabilir; normal oyun kapatamaz. Görsel salınım yalnız çizim/çocuk görselleri oynatır, StaticBody/floor_y sabittir. Loot adayları tahmini koşu/kat geçişiyle erişim süresine göre süzülür; çimento yok ve hasar varken her ikinci rastgele drop çimentodur; eski bina-geneli structure_hit yolunu yeniden bağlama.
+- Her tehlike `TelegraphSystem` üzerinden uyarılır: normal 0,55–0,75 sn; tam kat süpürmesi 1,0 sn. Betonun üç sekme parçası impact sonrası yeni 0,55 sn uyarıdan geçer. Uyarı ve mermi aynı dondurulmuş `HazardAttack` yolunu kullanır; sonradan hedef değiştirme. `is_armed` doğrulamasıyla erken/uyarısız spawn'ı reddet. 128 öğeli havuzu savaşta yeni node ile büyütme. Hızlı göreli kapsül/segment sorgusunu koru; kat duvarının hitbox'ını komşu kata taşırma.
+- Temel dash dokunulmazlığı 0,25 sn, isabet koruması 1 sn, manyetik toplama kalkanı 2 sn; ayrı sayaçlardır. Grapple dash hızı ×1,6, süre aynı; kat/duvar fazlaması bittiğinde collider geri açılır ve döşeme içinde bitiş çözülür. Mevcut 2x W parabolünü değiştirme. Normal DODGE gerçek kesişimde bir kez; Perfect Dodge dash başında son 0,15 sn için gelecek kapsül/yol çarpışması tahminidir, uzaklaşan mermi tetiklemez. Engine.time_scale her reset/faz sonu/ölüm/çıkışta 1 olur.
+- Kod değişikliğinde Godot import/parse ve uygun motor içi testleri çalıştır. `Step1Smoke.gd` temel hareketi; `Step2Smoke.gd` faz/uyarı/çarpışma/havuzu; `Step2Soak.gd` tam dalga programını; `Step25Smoke.gd` 16 oda kimliği, jump/coyote/2x W üst kat/S alt kat/8 yön dash, temel paternler ve zincir uyarılarını; `Step3Smoke.gd` ekran sığması, fırtına girdap/çapraz yaylım/koridor/rüzgâr itmesi ve deprem temposunun korunmasını; `Step27Smoke.gd` tabelasız odaları, pixel grid'i, gece paletini/şimşeği, lamba ve baret ışıklarını, sprite yükleyiciyi, akıcı hareketi/squash-stretch'i, çok parçalı boss animasyonlarını ve neon mermileri; `Step3LootSmoke.gd` 2x W yayını (tepe yüksekliği, döşeme istisnası, iniş), oda HP/durumları, saldırı hasarı, çöküş kuralını, loot zamanlaması/oda seçimi/toplama ve E onarımını kontrol eder. Pencerede ekran etiketi sayan kontroller gerçek bir çizim karesi beklemeli (`_rendered()`). Görsel kayıtları `--capture=` ile al; test exclusive fullscreen'e geçip tam 1920×1080 kare kaydeder. Fırtına rüzgârı hasar vermez ama `warn_gust` ile 0,55–0,75 sn önceden uyarılır. Kullanıcının değiştirdiği kontroller için eski beklentileri yeni davranışla güncelle; regresyon kapsamını silme. Headless görsel doğrulama değildir; çizim değiştiğinde gerçek renderer ile PNG alıp incele. Ekranlı test penceresi fiziksel girdiyi almaz; normal F5 penceresi alır.
+- SiegeUpgrades kataloğu artık yalnız dokuz aktif mekanik: DASH_REPAIR, AUTO_DRONE, SLAM_SHIELD, DEFLECTOR, GRAPPLE_DASH, CHAIN_REPAIR, ADRENALINE_REFLEX, ROOF_TURRET, LOOT_MAGNET. SiegeMechanics gerçek havuz/oda/loot üzerinde uygular ve prosedürel VFX çizer. Eski dokuz pasif kart kaldırıldı. Chain komşuya +22,5 HP ve %27,5 yarım destek verir; anchor veya ücretsiz tam güçlendirme vermez. Kule/şok/türbinle yok edilen mermi hasar/split üretmez. Elektrik izi uyarılan yolun geometrisini değiştirmez, ilerleme saatini yavaşlatır. CampaignSmoke modal/inşaat/zaferi; Step45Smoke dokuz etkiyi, 90/15 sınırlarını, geçişleri, pacing cap'i; Step2Soak tam 270 sn savaşı denetler. Görsel değişimde native PNG incelemesi zorunlu.
+- AI, hazır kaynak ve lisans kayıtlarını BEYAN/SOURCES içinde gerçek kapsamıyla güncelle. Afet davranışlarını resmî kaynakla doğrula; kurgusal boss/dash davranışlarını gerçek hayatta güvenlik tavsiyesi diye sunma.
+- Tamamlandığında STATUS içinde gerçek sonucu ve eksikleri yaz; kullanıcıya neyin çalıştığını ve neyin denenmediğini açıkla.
+- Commit veya push yalnızca kullanıcının ilgili isteğiyle yapılır. Force push kullanma. Projeyi değiştirme isteği tek başına GitHub'a gönderim izni değildir.

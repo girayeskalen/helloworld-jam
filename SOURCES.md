@@ -1,56 +1,72 @@
-# AI ve hazır kaynak kayıtları
+# AFET KUŞATMASI — kaynaklar
 
-> Bu dosya ARTÇI öncesi hazırlık ve seçilmeyen tasarım araştırmasının kayıtlarını korur. “Henüz oyun üretilmedi” ifadeleri o aşamaların durumudur. ARTÇI v0.1'in kod, prosedürel görsel/ses ve bağımlılık kayıtları [BEYAN.md](BEYAN.md) içindedir; teslimde iki dosya birlikte dikkate alınır.
+16 Ekim 2026. Teknik uygulamada Godot'un **4.3** belgeleri incelendi:
 
-Bu dosya teslim beyanını hazırlamak içindir. Yalnızca gerçekten kullanılan araçları ve kaynakları yazın. Kayıtlar organizasyonun web teslim formuna aktarılacak; bu dosya tek başına teslim değildir.
+- [CharacterBody2D](https://docs.godotengine.org/en/4.3/classes/class_characterbody2d.html): velocity, çarpışma ve `move_and_slide`.
+- [Custom drawing in 2D](https://docs.godotengine.org/en/4.3/tutorials/2d/custom_drawing_in_2d.html): `_draw`, çizim sırası ve redraw.
+- [Command line tutorial](https://docs.godotengine.org/en/4.3/tutorials/editor/command_line_tutorial.html): import, headless, script ve proje çalıştırma.
+- [Godot lisansı](https://godotengine.org/license/): motorun MIT bildirimi ve dağıtım koşulları; dağıtımda motor sürümünün kendi lisansları ayrıca korunmalı.
+- [Godot 4.3 resmî sürümü](https://github.com/godotengine/godot-builds/releases/tag/4.3-stable): Windows x64 motoru, 4.3 uyumluluğunu gerçekten çalıştırarak doğrulamak için Temp klasörüne indirildi; ZIP'in SHA512 değeri aynı sürümün resmî `SHA512-SUMS.txt` kaydıyla eşleşti. Oyun asseti veya repo dosyası değildir.
 
-Kurallar: [madde 3 ve 4](https://game.ktimo.com.tr/kurallar). Kural kontrolü: **16 Ekim 2026, v09**.
+Hazır oyun/asset indirilmedi. AI katkısının kategorileri ve kapsamı [BEYAN.md](BEYAN.md) içindedir.
 
-## AI kullanımı
+## Adım 2 teknik başvuruları
 
-| Araç | Aşama | Amaç ve kapsam | Oyundaki kullanım yeri |
-| --- | --- | --- | --- |
-| OpenAI Codex | Etkinlik öncesi hazırlık | Git ortak çalışma kurulumu, dokümantasyon, resmî kuralların araştırılması, hazırlık ve teslim kayıtları; üç araştırma ajanıyla motor karşılaştırması ve tartışma, Godot CLI sürüm kontrolü | Henüz oyun üretilmedi; oyuna özgü kod veya asset oluşturulmadı. |
-| OpenAI Codex | 16 Ekim 2026, 18.00 sonrası; tema sonrasında tasarım araştırması | Üç ajanla alternatif oynanış fikirleri, Godot'ta uygulanabilirlik ve afet bilgisi incelemesi; adayların karşılaştırılması ve GAME_DESIGN.md taslağı | Öneri seçilmedi; belge arşiv olarak korundu. Oyun içi uygulama yok; tasarım/metin ve araştırma desteği. Oyun kodu, görsel veya ses üretilmedi. |
-| OpenAI Codex | 16 Ekim 2026, 18.00 sonrası; v09 PDF incelemesi | Resmî PDF'nin 13 sayfasının metin ve görüntü incelemesi; üç ajanla site metni ve proje belgelerinin karşılaştırılması; teslim, alan koşulları ve tasarım önceliğinin güncellenmesi | Araştırma ve proje dokümantasyonu. Oyun kodu, görsel veya ses üretilmedi. |
+- [Geometry2D — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_geometry2d.html): hareketli mermi/oyuncu için segmentler arasındaki en yakın noktalar; hızlı dash'te atlanan temasın önlenmesi.
+- [Node — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_node.html): oyuncu, uyarı ve havuzun fizik işlem sırası.
+- [CanvasItem — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_canvasitem.html): prosedürel boss/uyarı/mermi çizimi ve dönüşümler.
+- [Window — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_window.html): ekranlı otomasyonda fiziksel kullanıcı girişini test penceresinden ayırma. Normal oyun penceresine bu test bayrakları uygulanmaz.
 
-16 Ekim 2026'da tema öncesindeki ilk incelemede Codex ile güncel site kurallarının tamamı ve bu depodaki hazırlık belgeleri incelendi; teslim yönergeleri v09 ile uyumlu hale getirildi. Bu ilk çalışma etkinlik öncesi araştırma/dokümantasyon kapsamındadır; oyun kodu veya asset üretilmedi.
+## Adım 2.5 teknik başvuruları
 
-Tema sonrasındaki ayrı incelemede [v09 PDF](https://game.ktimo.com.tr/assets/CIVIL_GAME_JAM_Kural_Kitapcigi_v09.pdf) doğrudan indirildi ve baştan sona okundu: 1–11. maddeler, EK A/B/C, kampüs haritası ve son teslim kontrol listesi dahil. Önceki resmî site metniyle ana kural içeriğinde anlam farkı saptanmadı; harita görselinin site görseliyle piksel karşılaştırması yapılmadı. PDF araştırma kaynağıdır; oyuna asset olarak eklenmedi. İndirilen dosyanın SHA-256 kimliği: `fa5571cd3c189c8f1a828953f0ea268fbf6357305b5e174076690ddb06888d67`.
+Adım 2.5 (17 Ekim 2026) teknik başvuruları:
 
-Etkinlik sırasında yeni kullanım oldukça araç, amaç ve gerçek kullanım yerini ekleyin. Henüz yapılmamış işi yapılmış gibi yazmayın. Ön hazırlık kullanımını teslimde açıklama notuyla belirtmek önerimizdir; oyun geliştirmesinde AI kullanılırsa ilgili alanlar ayrıca doldurulacak.
+- [CollisionShape2D — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_collisionshape2d.html): üst katların tek yönlü zemin çarpışması ve geçiş payı.
+- [PhysicsBody2D — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_physicsbody2d.html): yalnız mevcut katı geçici dışlayan `add_collision_exception_with` ve iniş/reset sonrasında geri açma.
 
-## Tema sonrası bilgi ve tasarım referansları
+Coyote/jump yüksekliği ve patern matematiği proje içinde yazıldı; hazır karakter kontrolcüsü veya bullet-hell paketi alınmadı.
 
-16 Ekim 2026'da aşağıdaki resmî sayfalar, hazırlık bilgisi ve tasarım değerlendirmesi için incelendi. AFAD sayfalarının içeriği tarama aracındaki erişim hatasından sonra doğrudan HTTP ile kontrol edildi. Bunlardan oyun kodu, görsel, ses, logo veya PDF içeriği alınmadı; bilgi kaynağı olması asset yeniden dağıtım izni anlamına gelmez.
+## Adım 3 teknik başvuruları
 
-- [AFAD: Deprem öncesi, anı ve sonrası](https://afad.gov.tr/deprem-oncesi-ani-ve-sonrasi-onlemini-al-guvende-kal): hazırlık ve olay anı davranışlarını ayırma, eşya önlemleri ve malzeme hazırlığı.
-- [AFAD: Toplanma alanına erişim](https://agri.afad.gov.tr/toplanma-alanina-erisim): önceden planlama, aileyle paylaşma ve erişilebilirlik. Türkiye hizmetleri KKTC için varsayılmadı.
-- [USGS: Earthquake Facts & Earthquake Fantasy](https://www.usgs.gov/programs/earthquake-hazards/earthquake-facts-earthquake-fantasy): ağır eşyalar, sabitleme, hazırlık ve yapısal güvenlik değerlendirmesinin ayrılması.
-- [FEMA: Çocuk bakım hizmetleri için hazırlık eğitimi](https://emilms.fema.gov/is_0036a/groups/166.html): çıkışları açık tutma, planı paylaşma ve deneme. Kurumun hedef bağlamı korundu; KKTC'ye özel talimat olarak kullanılmadı.
-- [UNDRR: Kapsayıcı afet riski azaltma eğitimi](https://www.undrr.org/resource/training-course/disability-inclusive-disaster-risk-reduction-didrr-e-learning-course): farklı ihtiyaçları ve katılımı gözetme.
-- [UNDRR: Stop Disasters öğretmen rehberi sayfası](https://www.undrr.org/publication/documents-and-publications/teaching-resilience-stop-disasters-game-teachers-guide): oyunla hazırlık kararlarını ve sonuçları tartışmaya bir örnek. Rehber PDF'si veya oyunun dosyaları alınmadı.
+- [Camera2D — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_camera2d.html): `zoom` (1'den küçük değer daha geniş alan gösterir) ile 4×4 binanın ve bossların ekrana sığdırılması.
+- Kat fazlaması, spiral (girdap) yolu, çapraz yaylım geometrisi ve rüzgâr itmesi proje içinde yazıldı. Bu davranışlar fantastik oyun mekaniğidir; gerçek fırtına/hortum davranışı veya güvenlik tavsiyesi değildir ve bu adımda afet bilgisi metni eklenmedi.
 
-Henüz oyun üretilmediği için bu araştırma, oyunun öğrenme etkisinin veya afet güvenliğinin doğrulandığı anlamına gelmez. Tasarımda yer alacak somut kurallar üretim sırasında ilgili kaynakla eşleştirilecek.
+## Önceki projedeki kayıtlar
 
-## Kategori bazlı beyan ve değerlendirme
+Kullanıcı ARTÇI'yı kaldırıp yeni projeyi istedi. Eski araştırma/AI kayıtlarının tamamı `2647179` commitindeki SOURCES ve BEYAN dosyalarında durur:
 
-AI ve hazır kaynaklar ayrı beyan edilir. Her biri için görsel, ses, kod, metin ve diğer kategorilerinin tamamında "Kullanıldı" veya "Kullanılmadı" seçilecek; küçük miktarlar dahil gerçek kullanım açıklanacak. Hazırlık metinlerindeki AI kullanımı ile sonradan üretilecek oyun içeriğinin kullanımını ayrı kapsamlarla anlatın. Henüz oluşmamış oyun için bu seçimleri tamamlanmış saymayın.
+- [Önceki SOURCES.md](https://github.com/girayeskalen/helloworld-jam/blob/2647179121c4a57bdb90e236db6337d6afe61873/SOURCES.md)
+- [Önceki BEYAN.md](https://github.com/girayeskalen/helloworld-jam/blob/2647179121c4a57bdb90e236db6337d6afe61873/BEYAN.md)
 
-Güncel madde 4.3'e göre AI için oran sınırı veya sabit/otomatik puan cezası yoktur; kullanım yoğunluğu, yaratıcılık ve görsel/sanatsal değerlendirmede jürinin kanaatini etkileyebilir. Gerçek kullanımın gizlenmesi veya yanlış beyanı diskalifiye nedenidir.
+Bu kaynak geçmişi yeni oyunda eski oyun kodunun kullanıldığı anlamına gelmez. Jam tesliminde ekip gerçek kullanımını ve güncel resmî kuralları birlikte kontrol eder.
 
-## Hazır kaynaklar
+## Adım 2.7 teknik başvuruları
 
-Henüz oyun için edinilmiş veya kullanılmış bir hazır kaynak kaydı yok. Aşağıdaki tablo taslaktır; boş olması son teslimde "hazır kaynak kullanılmadı" kararının verilmiş olduğu anlamına gelmez.
+- [SubViewportContainer — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_subviewportcontainer.html): `stretch` ve `stretch_shrink` ile dünyanın düşük çözünürlükte çizilip büyütülmesi (pixel-art render).
+- [CanvasItemMaterial — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_canvasitemmaterial.html): `BLEND_MODE_ADD` ile lamba konileri, baret feneri ve mermi ışıması.
+- [CanvasItem — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_canvasitem.html): `draw_polygon` köşe renkleriyle gradyan ışık/gölge, `draw_string_outline` ile ekran etiketleri.
+- [Image — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_image.html): içe aktarılmamış PNG'lerin `load_from_file` ile okunması (sprite yükleyici).
+- [DisplayServer — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_displayserver.html): test görüntüleri için exclusive fullscreen.
 
-| Kaynak adı | Üretici / sağlayıcı | Kaynak bağlantısı | Lisans / izin bağlantısı | Oyundaki yeri ve değişiklik | Ham dosyanın repoda paylaşım koşulu |
-| --- | --- | --- | --- | --- | --- |
-| — | — | — | — | — | — |
+Işık, dither, IK ve boss iskeletleri proje içinde yazıldı; hazır shader, ışık paketi veya animasyon eklentisi kullanılmadı. Şimşek/yağmur/fırtına görselleri kurgusal atmosferdir; gerçek afet davranışı veya güvenlik tavsiyesi değildir.
 
-Kullanılan görsel, ses, font, model ve kod kütüphanelerini kaydedin. Bir kaynağın ücretsiz olması yeniden dağıtım izni olduğunu göstermez. Paylaşılması kısıtlı ham dosyalar için edinme ve kurulum yolunu açıklayın; onları public repoya koymayın.
+## Adım 3-B teknik başvuruları
 
-## Teslim öncesi kontrol
+- [PhysicsBody2D — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_physicsbody2d.html): üst kata zıplarken yalnız o katın döşemesini `add_collision_exception_with` ile geçici yok sayıp tepe noktasında geri açma.
+- [CharacterBody2D — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_characterbody2d.html): yay sırasında `velocity` ve `move_and_slide` ile gerçek iniş.
 
-- AI kullanım kaydı gerçek çalışmalarla eşleşiyor mu?
-- Hazır kaynakların sağlayıcı, bağlantı, lisans ve kullanım bilgileri tamam mı?
-- Hiç kullanılmadı seçeneği yalnızca gerçekten kullanılmadıysa mı işaretlendi?
+Yay hızı (ayrık 60 Hz entegrasyon için düzeltilmiş), oda hasar tablosu, çöküş kuralı ve loot oda seçimi proje içinde yazıldı; hazır envanter/loot paketi kullanılmadı. Oda hasarı ve onarım kurgusaldır; deprem/fırtına güvenliği veya bina güçlendirme bilgisi olarak sunulmaz.
+
+## Üç dalgalı kampanya ve afet hazırlığı ek kapsamı — 17 Ekim 2026
+
+Araç: **OpenAI Codex**; kesin model etiketi bu çalışmada ayrıca doğrulanmadı. Kullanıcının verdiği tasarımla yalnız hasarlı odada kuşatma onarımı, 5 tip süreli loot, üç bileşenli inşaat ve %55 hasar azaltımı, 9 seçilebilir kartın gerçek oyun etkileri, 20 sn inşaat araları, koordineli çift boss finali ve zafer ekranı kodlandı. `SiegeUpgrades.gd`, `UpgradeOverlay.gd`, `CampaignSmoke.gd` eklendi; mevcut dalga/loot/oda/HUD ve uygun testler güncellendi. Claude'un 16 oda çizimleri, parabolik 2x W kat zıplaması ve çok parçalı boss rigleri korundu.
+
+Görsel katkı: AI destekli GDScript çizimleriyle büyük çelik X-kiriş/perçin/şerit, kepenk, kum torbası, sabitleme kemeri, LED, 5 loot simgesi/ömrü ve üç kart arayüzü. Yeni harici sprite, font, ses, asset, eklenti veya resim üretim servisi kullanılmadı. Metin katkısı: kart açıklamaları, arayüz ve proje belgeleri. Doğrulama: motor içi testler ve gerçek Compatibility renderer görüntülerinin incelenmesi (sonuç STATUS'ta).
+
+Kart adları, C40 etiketi ve oranları kullanıcı tasarımıdır; bu görevde gerçek afet veya mühendislik bilgisi doğrulaması yapılmadı. Anlık yapı onarımı, dokunulmaz takla, hidrolik bot ve manyetik drone gibi etkiler gerçek afet davranışı/teknik güvence olarak sunulmaz. Bu ek bir resmî kurum onayı veya bağımsız oyun teslimi değildir.
+
+## 17 Ekim 2026 — Adım 4.5 / aktif mekanikler ve dalga dengesi
+
+OpenAI Codex, kullanıcının ekli tasarımıyla 90 sn savaş / 15 sn inşaat, kilitli üç boss sırası, 1,5 sn giriş / 2,5 sn çıkış / kart fade-in, ortak üç odalık hasar sınırı, 10 sn onarım payı, görsel salınım/çatlak/toz ve dokuz yeni aktif kartı uyguladı. Eski pasif kart havuzu kaldırıldı. `SiegeMechanics.gd` dron/kule/türbin/iz/şok/ışın çizimlerini ve etkileri içerir; mevcut Claude oda çizimleri, gece atmosferi ve 2x W fizik yayı temel alınarak korundu. Boss rigine çıkış ayrışması eklendi. Yeni ses, harici görsel, font, paket veya servis kullanılmadı; görseller GDScript ile prosedüreldir. Kart isimleri/fantastik etkiler gerçek afet davranışı veya mühendislik uygulaması tavsiyesi değildir.
+
+Testler yeni faz ve mekaniklere uyarlandı; `Step45Smoke.gd` eklendi. Gerçek test sonuçları ve native görsel kayıtların yeri `STATUS.md` içindedir. Commit/push veya dağıtım yapılmadı.

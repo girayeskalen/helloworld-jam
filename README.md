@@ -1,204 +1,214 @@
-# ARTÇI — AFTERSHOCK: Tactical Rewind
+# AFET KUŞATMASI / Disaster Siege
 
-CIVIL GAME JAM 2026 için **Afet Hazırlığı ve Farkındalık** temalı, 2D yandan kesitli taktiksel afet öngörü ve zamanı geri sarma oyunu. Into the Breach'in risk okuması ve Katana ZERO'nun yeniden deneme fikrinden esinlenir; bu oyunların kodu veya kaynakları kullanılmaz.
+Doğal afet hazırlığı ve farkındalık temalı, Fallout Shelter esinli apartman kesitini bullet-hell hareketiyle birleştiren Godot oyunu. 4 kat × 4 oda = 16 benzersiz odalı apartmanda merdivensiz dolaş: çift zıplamayla üst kata süzül, S ile alt kata in, sekiz yönlü takla at, fırtına ve deprem bosslarının paternlerinden kaçın.
 
-İki kişilik ekibimizin ortak deposu: [girayeskalen/helloworld-jam](https://github.com/girayeskalen/helloworld-jam).
+**Adım 2.7 — karanlık afet gecesi:** Oyun artık kasvetli bir pixel-art gecesinde geçer. Yağmur, kül ve soğuk şimşekler; elektrik kesintisinde karanlık odalar, titreyen amber/acil kırmızı lambalar, baret feneri, yazısız sade bina, çok parçalı canlı bosslar, neon parlayan mermiler ve daha hızlı, tok bir karakter hareketi.
 
-**Fizik prototipi v0.2:** Vite + TypeScript + **Matter.js 0.20.0** + HTML5 Canvas 2D + Web Audio API. Bütün grafikler kodla çizilir; sesler çalışma anında sentezlenir. Harici görsel, ses veya font dosyası indirilmez. Çizim yüzeyi 1280×720'dir ve pencereye orantılı ölçeklenir.
+## Oyunu aç
 
-## Kurulum ve çalıştırma
+1. Standart **Godot 4.3 veya üstünü** aç. .NET sürümü gerekmez.
+2. Proje yöneticisinde **İçe Aktar** seçip bu klasördeki `project.godot` dosyasını seç.
+3. **İçe Aktar ve Düzenle** ile aç; **F5** ile oyna. Ana sahne hazırdır; sprite atama veya sahne kurma gerekmez.
 
-[Node.js](https://nodejs.org/) **22.12 veya üstü** ve npm gerekir. Güncel masaüstü Chrome/Edge/Firefox gibi Canvas 2D ve Web Audio destekleyen bir tarayıcı kullanın. Chromium üzerinde otomatik doğrulama yapılmıştır; diğer tarayıcılarda manuel kontrol sıradaki görevdir.
+Windows'ta **`Oyunu-Ac.cmd` dosyasına çift tıklayarak** da çalıştırabilirsin. Başlatıcı önce `GODOT_BIN` ortam değişkenine, ardından masaüstü/Downloads içindeki standart Godot klasörlerine bakar. Bulamazsa Godot'tan `project.godot` dosyasını aç.
 
-Proje kökünde:
+Godot'un konsol sürümüyle terminalden:
 
-```sh
-npm install
-npm run dev
+```powershell
+& 'C:\Godot\Godot_console.exe' --path .
 ```
 
-Geliştirme sunucusu varsayılan olarak `http://127.0.0.1:5173` adresini tarayıcıda açar. Port doluysa terminalde yazan adresi kullanın. Ses tarayıcı kuralı gereği ilk tıklama/tuştan sonra açılır; **M** veya ses düğmesiyle kapatılabilir. Sekme gizlenince simülasyon ve geri sayım duraklar.
+Yukarıdaki EXE yolunu kendi kurulumunla değiştir. Oyun artık yerel web sayfasından veya `npm run dev` ile açılmaz. Kaynak projeyi F5 ile çalıştırmak için export şablonu gerekmez; bağımsız EXE/web dağıtımı ayrı bir teslim işidir.
 
-```sh
-npm run build
-npm run preview
-```
+## Kontroller
 
-`build`, önce sıkı TypeScript kontrolünü sonra Vite üretim derlemesini çalıştırır. Çıktı `dist/` dizinindedir. `preview` bu çıktıyı yerelde sunar; terminaldeki adresi açın. Üretim sürümünü `index.html` dosyasına çift tıklayarak değil, HTTP üzerinden çalıştırın. Kurulu bağımlılıkları kilit dosyasından birebir yenilemek için `npm ci` kullanılabilir.
+| Tuş | İşlev |
+| --- | --- |
+| A/D veya ←/→ | Hızlı, anında tepki veren koşu (403 px/s); ters yöne basınca hemen döner |
+| W/↑ | Katın içinde zıpla; basılı tutarsan daha yükseğe çık (tavanın altında kalır) |
+| W/↑ havada ikinci kez | Çift zıplama: bulunduğun X'ten **bir üst kata** fırla; döşemenin biraz üstünde tepe yapıp yumuşakça in. Kat 03'te yalnız havada ikinci zıplama |
+| S/↓ | Herhangi bir X'ten **bir alt kata** süzül (yerde veya havada). Kat 00'da havadaysan hızlı iniş |
+| Shift, Space veya sağ tık + yön tuşları | Yerde/havada sekiz yöne takla (dash, 1150 px/s); 0,25 sn dokunulmazlık, 0,304 sn bekleme |
+| T | Kamera sarsıntısını test et |
+| F | Hazırlık süresini atlayıp sıradaki dalgayı başlat |
+| 1 / 2 / 3 | Kart ekranında seçim; normal oyunda dalgayı değiştirmez |
+| F9 | Test modunu aç/kapat; açıkken 1/2/3 boss testi yapar |
+| E | Kuşatmada yalnız `[!] ONAR [E]` görünen odada çimentoyla onarım; inşaat evresinde onarım veya bir güçlendirme kiti kurma |
+| U (F9 açıkken) | Kart + inşaat denemesi; normal kampanyada etkisiz |
+| R | Oyuncuyu, odaları, loot'u ve dalga döngüsünü başa al |
 
-Oynanış testlerini çalıştırmak için bir kez test tarayıcısını kurun:
+**Adım 3'te Space yeniden takladır** (kullanıcı isteği); zıplama W/↑'dır. A/D ile yatay, W/S ile dikey takla yönünü seç; örneğin W+D+Shift sağ üst çapraza atılır. Yön basmazsan bakış yönüne atılırsın. Havada bir takla ve bir ikinci zıplama hakkı vardır; yere inince yenilenir. Her takla 32 enerji tüketir; enerji kısa gecikmeden sonra dolar. Sağ üstte can, takla enerjisi ve **binanın ayrı dayanıklılık barı** görünür.
 
-```sh
-npx playwright install chromium
-npm test
-```
+**Merdiven yoktur.** Kat geçişi her X konumunda çalışır. **Yukarı (2x W, Adım 3-B):** karakter güçlü bir dikey hızla fırlar; yükselirken yalnızca üst katın döşemesi onu yok sayar (duvarlar çarpışmaya devam eder). Döşeme hizasında yapışmaz: yaklaşık 32 px daha yükselip tepe noktasına çıkar, orada dikey hızı sıfırlanır, döşeme çarpışması geri açılır ve normal yerçekimiyle alçalarak yumuşak bir basılma (squash) ve tozla iner. Tepeye varış ~0,35 sn sürer. **Aşağı (S):** 0,11 sn'lik ease-out fazlama döşemeden süzülür. Geçişte rüzgâr izi, hayalet iz ve döşeme tozu çıkar; yükselirken takla başlatılamaz, tepe noktasından sonra hava taklası kullanılabilir. A/D ile yatay kontrol sürer. Tek zıplama yerçekimi, değişken yükseklik, 0,1 sn coyote time ve kısa giriş tamponu kullanır; yukarı takla da tavanın altında durur. Çelik Halat Kancası seçilirse yalnız takla sırasında duvar/kat geçişi açılır; takla bitince çarpışma geri gelir.
 
-Testler kendi Vite sunucusunu 5174 portunda açar; portun boş olması gerekir. Linux'ta eksik sistem kütüphaneleri bildirilirse Playwright'ın [kurulum rehberini](https://playwright.dev/docs/browsers#install-system-dependencies) izleyin. Normal oyun/derleme için test tarayıcısı kurulumu gerekmez.
+Karakter zıplarken dikey uzar, yere veya yeni kata inince basılır (squash & stretch), koşarken hareket yönüne eğilir; havada bacaklarını toplar, pelerini ve baret kayışı hıza göre dalgalanır. Bunlar yalnızca görseldir; çarpışma kutusu değişmez. Baretin feneri baktığın yöne sıcak bir ışık konisi uzatır ve karanlık odaları aydınlatır (koni bulunduğun odanın duvarlarında kesilir).
 
-## Nasıl oynanır?
+## Oda hasarı, malzeme ve güçlendirme
 
-1. **FORESIGHT / Öngörü:** 8 saniyelik sarsıntıda gerçek gövdelerin hareketini izle. Darbeler, kopan askılar, devrilme, masa/kolon hasarı ve gaz-kıvılcım zinciri sonucu değiştirir.
-2. **REWIND / Geri sarma:** Her iki fizik karesinden biri kaydedilir (30 Hz). Gövdeler, hızlar, açılar, NPC sağlığı, parçalar ve bağlar 1,8 saniyede interpolasyonla geri oynar. Planlama T=0'da temiz dünya ile başlar.
-3. **PLANNING / Hazırlık:** **5 AP** vardır. **1:** gardırop sabitle (1), **2:** kitaplık sabitle (1), **3:** buzdolabı sabitle (1), **4:** masa çaprazı (2), **5:** kolon çaprazı (2), **6:** gaz kesici (1), **7:** sığınma planı (1). Nesne veya düğmeye tıklanabilir. Masa altı/kolon yanı hedefi değiştirilebilir; ilk sığınak seçimi plan komutunu 1 AP'ye alır, hedef değiştirmek tekrar ücretlendirilmez. **R** bütün planı ve bağlarını sıfırlar.
-4. **EXECUTION / Aktif tutunma:** **Space** ile başlat. **A/D veya ←/→** ile göstergeyi yeşil bölgede tut. **Space** kısa bir tutuşla merkeze çeker; sürekli basmak enerjiyi tüketir. Tuşu bırakınca enerji yenilenir. Denge bozulursa tutuş bağı çözülür; karakter fiziksel olarak savrulabilir ve yaralanabilir.
-5. **EVACUATION / Tahliye:** Sarsıntı durunca **12 saniye** başlar. **A/D veya ←/→** ile koş; **Space, W veya ↑** ile zıpla; **S/↓** havada hızlı iniş sağlar. Havada ikinci zıplama yoktur. Enkaz, devrilmiş eşyalar ve yerinde kalan taşıyıcılar fiziksel yolu değiştirebilir. Sağdaki kapıya ulaş. Karnede **R** yeniden başlatır.
+Odalar başlangıçta 100 HP'dir. Sağlam: en az %70; hasarlı: %35–70 arası; kritik: %0–35 arası; yıkık: 0 HP. Güçlendirmeler hasar alınca kaybolmaz. Bina barı, 16 odanın kalan HP yüzdelerinin ortalamasıdır. **4 oda yıkılırsa veya bina barı sıfırlanırsa kaybedersin.** Yıkık odalar yeniden kurulamaz.
 
-Dört ana `Phase` korunur; tutunma, tahliye ve karne `EXECUTION` içindeki adımlardır. Örnek başarılı plan: kolon çaprazı (2) + gardırop sabitleme (1) + gaz kesici (1) + kolon yanında sığınma planı (1). Tek başına düğmelere basmak tam puan vermez; tutunuş ve tahliye de tamamlanmalıdır. Başka planların açık bıraktığı rotayı öngörüden okuyun.
+**Kuşatmada E:** Yalnız hasarlı/kritik odalarda görünen **[!] ONAR [E]** işareti onarım iznidir. Bir çimento ile +45 HP onarılır; zırh eklenmez. Sağlam odada E sessizce hiçbir şey yapmaz ve etkileşim ipucu çıkmaz. Çimenton yoksa uyarı görünmeye devam eder, E eksik malzemeyi söyler. Bütün mermi, sarsıntı ve aşınma hasarı ortak denge kontrolünden geçer: aynı anda en fazla **3 hasarlı/kritik oda**. Yeni uyarı alan oda **10 saniye** ek hasardan korunur; sonra en fazla 1,3 HP/sn kaybeder (kısa darbe bütçesi 1,5 HP). Fırtınada da odalar kademeli aşınır; onarım bekleyen oda sayısı arttıkça sağlam odalara odaklanan aşınma yavaşlar. Onarmadan uzun süre beklersen oda yine yıkılır. Mermi hasarı, türüne göre çarptığı odada hesaplanır; kat süpürmesi o kattaki dört odayı etkiler.
 
-Karne: mühendislik 40 + farkındalık/tutunma 30 + tahliye 30. Mühendislik puanı gerçekten ayakta kalan güçlendirme, dik kalan sabit eşya, gaz kesici ve patlamanın önlenmesini hesaba katar. Yeşil bölgede geçirilen süre farkındalık puanını etkiler. **S: ≥90 ve başarılı tahliye; A: ≥75 ve başarılı tahliye; B: ≥50; C: diğer sonuçlar.** Bu, jam jüri puanlamasından ayrı oyun içi sistemdir.
+**Malzemeler yalnız kuşatmada düşer:** İlk düşüş dahil her **5,5–6,5 saniyede**, oyuncunun bulunmadığı, yıkılmamış ve başka loot olmayan rastgele bir odaya. Oda havuzu mevcut konumdan koşu + kat geçişiyle tahmini ulaşım süresine göre süzülür; en az 0,5 sn toplama payı bırakılır (saldırılardan kaçınma süresi bu tahmine dahil değildir). Art arda aynı oda seçilmez. Aynı anda en fazla **3** eşya bulunabilir. 0,45 sn düşüş animasyonundan sonra **yerde tam 4,0 saniye** bekler; halka küçülür ve son 1,5 sn yanıp söner. Süresi dolunca “MALZEME ENKAZDA KAYBOLDU” yazısıyla silinir. Aynı kattaki eşyanın yanına giderek otomatik toplarsın. Dalga bitişi yerdeki malzemenin ömrünü kısaltmaz: kart ekranında sayaç durur, inşaatta kalan süreden devam eder. Çimento yokken ve onarım beklerken her ikinci düşüş çimento olur; rastlantı uzun süre onarım malzemesiz bırakmaz. Topladıkların sonraki evreye taşınır. Ölüm, zafer ve sıfırlamada yerdekiler temizlenir.
 
-P/S dalga esinli hareketli temel ve kat kesme kuvveti fizik motoruna aktarılır; bu bir sismik dalga yayılımı veya yapı mühendisliği çözücüsü değildir. Kütleler, yük/hasar eşikleri ve süreler oyun birimleridir. `SafeTriangle`, destek gövdesi hâlâ ayaktayken karakter hacminin diğer cisimlerle çakışmadığı oyun içi boşluğu gösterir; gerçek bir binada güvenlik garantisi değildir. Eğitim davranışı, [AFAD'ın sağlam masa altında Çök-Kapan-Tutun ve sarsıntı sonrasında tahliye önerisine](https://afad.gov.tr/deprem-oncesi-ani-ve-sonrasi-alabileceginiz-onlemleri-biliyor-musunuz) dayanır. 12 saniye gerçek artçı zamanı tahmini değildir.
+| Malzeme | Renk | İşlev |
+| --- | --- | --- |
+| C40 Yapısal Çimento & Harç (`CEMENT_MORTAR`) | Kehribar | +45 oda HP onarımı; sağlam odaya zırh vermez |
+| Çelik Çapraz Kiriş / X-Brace (`STEEL_CROSSBRACE`) | Mavi | İki kolona büyük X-kirişler, sarı-siyah plakalar ve perçinler |
+| L-Demir Dübel & Eşya Sabitleme Kiti (`L_ANCHOR_BOLT`) | Turkuaz | Eşyaları çelik kemerlerle sabitler; avize dahil sabitlenmiş eşyalardan mermi çıkmaz |
+| Polikarbon Fırtına Panjuru & Kum Torbası (`STORM_SHUTTER`) | Sarı | Ağır pencere kepenkleri ve zeminde kum torbası barikatı |
+| Acil İlk Yardım & Elektrolit Çantası (`EMERGENCY_MEDKIT`) | Yeşil | Toplandığında +25 can ve tam takla enerjisi; depolanmaz |
 
-## Mimari ve dosya sahipliği
+**İnşaat evresinde E:** Sağlam veya hasarlı odada çalışır. Odanın HP'si eksikse ve çimenton varsa önce onarır. Sonraki E, envanterindeki ve o odada henüz bulunmayan bir kiti kurar: öncelik çelik → kepenk → sabitleme. Her farklı kit **bir kademe** verir; bulduğun kite göre sıra değişebilir. Üç farklı kit birlikte **Kademe 3 / Tam Zırhlı Sığınak** olur. Aynı kiti aynı odaya iki kez harcayamazsın. Ekranın altında sıradaki işlem ve mevcut dört malzemenin sayıları görünür.
+
+En az bir güçlendirmesi olan oda **%55 daha az hasar** alır. Eşyaların mermi üretmesini durdurmak için ayrıca sabitleme bileşeni gerekir. Üç yeşil LED ilerlemeyi gösterir; inşaat sırasında tamamlanan odanın üstünde **AFETE HAZIR / GÜVENLİ** görünür. Odanın kimliğini ve gece atmosferini koruyan büyük kiriş, kepenk, barikat ve çelik kemer çizimleri kullanılır.
+
+## Afet hazırlık bülteni: 9 kart
+
+İlk iki dalganın sonunda, henüz almadığın kartlardan rastgele üçü sunulur. **1/2/3 veya fareyle birini seç.** Seçim sırasında oyuncu ve geri sayım durur; F/E boss veya inşaat başlatamaz. Kartlar o oyun boyunca kalır; R bütün etkileri temizler.
+
+| Kart | Oyun içindeki etkisi |
+| --- | --- |
+| Takla-Onarım Modülü | Uyarılı odadan dash ile geçince 1 inşaat malzemesi tüketir, +45 HP onarır ve takla enerjisini doldurur. Önce çimento kullanır; aynı dash aynı odayı ikinci kez onaramaz. |
+| Otonom Tamir Dronu | Işıklı dron etrafında uçar, 430 px yakınındaki yerdeki malzemeleri ışınla toplar. Her 12 oyun saniyesinde en hasarlı ayakta kalan odaya uçup varınca bedava +45 HP onarır. |
+| Sismik Çizme & Şok İnişi | S veya 2x W kat geçişi hedef katta şok halkası açar; mevcut tüm mermileri siler. Yeni uyarılar geçerlidir. |
+| Rüzgar Türbini & Saptırıcı | Kepenkli pencereye dönen türbin kurar. Pencere bölgesinden geçen mermiyi parçalar, +6 enerji verir. Üç parça = 1 çimento. |
+| Çelik Halat Kancası | Dash 287,5 → 460 px (%60 uzar); 0,25 sn I-frame değişmez. Taklada kat/duvar geçilir, bina dış sınırları aşılmaz. 0,9 sn kalan elektrik izi içindeki mermi %40 hızla ilerler. |
+| Merkezi Harç Pompası | E onarımı veya güçlendirmesi dört yöndeki komşulara +22,5 HP ve yarım çelik destek verir: %27,5 hasar azaltımı. Tekrarlı destek birikmez, tam kit veya eşya sabitlemesi vermez; çapraz komşular etkilenmez. |
+| Acil Durum Zaman Bükücü | Çarpmaya son 0,15 sn kala başlayan dash, zamanı 1,5 gerçek saniye yarı hıza indirir; yakına bir çimento düşürür. Her dash tek ödül; max 3 doluysa en eski loot yerini ödüle bırakır. Savaşın 90 sn sayacı gerçek zamanla ilerlemeye devam eder. |
+| Paratoner & Lazer Kulesi | Çatıda görünen kule her 3 oyun saniyesinde büyük mermilerden tehdit puanı en yüksek olanı patlatır; parçalanma saldırısı üretmez. Hedef yokken atışı hazır tutar. |
+| Manyetik Kargo Çekici | 580 px yakınındaki yerdeki loot oyuncuya kayar; komşu kattan da gelir. Ömür 4 → 8 sn. Her toplama 2 sn %30 koşu hızı ve hasar kalkanı verir; tekrar toplamak süreyi 2 sn'ye yeniler. |
+
+## Atmosfer ve görünüm (Adım 2.7)
+
+- **Pixel-art render:** Dünya 960×540 çözünürlükte çizilip en yakın komşu filtresiyle 2× büyütülür; tüm prosedürel çizim gerçek bir piksel ızgarasına oturur. `MainGame` düğümündeki **Pixel Scale** 1 yapılırsa tam çözünürlüğe döner. Uyarı yazıları, boss saldırı adları, rüzgâr sayacı ve DODGE! keskin kalsın diye ayrı ekran katmanında (`WorldLabels`) çizilir.
+- **Gece:** Gökyüzü `#0b0e14`–`#141923` aralığında, dither geçişli bantlarla çizilir. Boğuk bir ay, ağır bulutlar, uzakta yangın kızıllığı, karartılmış şehir silüeti (yalnız birkaç mum ışığı), sürekli eğik sağanak, uçuşan kül/köz ve ara sıra binanın yanına düşen soğuk şimşek vardır. Şimşek bir anlığına odaları da aydınlatır; fırtına bossu sahnedeyken şimşek daha sık çakar.
+- **Elektrik kesintisi:** Odalar boyanmış parlaklığın yaklaşık %50'siyle, soğuk bir tonla görünür; duvarlarda su lekesi, çatlak, küf ve dither kir dokusu, köşelerde koyu gölge (ambient occlusion/vinyet) bulunur. Her tavan lambası yalnız altına sıcak amber, atölye/çamaşırhane/spor/çatı odalarında **acil durum kırmızısı** bir ışık konisi düşürür. Yorgun ampuller ara sıra titrer; deprem vuruşu veya sarsıntıda lambalar sarkaç gibi sallanır ve yanıp söner.
+- **Yazısız bina:** Oda adı levhaları, sol taraftaki "KAT 00–03" kutuları ve çatıdaki apartman tabelası kaldırıldı. Odalar eşyalarıyla anlaşılır; çatıda yalnız havalandırma, su deposu ve anten vardır.
+- **Neon mermiler:** Fırtına mermileri elektrik mavisi, deprem mermileri kor turuncusu kenar ışıması ve uzun hareket izi taşır; hepsinin ortasında parlak kırmızı bir tehlike çekirdeği vardır. Uyarılar da aynı renklerde neon kesik çizgi ve parlayan "!" işaretiyle çizilir.
+
+## Bosslar
+
+- **Sismik Golem (sağ):** Kalça, nefes alan gövde, iki omuz, dirsekleri dışa bükülen iki eklemli kollar, dev yumruklar, baş, ayrı menteşeli çene ve etrafında yerçekimsiz dönen kayalar ayrı ayrı ve faz farkıyla hareket eder. Beklerken ağır nefes alır, omuzları kalkıp iner, çenesi açılınca boğazındaki lav parlar ve ağzından duman/köz çıkar. Saldırı uyarısı boyunca kollarını başının üstüne kaldırıp geriye yaslanır, gözleri kor gibi parlar; mermi çıktığı anda yumruklarını apartmanın dibine indirir (çarpma flaşı, toz ve kaya parçası patlaması, şok halkası).
+- **Yıkıcı Fırtına (sol):** 12 halkalı omurgası S şeklinde kıvrılan, halkaları genişleyip daralan canlı bir girdaptır; yüzü omurgayla birlikte kayar. Uyarı boyunca kendi içine büzülür, halkalarında ve çekirdeğinde elektrik birikir, şimşek arkları çakar; atış anında apartmana doğru aniden öne genişler, ağzı kükreyerek açılır ve rüzgâr çizgileri savurur.
+
+## Kendi sprite'larını koy
+
+`assets/sprites/` klasörüne şu dosyaları koyarsan oyun bir sonraki açılışta onları kullanır; yoksa karanlık prosedürel çizim çalışır (`scripts/art/AssetRegistry.gd`):
+
+| Dosya | Kullanım |
+| --- | --- |
+| `player.png` | Oyuncu (sağa bakan, ayaklar alt ortada; 64×88 dünya birimine ölçeklenir, squash/eğilme/takla uygulanır) |
+| `boss_storm.png` | Sol fırtına bossu (292×550; uyarıda büzülme, atışta öne genişleme) |
+| `boss_quake.png` | Sağ golem (292×550; uyarıda geri çekilme, vuruşta öne çarpma) |
+| `tileset.png` | Her odanın arka duvarına döşenen doku (oda rengiyle tonlanır) |
+
+Klasörde ayrıntılı bir [README](assets/sprites/README.md) var. Bu dosyalar `resources/VisualAssets.tres` atamalarından önceliklidir.
+
+## Odalar
+
+| Kat | A | B | C | D |
+| --- | --- | --- | --- | --- |
+| 03 | Kış bahçesi/sera: cam bölmeler, saksı rafı, eğrelti/palmiye/ot, çatı penceresi | Spor odası: koşu bandı, dambıl rafı, kum torbası, ayna duvar | Resim atölyesi: şövale, boya masası, tablolar, boya lekeli örtü | Çatı elektrik/klima: büyük klima ünitesi, pano, havalandırma motoru, teras merdiveni |
+| 02 | Ebeveyn yatak odası: çift yatak, komodin, **büyük gardırop**, perdeli kırık pencere | Banyo: ayaklı küvet, aynalı lavabo, şofben, karo duvar | Çocuk/genç odası: ranza, oyuncak rafı, posterler, klima, yıldızlı duvar | Misafir odası: tek yatak, valiz, komodin, tablo, pencere |
+| 01 | Salon: kanepe, TV, sehpa/halı, büyük avize | Yemek odası: uzun masa, iki sandalye, vitrin, baklava desenli duvar | Çalışma odası/kütüphane: çift monitör, döner koltuk, kitaplık, mantar pano | Müzik/plak odası: duvar piyanosu, pikap ve plak dolabı, hoparlör, akustik panel |
+| 00 | Teknik atölye/kazan dairesi: kazan, tezgâh, alet dolabı, alet çantası | Giriş lobisi: çift kanatlı kapı, posta kutuları, yangın dolabı, ana elektrik panosu | Mutfak/kiler: buzdolabı, ocak, aspiratör, tezgâh, tabak rafı | Çamaşırhane/vana odası: çamaşır ve kurutma makinesi, gaz/su vanaları, ip üstünde çamaşırlar |
+
+Her eşyanın kimliği (`f<kat>_<ad>`), katı, durumu ve sprite atama yolu ayrıdır. Mobilyalar karakterin hareket alanını kapatan fizik engelleri değildir. Deprem paterninin oda eşyası kaynakları (gardırop, avize, mutfak, tezgâh, kitaplık, oyuncak rafı) 16 odada da birer tane kaldı; böylece deprem zorluğu artmadı.
+
+## Kuşatma nasıl işler?
+
+Oyun **8 saniyelik ilk hazırlıkla** başlar; F ile erken başlayabilirsin. Sonlu akış şöyledir:
+
+1. **Dalga 1 — Yıkıcı Fırtına:** 90 saniye hayatta kal.
+2. Üç karttan birini seç → **15 saniye inşaat**; hazır olduğunda F ile erken bitir.
+3. **Dalga 2 — Sismik Golem:** 90 saniye hayatta kal.
+4. Üç yeni karttan birini seç → **15 saniye inşaat** veya F.
+5. **Dalga 3 — Çifte Felaket:** İki boss aynı anda, ortak 2,8 sn saldırı temposuyla farklı katları koordine ederek kuşatır. 90 saniye sonunda oyuncu ve bina ayaktaysa **“AFET KUŞATMASI BAŞARIYLA ATLATILDI - BİNANIZ HAYATTA KALDI!”** zaferi gelir. Dördüncü dalga başlamaz.
+
+**Her boss önce 1,5 sn giriş animasyonu oynar; ardından tam 90 sn savaş başlar.** Süre bitince **2,5 sn WAVE_OUTRO**: mermiler toz/kıvılcım olur, fırtına incelerek göğe çıkar, golem parçalanıp toza gömülür. Kartlar boss çıktıktan sonra 0,35 sn fade-in ile açılır; final çıkışından sonra zafer gelir.
+
+Kart seçimi inşaatın 15 saniyesini tüketmez. Dalga değişiminde saldırılar temizlenir; oda hasarı, güçlendirmeler, can, topladığın malzemeler ve kartlar korunur. Normal oyunda 1/2/3 ve U dalgayı başa alamaz. **F9 ile açıkça test modu açıldıktan sonra** 1/2/3 testleri mevcut saldırıları, kartları ve envanteri temizleyip taze bir test başlatır. Test modunda U, mevcut saldırıyı kesip kart + inşaat denemesini açar; dalga kazanılmış sayılmaz. Oyuncu ateş etmez; amaç kuşatmayı atlatmaktır.
+
+- **Zemin şoku:** Golem alçak dalgaları sağdan sola veya ortadan iki yana gönderir. Üstünden zıpla veya dash ile geç.
+- **Fırtına döngüsü (Adım 3):** Fırtına 1,95 sn'de bir, altı vuruşluk döngüyle saldırır (finalde iki bossun ortak temposu 2,8 sn). Saniyedeki uyarılı mermi sayısı Adım 2.5'e göre yaklaşık 1,8 katıdır.
+  - **Girdap halkası:** Oyuncunun üstünde olmayan bir odada mini hortum gözü açılır; 10 veya 12 cam/rüzgâr küresi dönerek genişleyen bir halka çizer. Halka kendi katının yüksekliğinde basıktır, alt kısmı ayaktaki oyuncuya değer; aralıkları kolla, zıpla veya takla at. Her döngüde dönüş yönü değişir.
+  - **Çapraz yaylım:** Sol pencerelerden ve sağdaki çatı hava akımından gelen sığ çapraz atışlar katın ortasında X çizer; bir yaylım alttan yükselir, sonraki üstten dalar. Yanında uçan bir saksı ve rüzgâr bıçağı vardır.
+  - **Hortum koridoru:** Bulunduğun kat 1,0 sn uyarıyla boydan boya süpürülür. 2x W ile üste ya da S ile alta kaç; komşu katlarda zeminden yuvarlanan alçak enkaz/saksı dalgası vardır, onun üstünden zıpla.
+  - **Rüzgâr kükremesi:** 0,65 sn ok/sayaç uyarısından sonra bina boyu rüzgâr 2,2 sn seni fırtınadan uzağa (sağa) iter. Hareketsiz durursan sürüklenirsin; karşıya koşarak yavaş ilerler, takla ile tam hızda kesersin. Rüzgâr hasar vermez.
+  - **Yelpaze / savrulan eşyalar:** Dönüşümlü 5/7 açılı cam ve rüzgâr küresi; saksı, sandalye ve rüzgâr bıçağı saldırıları korunur.
+- **Parçalanan enkaz:** Beton zemine çarpınca üç parçaya ayrılır. Küçük parçalar önce **0,55 sn ayrı uyarı** gösterir, sonra sola/sağa sekerek gider; habersiz aynı-kare hasarı vermez.
+- **Kat süpürmesi (deprem: yıkım tüneli):** Katın tamamı **1,0 sn** mavi/kırmızı çerçeveyle işaretlenir. Kat değiştir veya dar ve hızlı duvarı zamanlanmış dash ile aş; kısa zıplama yeterli değildir. Deprem golemi paternleri ve 2,8 sn temposu değiştirilmedi.
+- **Oda eşyaları:** Sabitlenmemiş gardırop, avize, mutfak bıçak/tabakları, atölye testere/aletleri, kitap ve oyuncaklar kendi eşyalarının konumundan çıkar. Odasına inşaat evresinde sabitleme kiti kurulan eşya L-demirle sabitlenir ve bu saldırıyı üretmez; yıkık odadaki eşya enkaz altında kalır.
+- Kat süpürmesi dışındaki tehlikeler **0,55–0,75 sn** önce uyarılır. Neon kesikli yol/parabol mermi yolunu; kor renkli sütun ve hedef çemberi düşüş alanını gösterir. Bossun saldırı hazırlığı (wind-up) bu uyarı süresi boyunca oynar. Uyarılar hasar vermez ve hedef sonradan değiştirilmez.
+- Dash sırasında gerçek mermi teması hasar vermez ve **DODGE!** gösterir. Sadece yakınından geçmek veya isabet korumasında durmak DODGE sayılmaz.
+- Normal isabet can azaltır; kısa kırmızı ekran parlaması, kamera sarsıntısı ve **1 saniyelik yanıp sönen hasar koruması** verir. Bu sürede koşu/kat geçişi kontrolü devam eder.
+- Her çarpma düştüğü odayı aşındırır (yukarıdaki "Oda hasarı" bölümü). Can sıfırlanırsa, 4 oda yıkılırsa veya bina %0'a düşerse saldırılar durur; R ile yeniden dene.
+
+Kasırga kategorisi, 7.4 golem etiketi, girdap/çapraz yaylım/rüzgâr itmesi, kat fazlaması, 8/15/90 saniye süreler, dash, oda HP değerleri, 4 oda çöküş kuralı ve "çimento/kepenk ile anında onarım" fantastik oyun tasarımıdır; gerçek afet davranışı, bina güvenliği tahmini veya güçlendirme tavsiyesi değildir. Kartlardaki oranlar, C40 etiketi ve fantastik ekipmanlar oyun dengesidir; uygulamalı yapı güçlendirme talimatı değildir.
+
+## Dosyalar
 
 ```text
-src/
-  types/game.ts                 Ortak sözleşme; değişiklikler koordineli
-  core/                         Kişi 1 — Core Simulation & Physics
-    Engine.ts                   Sabit 60 Hz adım / render döngüsü
-    SimulationManager.ts        Dört faz, AP, giriş, tahliye, karne
-    TimelineRewind.ts            İzole snapshot kaydı ve ters örnekleme
-    PhysicsHazardSystem.ts      Matter dünyası, darbeler, kırılma ve gerçek bağlar
-    PhysicsLevel.ts             Kişi 1 referans fizik sahnesi; eski bölüm verisini korur
-  ui_vfx/                       Kişi 2 — Tactical UI, Audio, VFX
-    Renderer.ts                 Malzemeli kesit, tehlike vektörleri, VHS (v0.1 sözleşmesi)
-    SceneArt.ts                 Kişi 2 — Önbellekli mimari ve prosedürel malzemeler
-    TacticalHUD.ts              Erişilebilir DOM düğmeleri ve karne (v0.1)
-    SoundSynth.ts               Web Audio sentezi ve ses kontrolü
-    ParticleSystem.ts           Olay tabanlı parçacıklar
-    styles.css                  HUD ve duyarlı ekran yerleşimi
-  levels/levels.ts              Kişi 2 — Salt bölüm verisi ve farkındalık
-  integration/                  Kişi 1 — Yeni fizik sözleşmesinin çalışan referans sunumu
-    PhysicsView.ts              Gerçek gövdeler + SceneArt; tutunma/planlama kontrolleri
-    physics.css                 Referans görünüm stilleri
-  main.ts                       Kişi 1 — Sistem bağlantıları / entegrasyon
-tests/game.spec.ts              Kişi 1 — Gerçek tuş/fare, faz ve HUD kontrolleri
-tests/physics.spec.ts           Kişi 1 — Rijit cisim, snapshot, AP, grip ve tahliye testleri
+project.godot
+scenes/MainGame.tscn
+scripts/MainGame.gd
+scripts/art/             Ortak cel çizimi, karakter (squash/eğilme/pelerin), gece arka planı
+scripts/art/NightWeather.gd   Yağmur, kül/köz ve şimşek; odaları aydınlatan flaş
+scripts/art/AssetRegistry.gd  assets/sprites/ içindeki el yapımı PNG'leri otomatik yükler
+scripts/building/        Apartman (karartma), oda dioraması (kir, AO/dither gölge), durumlu eşyalar
+scripts/building/RoomLighting.gd Additive lamba konileri, sallanma ve titreme
+scripts/player/Player.gd CharacterBody2D, hızlı koşu, 2x W üst kat / S alt kat fazlaması, squash & stretch, baret feneri, 8 yön dash
+scripts/camera/          Camera2D, apply_shake ve sarsıntı gücü
+scripts/ui/              Sabit ekran HUD'u ve keskin dünya etiketleri (WorldLabels)
+scripts/bosses/          Çok parçalı golem ve 12 halkalı fırtına iskeleti
+assets/sprites/          İsteğe bağlı el yapımı sprite klasörü
+scripts/combat/          Dalga, oda hasar tablosu, çöküş kuralı, telgraf, sabit havuz, mermi ve DODGE
+scripts/loot/LootSystem.gd Süreli 5 malzeme, toplama, faza bağlı E onarımı/inşaat
+scripts/combat/SiegeUpgrades.gd Dokuz aktif kartın kataloğu ve seçimi
+scripts/combat/SiegeMechanics.gd Dron, kule, türbin, zincir, manyetizma ve zaman bükme
+scripts/ui/UpgradeOverlay.gd Fare/klavye ile üç kart seçimi
+scripts/combat/BossPatterns.gd Fırtına girdap/çapraz/koridor, deprem paternleri ve uyarılı sekme zinciri
+scripts/art/FurnitureArt.gd 16 odaya özgü detaylı prosedürel mobilya çizimleri
+resources/VisualAssets.tres Kalıcı sprite atama alanları
+tests/Step1Smoke.gd      Godot içinde giriş/fizik/durum kontrolleri
+tests/Step2Smoke.gd      Kuşatma/uyarı/çarpışma/havuz kontrolleri ve görsel yakalama
+tests/Step2Soak.gd       Süre atlamadan tam fırtına, deprem ve kaos dalgaları
+tests/Step25Smoke.gd     16 oda, gerçek jump/2x W/S/air-dash, paternler ve PNG kaydı
+tests/Step3Smoke.gd      Ekrana sığma, fırtına bullet-hell paternleri, rüzgâr ve PNG kaydı
+tests/Step27Smoke.gd     Karanlık atmosfer, ışıklar, sprite yükleyici, akıcı hareket, boss iskeletleri, 1920×1080 PNG
+tests/Step3LootSmoke.gd  2x W yayı, oda HP/durumları, çöküş, loot ve E onarımı, 1920×1080 PNG
+tests/CampaignSmoke.gd   4 sn ömür, inşaat, kart modal input, 3 dalga, zafer, görsel kayıtlar
+tests/Step45Smoke.gd     90/15 sn, giriş/çıkış, hasar sınırı, dokuz aktif kart ve görsel kayıtlar
 ```
 
-Core, DOM/Canvas/Web Audio'ya bağımlı değildir; `Engine` yalnızca zamanlama için tarayıcı API'sini kullanır. Sunum, `GamePresentation` üzerinden salt okunur `GameState` alır; müdahaleleri `GameController` aracılığıyla iletir. `Phase` dört ana durumdan oluşur; son fazın `ExecutionStage` adımları `SHAKING`, `EVACUATION`, `REPORT` olarak ayrılır. Oynanış 60 Hz, Matter alt adımları 120 Hz, kayıt 30 Hz'dir. Çizim ve ses rastgeleliği fiziği etkilemez. Snapshot içinde Matter nesnesi tutulmaz; konum, hız, açı, kırılma, gaz durumu ve bağ varlığı serileştirilir. Geri sarma sırasında fizik ileri işletilmez. Planlama/tekrar başlangıcı temiz dünyadan yeniden kurulur. Ara bir snapshot'tan devam için solver temas önbelleği yeniden oluşturulur; bit düzeyinde ara kare devamı garantisi verilmez.
+Görünür bileşenlerde Inspector'daki **Custom Sprite** alanına Texture2D sürüklenebilir; atanmazsa detaylı prosedürel çizim kullanılır. Bina bütünü için sprite atanırsa oda/eşya çizimleri gizlenir, fizik ve durum verisi korunur. Eşyalar `UNSECURED`, `REINFORCED`, `DAMAGED` durumlarını tutar; oda durumu değişince pencere kırılır/kepenk alır, eşyalar eğilir veya L-demirle sabitlenir; R yazılmış ilk durumlara döndürür.
 
-**Görsel dal entegrasyonu:** `feat/ui-realistic-visuals` dalındaki `fa2de72` değişikliği, v0.2 fizik çalışmasıyla birleştirildi. Arkadaşın Renderer/HUD/SceneArt/efekt/stil kodu korunur. Aktif `PhysicsView`, `SceneArt` mimari arka planı ve ahşap/beton malzemeleri ile güncellenen ParticleSystem ve genel stilleri kullanır; hareketli nesneleri gerçek `physicsBodies.parts` köşelerinden çizer.
+Prosedürel oluşturulan eşyalar için kalıcı asset ataması: Godot FileSystem'de **`resources/VisualAssets.tres`** dosyasını seç, Inspector'da ilgili Player/Pillar/Window/Sofa vb. alanına PNG sürükle. Yeni mobilyalar dahil bir tek nesne farklı görünecekse `Object Overrides` sözlüğüne `f1_bookcase`, `f2_wardrobe` veya `f0_workbench` gibi `object_id` anahtarıyla Texture2D ekle. Böylece her çalıştırmada sprite yeniden atanır; Remote Inspector'daki geçici değişikliğe ihtiyaç kalmaz.
 
-**Kişi 2'ye kalan uyarlama:** Ayrıntılı `Renderer.ts` ve `TacticalHUD.ts` hâlâ eski animasyon/AP düzenini kullanıyor; doğrudan aktif görünüm yapılmadı. Bu modülleri `physicsBodies`, `constraints`, `safeTriangles`, `grip`, `seismic` alanlarına geçirin. `x/y` kütle merkezi, `angle` radyandır; kaymış kütle merkezi ve compound masa için `parts` dünya köşelerini kullanın. AP/maliyet/süreleri `LevelData` üzerinden okuyun. `PhysicsView.ts` çalışan referanstır; görsel katkının doğrulama ve AI notları [VISUAL_NOTES.md](src/ui_vfx/VISUAL_NOTES.md) içindedir.
+Boss sprite'ı için `assets/sprites/` klasörünü ya da sahnedeki `World/Viewport/StormBoss` veya `World/Viewport/EarthquakeBoss` düğümünün **Boss Sprite** alanını kullan. Atanmazsa çok parçalı prosedürel iskelet çalışır. Dünya düğümleri (bina, oyuncu, bosslar, kamera) `World/Viewport` SubViewport'unun içindedir.
 
-`PhysicsLevel.ts`, eski bölüm verisini değiştirmeden v0.2 fizik tanımlarına dönüştürür. `LevelData.physics` ile yeni veri geçirilebilir; şu referans sistem `ground`, `upper-floor`, `wall-left`, `column`, `ceiling-beam`, `ceiling-a`, `ceiling-b`, `lamp`, `gas` ve `desk` kimliklerini bekler. Şu an bir kontrol edilebilir NPC vardır. Kesit modelinde NPC, masa ayaklarının önünden/arkasından geçebilir: yalnız sağlam masa/NPC çarpışması filtrelenir; eşya–masa ve karakter–enkaz temasları tam fizikseldir. NPC diğer eşyaların içinden geçmez.
-
-Paralel çalışma sırasında `feat/core-*` ve `feat/ui-*` gibi ayrı dallar kullanın. **Kişi 1**, ortak tipler, giriş noktası, kök yapılandırmalar, lock dosyası ve ortak belgelerin entegrasyon sorumlusudur. **Kişi 2**, `src/ui_vfx/` ve `src/levels/` dışında değişiklik yapmadan arayüz taleplerini kendi PR açıklamasında iletir. Ortak sözleşme değişikliği önce birlikte kararlaştırılır, sonra tek kişi uygular. Ayrı dosya sahipliği aynı satırların paralel düzenlenmesini önler; Git bütün olası birleştirmelerde sıfır çakışma garantisi vermez. Ayrıntılar [AGENTS.md](AGENTS.md) içinde.
-
-## Ortak çalışma düzeni
-
-- Herkes kendi bilgisayarındaki proje kopyasında, kendi GitHub ve Codex hesabıyla çalışır.
-- Değişiklikleri GitHub üzerinden paylaşırız. Bir kişinin Codex sohbeti diğer kişinin sohbetine aktarılmaz; ortak kararları ve görev durumlarını dosyalara yazarız.
-- `main` entegrasyon dalıdır; herkes kendi görev dalında çalışır. Aynı dosyayı aynı anda değiştirmeden önce haberleşiriz; görev sahiplerini `STATUS.md` içinde belirtiriz.
-- **Kaydetmek** dosyayı bilgisayarında günceller. **Commit** değişikliklerin yerel Git kaydını oluşturur. **Push** commitleri GitHub'a gönderir. **Pull** GitHub'daki değişiklikleri bilgisayarına alır.
-
-## 1. Projeyi aç
-
-VS Code'da **Dosya → Klasör Aç** menüsünden mevcut `helloworld-jam` klasörünü seç. Windows'ta kısayol: önce `Ctrl+K`, sonra `Ctrl+O`. Zaten indirilmiş projeyi yeniden clone etmene gerek yok.
-
-**Terminal → Yeni Terminal** menüsünü aç. Aşağıdaki komutları proje klasöründeki terminalde çalıştır:
+## Kontrol ve ekip çalışması
 
 ```powershell
-git status
-git remote -v
+& 'C:\Godot\Godot_console.exe' --headless --path . --editor --quit
+& 'C:\Godot\Godot_console.exe' --headless --path . --script res://tests/Step1Smoke.gd
+& 'C:\Godot\Godot_console.exe' --headless --path . --script res://tests/Step2Smoke.gd
+& 'C:\Godot\Godot_console.exe' --headless --fixed-fps 60 --path . --script res://tests/Step2Soak.gd
+& 'C:\Godot\Godot_console.exe' --headless --fixed-fps 60 --path . --script res://tests/Step25Smoke.gd
+& 'C:\Godot\Godot_console.exe' --headless --fixed-fps 60 --path . --script res://tests/Step3Smoke.gd
+& 'C:\Godot\Godot_console.exe' --headless --fixed-fps 60 --path . --script res://tests/Step27Smoke.gd
+& 'C:\Godot\Godot_console.exe' --headless --fixed-fps 60 --path . --script res://tests/Step3LootSmoke.gd
+& 'C:\Godot\Godot_console.exe' --headless --fixed-fps 60 --path . --script res://tests/CampaignSmoke.gd
+& 'C:\Godot\Godot_console.exe' --headless --fixed-fps 60 --path . --script res://tests/Step45Smoke.gd
 ```
 
-`git status` bu klasörün Git durumunu gösterir. `origin` adresinin `https://github.com/girayeskalen/helloworld-jam` olması gerekir; adresin sonunda `.git` bulunması da normaldir.
+Farklı Godot sürümleri arasında geçiş yaptıysan testten önce o sürümle `--editor --quit` çalıştır; aksi hâlde sınıf önbelleği eski kalabilir.
 
-## 2. Kendi Git kimliğini kontrol et
+Görsel kontrol için aynı test, `--headless` olmadan `-- --capture=C:/Temp/disaster-siege` ile çalıştırılabilir. Yalnızca gerçek renderer görüntü üretebilir. `Step27Smoke` ve `Step3Smoke` görüntü alırken exclusive fullscreen'e geçer ve tam 1920×1080 kare kaydeder (ekran 1080p ise). Test veya görsel sonuçları [STATUS.md](STATUS.md) içinde gerçek motor sürümüyle kaydedilir.
 
-Her bilgisayarda bir kez kontrol et:
+`--fixed-fps 60`, tam dalga testinde gerçek zamanı beklemeyi kaldırır; simülasyon yine 60 Hz adımlarla bütün dalgaları işler. Uzun testte oyuncu canı yalnızca test sahnesinde yükseltilir, böylece tüm saldırılar denetlenir. Test sürücüsü gerçek düşen malzemeleri toplar ve kazanılan çimentoyla onarım API'sini kullanır; insan refleksleri veya kaçınma zorluğunun kanıtı değildir. Normal oyunun can ayarı değişmez.
 
-```powershell
-git config user.name
-git config user.email
-```
+Güne başlamadan temiz çalışma ağacında `git fetch origin`, ardından görev dalına göre uygun güncelleme yap. Yeni işe ayrı `feat/...` dalında başla. Dosyalarını kaydet, Git farkını kontrol et, yalnızca ilgili dosyaları commit et ve kendi dalına pushla. İki kişi aynı dosyada eşzamanlı çalışmasın. Push, bir dalın otomatik olarak `main` ile birleşmesi değildir. Commit/push görevleri kullanıcı isteğiyle yapılır.
 
-Bir değer eksik veya sana ait değilse aşağıdaki örneklerdeki adı ve e-postayı kendi bilgilerinle değiştir. `--local` yalnızca bu projeyi etkiler:
-
-```powershell
-git config --local user.name "Ad Soyad"
-git config --local user.email "GitHub e-postan"
-```
-
-Ad, commitlerde görünen isimdir; GitHub kullanıcı adın olmak zorunda değildir. E-posta için GitHub hesabına eklediğin adresi veya GitHub **Settings → Emails** sayfasındaki gizlilik amaçlı `noreply` adresini kullanabilirsin. Bunlar GitHub'a giriş yapmanın yerine geçmez.
-
-## 3. İşe başlamadan arkadaşının değişikliklerini al
-
-Önce durumu kontrol et:
-
-```powershell
-git status
-```
-
-Kaydedilecek yerel değişiklik yoksa (`working tree clean`) güncelle:
-
-```powershell
-git pull --ff-only
-```
-
-Bu komut ortak geçmişi otomatik birleştirme commiti oluşturmadan günceller. Yerel değişikliklerin varsa önce dosyaları kaydet ve aşağıdaki adımlarla commit oluştur. Pull hata verirse çalışmaya devam etmeden önce aşağıdaki hata bölümüne bak.
-
-## 4. Değişiklikleri kaydet ve kontrol et
-
-Dosyaları düzenledikten sonra `Ctrl+S` ile kaydet. Birden fazla açık dosya için **Dosya → Tümünü Kaydet** menüsünü kullan. Kaydetmek tek başına commit veya push yapmaz.
-
-```powershell
-git status
-git diff
-```
-
-`git status` değişen ve yeni dosyaları listeler. `git diff` henüz commit için seçilmemiş, Git'in zaten takip ettiği dosyalardaki değişiklikleri gösterir; yeni dosyaların içeriğini VS Code'da da incele.
-
-## 5. Açıklayıcı bir commit oluştur
-
-Yalnızca bu görevde değiştirdiğin dosyaları commit için seç. Örneğin görev durumu için sadece `STATUS.md` değiştiyse:
-
-```powershell
-git add -- STATUS.md
-git diff --cached
-git status
-git commit -m "Görev durumunu güncelle"
-```
-
-Başka dosyaları değiştirdiysen `git add --` sonrasına onların gerçek yollarını yaz. VS Code'un **Kaynak Denetimi** bölümünde ilgili dosyaların yanındaki **+** düğmesi de aynı seçimi yapar. `git diff --cached` ve `git status` ile commitin içeriğini kontrol et; mesajı yaptığın işi anlatacak şekilde değiştir.
-
-Küçük ve tek bir işi anlatan commitler oluştur. Ekip arkadaşının veya başka bir görevin değişikliklerini kendi commitine katma. Şifreleri, erişim anahtarlarını ve kişisel ayar dosyalarını ekleme.
-
-## 6. GitHub'a gönder
-
-```powershell
-git push
-git status
-```
-
-Push başarılı olunca GitHub depo sayfasında son commit görünür. `git status` yerel dalın takip ettiği uzak dalla güncel olduğunu ve çalışma alanının temiz olduğunu göstermelidir.
-
-GitHub oturum açma ekranı çıkarsa **Sign in with your browser** düğmesine tıkla, tarayıcıda kendi hesabına giriş yap ve gösterilen yetkilendirmeyi tamamla. Şifreni veya erişim anahtarını README'ye ya da sohbete yazma.
-
-## Pull veya push hata verirse
-
-- Push reddedildiyse arkadaşın senden önce yeni bir commit göndermiş olabilir. Yerel değişikliklerini önce kaydet ve commit et, sonra `git pull --ff-only` dene. Başarılı olursa yeniden `git push` çalıştır.
-- `Not possible to fast-forward`, `divergent branches` veya bir çatışma mesajı görürsen dur. Çıktıyı Codex'e göster ve "Yerel çalışmalarımı ve ekip arkadaşımın değişikliklerini koruyarak bunu çöz" de. Yerel ve uzak commitler ayrıştıysa birleştirme gerekebilir.
-- **Force push kullanma.** Sorunu aşmak için dosya silme, `git reset --hard` veya `git clean` çalıştırma.
-
-## Arkadaşın bu dosyaları nasıl alır?
-
-Arkadaşının bilgisayarında proje zaten varsa VS Code'da o klasörü açıp, yerel değişikliği olmadığını kontrol ettikten sonra `git pull --ff-only` çalıştırması yeterli.
-
-Henüz kendi bilgisayarına indirmediyse VS Code'da `Ctrl+Shift+P` → **Git: Clone** seçeneğine tıklayıp `https://github.com/girayeskalen/helloworld-jam` adresini girebilir. Yerel klasörü seçip indirme tamamlandıktan sonra **Open / Aç** düğmesine tıklar. Ardından kendi Git kimliğini yukarıdaki adımlarla kontrol eder.
-
-## Ortak kayıtlar
-
-- `STATUS.md`: görevler, görev sahipleri ve bilinen sorunlar.
-- `AGENTS.md`: Codex'in bu depoda çalışırken uyması gereken kurallar.
-- `BEYAN.md`: AI ve hazır kaynak kullanımı, kaynaklar ve lisans kayıtları. Teslim formuna aktarılacak canlı kayıttır.
-
-## Önceki hazırlık kayıtları
-
-- [PREPARATION.md](PREPARATION.md): tarihli yarışma öncesi hazırlık; Godot kurulum adımları ARTÇI için uygulanmaz.
-- [ENGINE_DECISION.md](ENGINE_DECISION.md): önceki motor araştırması ve Godot kararı; güncel karar yukarıdaki Vite/TypeScript yığınıdır.
-- [GAME_DESIGN.md](GAME_DESIGN.md): seçilmeyen önceki fikirlerin arşivi. Güncel ARTÇI kapsamı bu README içindedir.
-- [SOURCES.md](SOURCES.md): önceki araştırma/AI kayıtları. Oyun geliştirme beyanı BEYAN.md ile birlikte değerlendirilir.
-- [SUBMISSION.md](SUBMISSION.md): jam teslim taslağı ve temsilcinin tamamlayacağı kontrol listesi.
+Önceki ARTÇI web sürümü kullanıcı isteğiyle kaldırıldı; `2647179` commitinde geçmiş kaydı korunur. Yeni kaynaklar bu sürümle karıştırılmaz. [AI/kaynak beyanı](BEYAN.md), [kaynaklar](SOURCES.md), [teslim kontrolü](SUBMISSION.md).

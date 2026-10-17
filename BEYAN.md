@@ -1,85 +1,100 @@
-# ARTÇI — AI ve hazır kaynak beyanı
+# AFET KUŞATMASI — AI ve hazır kaynak kaydı
 
-Kayıt tarihi: **16 Ekim 2026** · Sürüm: **Fizik prototipi v0.2**
+17 Ekim 2026 · Yeni Godot projesi / Adım 1 + Adım 2 + Adım 2.5 + Adım 3 + Adım 2.7 (görsel/atmosfer) + Adım 3-B (loot/oda hasarı).
 
-ARTÇI öncesi hazırlık ve seçilmeyen tasarım araştırmasının AI/kaynak kayıtları [SOURCES.md](SOURCES.md) içinde korunur; teslimde bu dosyayla birlikte dikkate alınır.
+Bu kayıt yalnızca aktif yeni proje içindir. Önceki ARTÇI beyanları Git geçmişindeki `2647179:BEYAN.md` ve `2647179:SOURCES.md` içinde korunur; proje değişimi önceki AI kullanımını yok sayma gerekçesi değildir. Son teslimde gerçek toplam kapsam gözden geçirilir.
 
-Bu dosya teslim formuna aktarılacak geliştirme kaydıdır; tek başına etkinliğe teslim veya uygunluk onayı değildir. Ekip, sonraki değişikliklerde kayıtları günceller. Kişi 1 entegrasyon sorumlusudur; Kişi 2 kendi değişikliklerinin kullanım notlarını PR açıklamasında iletir.
+## AI kullanımı
 
-Dayanak: [CIVIL GAME JAM resmî kural kitapçığı v09](https://game.ktimo.com.tr/assets/CIVIL_GAME_JAM_Kural_Kitapcigi_v09.pdf), 3.4 ve 4.1–4.4; PDF 16 Ekim 2026'da okunarak doğrulandı. AI ve hazır kaynak için beş kategori ayrı cevaplanır; küçük, değiştirilmiş veya dolaylı kullanımlar da açıklanır. Yanlış/eksik beyan diskalifiye sebebidir. Son teslimde güncel kitapçık ve gerçek kullanım yeniden kontrol edilmelidir.
+Araçlar: Adım 1–2.5 için **OpenAI Codex** (kesin model sürüm etiketi ayrıca doğrulanmadı); Adım 3, Adım 2.7 ve Adım 3-B için **Anthropic Claude Code, Claude Opus 5.5** (`claude-opus-5-5`). Kapsamlar aşağıda ayrı ayrı yazılıdır.
 
-## 1. AI kullanımı
-
-Araç: **OpenAI Codex, GPT-6 tabanlı kodlama ajanı**. Bu oturumun tam model sürüm etiketi ayrıca doğrulanmadı; daha kesin bir model adı iddia edilmiyor. Sağlayıcı: [OpenAI](https://openai.com/codex/).
-
-| Kategori | Durum | Amaç, çıktı ve kullanım yeri |
+| Kategori | Durum | Amaç ve dosyalar |
 | --- | --- | --- |
-| Görsel | Kullanıldı | İlk Blueprint tasarımının ve sonraki doğal malzeme/ışık/gölge, iç mekân, karakter, VHS/parçacık kodunun AI ile üretimi: `src/ui_vfx/Renderer.ts`, `SceneArt.ts`, `ParticleSystem.ts`, `styles.css`; v0.2 referans çizimi `src/integration/PhysicsView.ts` ve `physics.css`. AI görsel üretim aracı veya dış görsel dosyası kullanılmadı; katkı çizim kodu yoluyla dolaylıdır. |
-| Ses | Kullanıldı | Osilatör, filtre, gürültü ve zarfla ses sentezi tasarımı/kodu: `src/ui_vfx/SoundSynth.ts`. AI ses üretim servisi veya hazır kayıt yok; katkı sentez kodu yoluyla dolaylıdır. |
-| Kod | Kullanıldı | Vite/TypeScript iskeleti, ortak veri tipleri, dört faz, fizik olay zinciri, snapshot geri sarma, AP, tahliye, HUD, bölüm verisi ve tarayıcı testleri; v0.2 Matter entegrasyonu, kırılma/yük modeli, fizik snapshot'ları, aktif tutunma/zıplama ve referans entegrasyon görünümü: `src/**`, kök yapılandırmalar, `tests/**`, `playwright.config.ts`. |
-| Metin | Kullanıldı | Oyun içi Türkçe açıklamalar, müdahale ve karne metinleri, bu beyan ile README/STATUS/AGENTS güncellemeleri. Farkındalık cümleleri AFAD'dan kontrol edilerek özgün biçimde özetlendi. |
-| Diğer | Kullanıldı | Mimari/faz modelleme, dosya sahipliği önerileri, test senaryoları ve doküman düzenleme desteği. |
+| Görsel | Kullanıldı | Diorama, mobilya, çevre, karakter ve efektlerin prosedürel GDScript çizim kodu AI yardımıyla üretildi: `scripts/art/`, `scripts/building/`, `scripts/player/`, `scripts/ui/`. Resim üretim servisi veya harici görsel kullanılmadı. |
+| Ses | Kullanılmadı | Bu adımda ses/müzik üretimi veya ses dosyası yok. |
+| Kod | Kullanıldı | Godot proje/sahne mimarisi, statik tipli GDScript, hareket, merdiven, dash/dokunulmazlık, efektler, kamera, Windows başlatıcı ve testler. |
+| Metin | Kullanıldı | Oyun arayüzü, README/AGENTS/STATUS/SOURCES/SUBMISSION ve bu beyan. |
+| Diğer | Kullanıldı | Mimari kararlar, test senaryoları ve görsel kontrol desteği. |
 
-Oyun adı, tema, teknoloji yığını, ana mekanik fikri ve üç müdahale kullanıcı tarafından bu görevde sağlandı. Bu kayıt, AI tarafından yazılan ilk uygulamayı açıklar; ekibin daha önceki veya gelecekteki başka araç kullanımı hakkında varsayım içermez. Çıktılar için otomatik MIT gibi bir lisans atanmamıştır; ekip, teslim ettiği içerik ve kullanım haklarını kendi adına kontrol eder.
+İsim, sanat yönü, Adım 1 gereksinimleri ve mekanik hedefler kullanıcı tarafından sağlandı. AI katkısını gizleyen veya insan çizimi olduğunu iddia eden bir beyan yapılmaz.
 
-## 2. Hazır kaynak kullanımı
+## Hazır kaynak kullanımı
 
 | Kategori | Durum | Açıklama |
 | --- | --- | --- |
-| Görsel | Kullanılmadı | Harici sprite, fotoğraf, ikon paketi, texture veya model yok. Çizgiler/şekiller Canvas ile, metin ve işaretler sistem fontuyla çizilir. |
-| Ses | Kullanılmadı | Hazır müzik, efekt, sample veya kayıt yok. Web Audio ile çalışma anında sentezlenir. |
-| Kod | Kullanıldı | Aşağıdaki Matter.js çalışma zamanı, Vite, TypeScript, Playwright ve dolaylı araç bağımlılıkları. Hazır oyun kodu veya oyun şablonu kopyalanmadı. |
-| Metin | Kullanıldı | AFAD'ın aşağıda bağlantısı verilen afet hazırlığı önerilerinden bilgi düzeyinde yararlanıldı; kaynak metin veya kılavuz dosyası oyuna kopyalanmadı. |
-| Diğer | Kullanıldı | Node.js/npm geliştirme ortamı, test amaçlı Chromium ve işletim sisteminin mevcut yazı tipleri. Ayrı font dosyası veya test tarayıcısı oyunla dağıtılmıyor. |
+| Görsel | Kullanılmadı | Harici sprite/PNG, ikon, texture, model veya görsel paket yok. |
+| Ses | Kullanılmadı | Harici müzik/sample/efekt yok. |
+| Kod | Kullanıldı | Godot motoru ve yerleşik GDScript/Canvas/2D fizik API'leri; proje scriptleri bu görevde yazıldı, hazır oyun şablonu alınmadı. |
+| Metin | Kullanıldı | Godot resmî API belgelerinden teknik bilgi düzeyinde yararlanıldı; eğitim/afet talimatı bu adımda üretilmedi. |
+| Diğer | Kullanıldı | Godot'un yerleşik varsayılan fontu; ayrıca font dosyası eklenmedi. |
 
-### Doğrudan araçlar ve kaynaklar
+- Godot: [Godot contributors](https://godotengine.org/license/), MIT; motor ve birlikte gelen üçüncü taraf bildirimleri dağıtımda korunmalı. Runtime/export paketi bu adımda oluşturulmadı.
+- Godot'un varsayılan fontu motor dağıtımının lisans/bildirimlerine tabidir; başka font indirildiği iddia edilmez.
+- Fallout Shelter, Enter the Gungeon ve Undertale yalnızca kullanıcı tarafından verilen estetik/mekanik referanslardır. Bu oyunlardan kod, görsel, ses veya dosya alınmadı.
+- Doğrulanan resmî teknik belge bağlantıları [SOURCES.md](SOURCES.md) içindedir. Ekibin sonraki araç/asset kullanımı ayrıca kaydedilir.
 
-| Ad / sürüm | Üretici veya sağlayıcı / kaynak | Lisans / hak bilgisi | Kullanım |
-| --- | --- | --- | --- |
-| Matter.js 0.20.0 | [Liam Brummitt ve katkıcılar](https://github.com/liabru/matter-js) | MIT; tam bildirim `public/THIRD_PARTY_NOTICES.txt` içinde ve üretim paketine kopyalanır | Rijit gövdeler, çarpışma çözümü, yerçekimi ve fiziksel bağlar; kütüphane kaynağı değiştirilmedi. |
-| @types/matter-js 0.20.2 | [DefinitelyTyped katkıcıları](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/matter-js) | MIT | TypeScript geliştirme tipleri; çalışma zamanına eklenmez. |
-| Vite 8.3.4 | [Vite ekibi](https://github.com/vitejs/vite) | MIT | Geliştirme sunucusu ve üretim paketleme; kaynak değiştirilmedi. |
-| TypeScript 7.0.2 | [Microsoft](https://github.com/microsoft/TypeScript) | Apache-2.0 | Tip kontrolü; kaynak değiştirilmedi. |
-| @playwright/test, playwright, playwright-core 1.64.1 | [Microsoft](https://github.com/microsoft/playwright) | Apache-2.0 | Otomatik tarayıcı testleri; oyun paketine eklenmez. |
-| Node.js 26.8.2 (bu ortam) | [Node.js contributors](https://github.com/nodejs/node/blob/main/LICENSE) | MIT ve birlikte gelen bileşen bildirimleri | JavaScript geliştirme çalışma ortamı; oyuna gömülmez. Minimum desteklenen sürüm 22.12. |
-| npm 12.0.2 (bu ortam) | [npm contributors](https://github.com/npm/cli) | Artistic-2.0; bağımlılıkların kendi lisansları da geçerli | Paket kurulumu / lock dosyası; oyuna gömülmez. |
-| Chromium / Chrome for Testing 156.0.8078.4, Playwright build 1248 | [Chromium projesi](https://chromium.googlesource.com/chromium/src/+/main/LICENSE) / Playwright dağıtımı | BSD tarzı Chromium lisansı ve üçüncü taraf bildirimleri | Sadece yerel test; `dist/` veya repoda dağıtılmaz. |
-| Deprem öncesi, anı ve sonrası önerileri | [AFAD](https://afad.gov.tr/deprem-oncesi-ani-ve-sonrasi-alabileceginiz-onlemleri-biliyor-musunuz) | Sayfada açık yeniden dağıtım lisansı belirlenmedi; belge, logo ve görsel alınmadı. Bilgiler özgün cümlelerle özetlendi. | Eşya sabitleme, sağlam masa altında Çök-Kapan-Tutun, sarsıntıda merdivene koşmama ve sarsıntı sonrası tahliye metinleri. |
-| Sistem yazı tipleri / Canvas 2D / Web Audio | Kullanıcının işletim sistemi ve tarayıcısı | Platformun kendi koşulları; font/binary dosyası dağıtılmıyor | `ui-monospace`, `system-ui` ve yerel fallback'ler; tarayıcı çizim/ses API'leri. |
+## Adım 2 ek kapsamı
 
-### Bu ortamda kurulu dolaylı kod bağımlılıkları
+OpenAI Codex ile iki animasyonlu prosedürel boss, mermi/uyarı çizimleri, DODGE metni ve savaş HUD'u üretildi; **görsel katkı AI tarafından yazılmış çizim koduyla dolaylıdır**. Kod katkısı `scripts/bosses/`, `scripts/combat/`, MainGame/sahne bağlantıları, oyuncunun hasar koruması, bina dayanıklılığı, eşya titremesi, kamera ve HUD entegrasyonunu kapsar. Metin/diğer katkı; arayüz ifadeleri, test tasarımı, görsel inceleme ve bu belgelerin güncellenmesidir. Ses katkısı yoktur.
 
-Kaynak: `package-lock.json` ve kurulu paketlerin `package.json` lisans/üretici kayıtları. Aşağıdaki dolaylı paketler geliştirme/test araç zincirindedir; kaynaklarında değişiklik yapılmadı. Windows/macOS veya başka mimaride npm, aynı araçların platforma uygun native paketini seçebilir; kilit dosyası bu varyantları da içerir.
+Yeni görsel/ses/font dosyası, asset paketi veya üçüncü taraf eklenti alınmadı. Mevcut Godot araçları kullanıldı; Geometry2D, Node, CanvasItem ve Window resmî 4.3 belgelerinden teknik bilgi düzeyinde yararlanıldı. Boss tasarımları fantastik yorumdur; gerçek afet/mühendislik doğruluğu iddiası değildir.
 
-| Kaynak / sağlayıcı | Paketler / sürümler | Lisans |
+## Adım 2.5 ek kapsamı — 17 Ekim 2026
+
+OpenAI Codex; altı odanın renk/malzeme/mobilya çizimlerini, oda kimliklerini, tesisat donanımlarını, yeni mermi görsellerini ve arayüz metinlerini GDScript ile üretti. Zıplama/değişken yükseklik/coyote, platform tutunma/drop-through, fast-fall, sekiz yönlü hava dash'i, beş patern ailesi ve enkazın ayrı uyarılı sekme zinciri AI destekli kod kapsamındadır. Testler, gerçek renderer görüntü incelemesi ve belgeler de AI desteği içerir. Görsel katkı prosedürel çizim kodudur; harici resim üretimi, sprite paketi, ses veya yeni font kullanılmadı. Loot sistemi bu görevin kapsamında değildir.
+
+## Adım 3 ek kapsamı — 17 Ekim 2026
+
+Araç: **Anthropic Claude Code / Claude Opus 5.5**. Kullanıcının istediği üç değişiklik bu araçla yazıldı:
+
+| Kategori | Durum | Amaç ve dosyalar |
 | --- | --- | --- |
-| [Oxc contributors](https://github.com/oxc-project/oxc) | `@oxc-project/types` 0.154.0 | MIT |
-| [Rolldown contributors](https://github.com/rolldown/rolldown) | `rolldown`, `@rolldown/binding-linux-x64-gnu` 1.2.14 | MIT |
-| [Rolldown plugins contributors](https://github.com/rolldown/plugins) | `@rolldown/pluginutils` 1.0.1 | MIT |
-| [Microsoft](https://github.com/microsoft/TypeScript) | `@typescript/typescript-linux-x64` 7.0.2 | Apache-2.0 |
-| [Lovell Fuller / detect-libc](https://github.com/lovell/detect-libc) | `detect-libc` 2.1.2 | Apache-2.0 |
-| [thecodrr / fdir](https://github.com/thecodrr/fdir) | `fdir` 6.5.0 | MIT |
-| [Parcel contributors](https://github.com/parcel-bundler/lightningcss) | `lightningcss`, `lightningcss-linux-x64-gnu` 1.33.0 | MPL-2.0 |
-| [Andrey Sitnik / Nano ID](https://github.com/ai/nanoid) | `nanoid` 3.3.20 | MIT |
-| [Alexey Raspopov](https://github.com/alexeyraspopov/picocolors) | `picocolors` 1.1.1 | ISC |
-| [Jon Schlinkert / micromatch](https://github.com/micromatch/picomatch) | `picomatch` 4.0.7 | MIT |
-| [PostCSS contributors](https://github.com/postcss/postcss) | `postcss` 8.5.30 | MIT |
-| [Valentin Semirulnik](https://github.com/7rulnik/source-map-js) | `source-map-js` 1.2.2 | BSD-3-Clause |
-| [Superchupu](https://github.com/SuperchupuDev/tinyglobby) | `tinyglobby` 0.2.17 | MIT |
+| Görsel | Kullanıldı (prosedürel kod) | 16 odanın duvar/zemin desenleri ve oda adları (`RoomDiorama.gd`), 20 yeni mobilya çizimi — kazan, posta kutuları, giriş kapısı, çamaşır makinesi, vitrin, yemek masası/sandalyesi, piyano, pikap, hoparlör, küvet, aynalı lavabo, valiz, saksı rafı, koşu bandı, dambıl rafı, kum torbası, şövale, boya masası, klima ünitesi (`FurnitureArt.gd`); çatı tabelası (`ApartmentBuilding.gd`); ölçeklenen dış çevre (`WorldBackdrop.gd`); girdap gözü, rüzgâr uyarısı/çizgileri, enkaz mermisi (`TelegraphSystem.gd`, `HazardProjectile.gd`); kat geçişi izi/tozu (`Player.gd`). Harici görsel veya resim üretim servisi kullanılmadı. |
+| Ses | Kullanılmadı | — |
+| Kod | Kullanıldı | Merdivenin kaldırılması, W/2x W/S kat sistemi ve tavan sınırı (`Player.gd`, `MainGame.gd`), 4×4 bina ve kamera zoom'u (`ApartmentBuilding.gd`, `MainGame.tscn`), fırtına girdap/çapraz yaylım/koridor/rüzgâr paternleri ve döngüsü (`BossPatterns.gd`, `DisasterBoss.gd`, `DisasterWaveManager.gd`, `HazardAttack.gd`), HUD yerleşimi (`GameHUD.gd`), testlerin güncellenmesi ve yeni `tests/Step3Smoke.gd`. |
+| Metin | Kullanıldı | Oyun içi oda/patern/kontrol metinleri, README/AGENTS/STATUS/SUBMISSION ve bu bölüm. |
+| Diğer | Kullanıldı | Yerleşim hesapları, test senaryoları ve gerçek renderer PNG'lerinin görsel incelemesi. |
 
-`node_modules/`, test tarayıcıları ve indirilen kural kitapçığı repoya veya oyuna eklenmedi. Bağımlılık sürümleri değiştiğinde bu kayıt ve ilgili lisans bildirimleri yeniden kontrol edilir. Into the Breach / Katana ZERO yalnızca mekanik esin referanslarıdır; bu oyunlardan kod, görsel veya ses alınmadı.
+Tasarım istekleri (16 oda listesi, kontrol şeması, fırtına paternleri) kullanıcıdan geldi. Yeni bağımlılık, asset, ses veya font eklenmedi.
 
-## 3. Teslim öncesi ekip kontrolü
+## Adım 2.7 ek kapsamı — 17 Ekim 2026 (görsel temizlik, karanlık atmosfer, akıcı hareket, çok parçalı bosslar)
 
-- İki kişinin ek AI/asset kullanımlarını bu kayda ekleyin; teslim formunda AI ve hazır kaynak için beş kategoriyi ayrı ayrı doldurun.
-- Bu dosyadaki araçların amaç, kullanım yeri, kaynak ve lisans bilgilerini form alanlarına aktarın. Takım temsilcisi gerçek kullanımın eksiksizliğini doğrulasın.
-- Son build, oynama bağlantısı ve public repo sürümünün eşleşmesini doğrulayın; paket içindeki gerekli üçüncü taraf bildirimlerini koruyun. Teslim/yayın bu görev kapsamında yapılmadı.
+Araç: **Anthropic Claude Code / Claude Opus 5.5**.
 
-## v0.2 kapsam notu
+| Kategori | Durum | Amaç ve dosyalar |
+| --- | --- | --- |
+| Görsel | Kullanıldı (prosedürel kod) | Gece gökyüzü/şehir/dither (`WorldBackdrop.gd`), yağmur/kül/şimşek (`NightWeather.gd`), oda kiri ve AO/vinyet/dither gölgesi (`RoomDiorama.gd`), additive lamba konileri (`RoomLighting.gd`), sallanan lamba (`BuildingProp.gd`), squash/eğilme/pelerin/baret feneri (`CharacterArt.gd`, `Player.gd`), çok parçalı golem ve 12 halkalı fırtına iskeleti (`DisasterBoss.gd`), neon mermi ışıması/iz/çekirdek ve uyarılar (`HazardProjectile.gd`, `TelegraphSystem.gd`), pixel-art SubViewport render (`MainGame.tscn`, `MainGame.gd`). Tabela/oda adı/kat levhaları kaldırıldı. Harici görsel, resim üretim servisi veya hazır shader kullanılmadı. |
+| Ses | Kullanılmadı | — |
+| Kod | Kullanıldı | Hareket ayarları ve görsel durumlar (`Player.gd`), sprite otomatik yükleyici (`AssetRegistry.gd`), ekran katmanı etiketleri (`WorldLabels.gd`), kamera sarsıntı gücü (`GameCamera.gd`), testlerin güncellenmesi ve yeni `tests/Step27Smoke.gd`. |
+| Metin | Kullanıldı | README/AGENTS/STATUS/SOURCES/SUBMISSION, `assets/sprites/README.md` ve bu bölüm. |
+| Diğer | Kullanıldı | 1920×1080 gerçek renderer görüntülerinin incelenmesi ve buna göre ayar (lamba yoğunluğu, şimşek konumu, golem kol bükümü). |
 
-Kişi 1 göreviyle Matter.js ve tipleri kuruldu. Mevcut `src/ui_vfx/` ve `src/levels/` içeriği korunarak yeni referans sunum `src/integration/` içinde oluşturuldu. Fizik/hasar birimleri ve dalga sinyali oyun modelidir; gerçek yapı dayanımı veya öngörü iddiası değildir. İlk fizik görevinde commit/push istenmedi; sonraki kullanıcı isteğiyle Git paylaşımı ve görsel dal entegrasyonu yapıldı.
+Atmosfer yönü (This War of Mine / Dead Cells / Carrion) kullanıcı tarafından yalnızca estetik referans olarak verildi; bu oyunlardan kod, görsel, ses veya dosya alınmadı. `assets/sprites/` klasörü boştur (yalnız README); oraya konacak el yapımı dosyaların kaynağı ayrıca bu belgeye yazılmalıdır.
 
+## Adım 3-B ek kapsamı — 17 Ekim 2026 (doğal üst kat yayı, oda hasarı/çöküş, loot ve onarım)
 
-## Görsel dal entegrasyon kaydı
+Araç: **Anthropic Claude Code / Claude Opus 5.5**.
 
-`feat/ui-realistic-visuals` / `fa2de72` katkısının kendi beyanı [VISUAL_NOTES.md](src/ui_vfx/VISUAL_NOTES.md) içindedir. Araç OpenAI Codex; tam model etiketi ayrıca doğrulanmadı. Görsel ve kod katkısı SceneArt, Renderer, TacticalHUD, ParticleSystem ve stillerde; metin/diğer katkısı tasarım vizyonu, entegrasyon notları ve doğrulamadır. Bu görsel görevde yeni ses kodu, hazır görsel/ses/font, yeni paket veya asset indirmesi bildirilmedi. Önceki ses ve AI kayıtları korunur. Birleşik v0.2 görünümü SceneArt arka planı/malzemelerini gerçek fizik gövdeleriyle kullanır; ayrıntılı Renderer/HUD geçişi takip işidir.
+| Kategori | Durum | Amaç ve dosyalar |
+| --- | --- | --- |
+| Görsel | Kullanıldı (prosedürel kod) | Oda hasar durumları: çatlak, sıva deliği, sarkan tavan, bel veren kolon, kıvılcım/toz/moloz, enkaz yığını ve duman, çelik X-kiriş (`RoomDiorama.gd`); kepenk + kum torbası ve L-demir (`BuildingProp.gd`); durumlara göre lamba titremesi/kırmızı/sönme (`RoomLighting.gd`); loot simgeleri, halka ve ışık hüzmesi (`LootSystem.gd`); HUD malzeme sayacı ve çöküş ekranı (`GameHUD.gd`), `[!] ONAR [E]` ve uçan yazılar (`WorldLabels.gd`). Harici görsel kullanılmadı. |
+| Ses | Kullanılmadı | — |
+| Kod | Kullanıldı | Fizik tabanlı 2x W yayı (`Player.gd`), oda HP/durum modeli (`RoomDiorama.gd`), bina ortalaması/çöküş kuralı/aşınma (`ApartmentBuilding.gd`), oda hasar tablosu ve `FailReason` (`DisasterWaveManager.gd`), yıkık odada eşya tehlikesinin durması (`BossPatterns.gd`), loot/toplama/E onarımı (`scripts/loot/LootSystem.gd`), E tuşu (`MainGame.gd`), test güncellemeleri ve yeni `tests/Step3LootSmoke.gd`. |
+| Metin | Kullanıldı | Oyun içi uyarı/geri bildirim metinleri, README/AGENTS/STATUS/SOURCES/SUBMISSION ve bu bölüm. |
+| Diğer | Kullanıldı | Hasar/loot dengesinin otomatik dalga testiyle ölçülmesi ve 1920×1080 görüntülerin incelenmesi. |
+
+Mekanik istekleri (oda durumları, çöküş koşulu, loot türleri, E onarımı) kullanıcı verdi. Oda HP değerleri ve "çimento/kepenk ile anında onarım" kurgusal oyun mekaniğidir; gerçek yapı güçlendirme veya afet güvenliği tavsiyesi olarak sunulmaz.
+
+## Üç dalgalı kampanya ve afet hazırlığı ek kapsamı — 17 Ekim 2026
+
+Araç: **OpenAI Codex**; kesin model etiketi bu çalışmada ayrıca doğrulanmadı. Kullanıcının verdiği tasarımla yalnız hasarlı odada kuşatma onarımı, 5 tip süreli loot, üç bileşenli inşaat ve %55 hasar azaltımı, 9 seçilebilir kartın gerçek oyun etkileri, 20 sn inşaat araları, koordineli çift boss finali ve zafer ekranı kodlandı. `SiegeUpgrades.gd`, `UpgradeOverlay.gd`, `CampaignSmoke.gd` eklendi; mevcut dalga/loot/oda/HUD ve uygun testler güncellendi. Claude'un 16 oda çizimleri, parabolik 2x W kat zıplaması ve çok parçalı boss rigleri korundu.
+
+Görsel katkı: AI destekli GDScript çizimleriyle büyük çelik X-kiriş/perçin/şerit, kepenk, kum torbası, sabitleme kemeri, LED, 5 loot simgesi/ömrü ve üç kart arayüzü. Yeni harici sprite, font, ses, asset, eklenti veya resim üretim servisi kullanılmadı. Metin katkısı: kart açıklamaları, arayüz ve proje belgeleri. Doğrulama: motor içi testler ve gerçek Compatibility renderer görüntülerinin incelenmesi (sonuç STATUS'ta).
+
+Kart adları, C40 etiketi ve oranları kullanıcı tasarımıdır; bu görevde gerçek afet veya mühendislik bilgisi doğrulaması yapılmadı. Anlık yapı onarımı, dokunulmaz takla, hidrolik bot ve manyetik drone gibi etkiler gerçek afet davranışı/teknik güvence olarak sunulmaz. Bu ek bir resmî kurum onayı veya bağımsız oyun teslimi değildir.
+
+## 17 Ekim 2026 — Adım 4.5 / aktif mekanikler ve dalga dengesi
+
+OpenAI Codex, kullanıcının ekli tasarımıyla 90 sn savaş / 15 sn inşaat, kilitli üç boss sırası, 1,5 sn giriş / 2,5 sn çıkış / kart fade-in, ortak üç odalık hasar sınırı, 10 sn onarım payı, görsel salınım/çatlak/toz ve dokuz yeni aktif kartı uyguladı. Eski pasif kart havuzu kaldırıldı. `SiegeMechanics.gd` dron/kule/türbin/iz/şok/ışın çizimlerini ve etkileri içerir; mevcut Claude oda çizimleri, gece atmosferi ve 2x W fizik yayı temel alınarak korundu. Boss rigine çıkış ayrışması eklendi. Yeni ses, harici görsel, font, paket veya servis kullanılmadı; görseller GDScript ile prosedüreldir. Kart isimleri/fantastik etkiler gerçek afet davranışı veya mühendislik uygulaması tavsiyesi değildir.
+
+Testler yeni faz ve mekaniklere uyarlandı; `Step45Smoke.gd` eklendi. Gerçek test sonuçları ve native görsel kayıtların yeri `STATUS.md` içindedir. Commit/push veya dağıtım yapılmadı.

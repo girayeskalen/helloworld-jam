@@ -1,6 +1,12 @@
+.godot/
+exports/
+captures/
+*.tmp
+*.log
+*.local
+.DS_Store
+# Obsolete local web-build caches; not part of the Godot project.
 node_modules/
 dist/
 test-results/
 playwright-report/
-*.local
-.DS_Store
