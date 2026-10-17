@@ -27,9 +27,12 @@ func _draw() -> void:
 		if attack.warning_delay > 0.0: continue
 		if attack.is_area():
 			var message: String = "GİRDAP ÇEKİMİ" if attack.source == 2 else "TERMAL VAKUM"
+			if attack.kind == HazardAttack.Kind.STEAM_COLUMN: message = "BUHAR SÜTUNU"
 			if attack.kind == HazardAttack.Kind.FLOOD_ZONE: message = "TAŞKIN · ZIPLA / ÜST KATA ÇIK"
 			if attack.kind == HazardAttack.Kind.FIRE_ZONE: message = "ZEMİN ALEVİ · ZIPLA / ODADAN ÇIK"
 			_text(attack.area.get_center()+Vector2(-140,-35),message,18,TelegraphSystem.warning_color(attack))
+		if attack.pattern == HazardAttack.Pattern.QUADRANT_SEAL and attack.lead and attack.source == 0:
+			_text(Vector2(game.building.center_x() - 150, attack.origin.y - 40), "ELEMENTAL MÜHÜR · %.1f sn" % maxf(0.0, attack.warning_duration - attack.warning_elapsed), 20, Color("ffe2b0"))
 		if attack.pattern == HazardAttack.Pattern.EMBER_DETONATION and attack.lead:
 			_text(attack.origin+Vector2(-65,-43),"KOR · %.1f sn" % maxf(0.0,attack.warning_duration-attack.warning_elapsed),17,Color("ffbc6a"))
 		var color: Color = TelegraphSystem.warning_color(attack)
@@ -50,8 +53,11 @@ func _draw() -> void:
 		_plate(Vector2(area.position.x + area.size.x * 0.5, area.position.y - 120), "RÜZGÂR KÜKREMESİ %s  %.1f sn" % [arrow, telegraphs.gust_warning_left], 24, TelegraphSystem.GUST)
 	for boss: DisasterBoss in game.waves.bosses():
 		if boss.visible and boss.is_charging() and boss.pattern_label != "":
-			var accent: Color = [TelegraphSystem.STORM_WARNING,TelegraphSystem.QUAKE_WARNING,Color("55e2db"),Color("ff9160")][boss.kind]
-			_plate(Vector2(boss.global_position.x, maxf(240.0,boss.global_position.y-610*absf(boss.scale.y))), boss.pattern_label, 18, accent)
+			var accent: Color = [TelegraphSystem.STORM_WARNING,TelegraphSystem.QUAKE_WARNING,Color("55e2db"),Color("c4f4ed")][boss.kind]
+			# The titan's attack plate sits under its head, inside the top floor band.
+			var anchor: Vector2 = Vector2(game.building.center_x(), game.building.global_position.y + 60) if boss.kind == DisasterBoss.Kind.CATACLYSM else Vector2(boss.global_position.x, maxf(240.0,boss.global_position.y-610*absf(boss.scale.y)))
+			_plate(anchor, boss.pattern_label, 18, accent)
+	_draw_action_hint()
 	for dodge: Dictionary in game.feedback.texts:
 		var alpha: float = minf(1.0, float(dodge["life"]) * 3.0)
 		_text(Vector2(dodge["position"]), "DODGE!", 28, Color(Color("f5d986"), alpha))
@@ -93,6 +99,15 @@ func _draw_rooms_and_loot() -> void:
 			if not collision: break
 		feedback_rects.append(rect)
 		_screen_text(point,message["text"],18,Color(Color(message["color"]),alpha))
+
+## Minimal contextual E prompt over the player (replaces the old bottom message bar).
+func _draw_action_hint() -> void:
+	var loot: LootSystem = game.loot
+	if loot == null or game.waves.failed or game.waves.victory or game.waves.upgrade_pending: return
+	var hint: String = loot.short_hint()
+	if hint == "": return
+	var color: Color = CelArt.GOLD if loot.can_offer_repair() else CelArt.TEAL
+	_text(game.player.global_position + Vector2(-46, -96), hint, 16, color)
 
 func _alert_plate(center: Vector2, message: String, accent: Color) -> void:
 	var font: Font = ThemeDB.fallback_font

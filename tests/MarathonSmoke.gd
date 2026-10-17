@@ -28,13 +28,16 @@ func _run() -> void:
 	print("MARATHON_RESULT checks=%d failures=%d" % [checks,failures])
 	game.queue_free()
 	await process_frame
+	await process_frame
+	# Drain the audio driver after deferred scene destruction.
+	OS.delay_msec(80)
 	quit(0 if failures == 0 else 1)
 
 func _fresh(mode: DisasterWaveManager.Mode = DisasterWaveManager.Mode.FLOOD) -> void:
 	game.reset_game()
 	game.waves.autoplay = false
 	game.waves.start_siege(mode,true)
-	game.waves.advance_wave(DisasterWaveManager.INTRO_DURATION)
+	game.waves.advance_wave(game.waves.intro_duration())
 	game.building.pacing_enabled = false
 	game.loot.set_physics_process(false)
 	game.mechanics.set_physics_process(false)
@@ -46,11 +49,11 @@ func _fresh(mode: DisasterWaveManager.Mode = DisasterWaveManager.Mode.FLOOD) -> 
 	launches.clear()
 
 func _patterns() -> void:
-	for mode: int in [DisasterWaveManager.Mode.FLOOD,DisasterWaveManager.Mode.FIRE]:
+	for mode: int in [DisasterWaveManager.Mode.FLOOD,DisasterWaveManager.Mode.CATACLYSM]:
 		_fresh(mode as DisasterWaveManager.Mode)
 		var labels: Dictionary = {}
-		var count: int = 5 if mode == DisasterWaveManager.Mode.FLOOD else 6
-		var boss: DisasterBoss = game.flood if count == 5 else game.fire
+		var count: int = 5 if mode == DisasterWaveManager.Mode.FLOOD else 4
+		var boss: DisasterBoss = game.flood if count == 5 else game.titan
 		for index: int in range(count):
 			game.projectiles.clear()
 			game.telegraphs.clear()
@@ -60,7 +63,7 @@ func _patterns() -> void:
 			_check(not game.telegraphs.pending.is_empty() and game.projectiles.active_count() == 0,"Mode %d pattern %d warns before activation" % [mode,index])
 			var frozen: bool = true
 			for a: HazardAttack in game.telegraphs.pending:
-				frozen = frozen and a.source == mode-1 and not a.warning_confirmed and a.warning_duration >= a.minimum_warning()
+				frozen = frozen and (a.source == 2 if mode == DisasterWaveManager.Mode.FLOOD else a.source in [0,1,2]) and not a.warning_confirmed and a.warning_duration >= a.minimum_warning()
 				for sample: int in range(11):
 					var p: Vector2 = a.point_at(a.lifetime*sample/10.0)
 					frozen = frozen and is_finite(p.x) and is_finite(p.y)
@@ -74,7 +77,7 @@ func _patterns() -> void:
 			for a: HazardAttack in launches: armed = armed and a.is_armed()
 			_check(armed,"Every launch carries completed warning evidence")
 		_check(labels.size() == count,"Distinct attack cycle contains %d patterns" % count)
-	_check(game.waves.fire_interval < game.waves.flood_interval and game.waves.flood_interval < game.waves.quake_interval,"Final waves accelerate beyond the double siege beat")
+	_check(game.waves.nova_interval < game.waves.flood_interval and game.waves.flood_interval < game.waves.quake_interval,"Flood and final nova retain distinct attack tempos")
 	_fresh()
 	game.flood.plan_pattern(game.waves,5,2)
 	_check(game.telegraphs.pending.size() == 2 and game.telegraphs.pending[0].floor_index == 0 and game.telegraphs.pending[1].floor_index == 1,"Alternate flood surge covers ground and first floor with upper escape floors")
@@ -145,38 +148,24 @@ func _hazards() -> void:
 	_check(p.hazard_pull > 0 and p.health == 100,"Warned whirlpool applies real centre-directed pull without direct damage")
 	w.finish_wave()
 	_check(p.hazard_pull == 0 and p.hazard_drag == 0,"Outro clears environmental forces")
-	_fresh(DisasterWaveManager.Mode.FIRE)
-	game.fire.plan_pattern(w,3,1)
+	_fresh(DisasterWaveManager.Mode.CATACLYSM)
+	game.titan.plan_pattern(w,3,1)
 	var cores: int = 0
 	for a: HazardAttack in game.telegraphs.pending:
 		if a.lead: cores += 1
-	_check(cores == 5 and game.telegraphs.pending.size() == 40,"Five ember cores each freeze eight radial fire arrows")
+	_check(cores == 4 and game.telegraphs.pending.size() == 20,"Four corner emitters combine three disaster sources with twenty rays")
 	game.telegraphs._physics_process(.999)
-	_check(game.projectiles.active_count() == 0,"Ember rings remain harmless at .999s")
+	_check(game.projectiles.active_count() == 0,"Corner seal remains harmless at .999s")
 	game.telegraphs._physics_process(.001)
-	_check(game.projectiles.active_count() == 40,"All eight-way core bursts launch at exactly one second")
-	_fresh(DisasterWaveManager.Mode.FIRE)
-	game.fire.plan_pattern(w,4,1)
-	var beam: HazardAttack
-	for a: HazardAttack in game.telegraphs.pending:
-		if a.kind == HazardAttack.Kind.FIRE_BEAM: beam = a
-	_check(beam != null and beam.warning_delay == .9 and beam.warning_duration == 1.0,"Backdraft schedules a separate full one-second beam warning after suction")
-	game.telegraphs._physics_process(.75)
-	var pulling: bool = false
-	for entry: HazardProjectile in game.projectiles.entries:
-		pulling = pulling or (entry.active and entry.attack.kind == HazardAttack.Kind.WHIRLPOOL)
-	_check(pulling and not beam.warning_confirmed,"Thermal vacuum activates before the beam")
-	game.telegraphs._physics_process(1.149)
-	_check(not beam.warning_confirmed,"Backdraft beam remains pending at 1.899s")
-	game.telegraphs._physics_process(.001)
-	_check(beam.warning_confirmed,"Backdraft beam only launches after complete 1.9s sequence")
-	_fresh(DisasterWaveManager.Mode.FIRE)
-	game.fire.plan_pattern(w,0,0)
+	_check(game.projectiles.active_count() == 20,"All seal rays activate at exactly 1.0 seconds")
+	_fresh(DisasterWaveManager.Mode.CATACLYSM)
+	game.titan.plan_pattern(w,0,0)
 	var roof_count: int = 0
 	for a: HazardAttack in game.telegraphs.pending:
-		if a.cross_floor and a.origin.y < game.building.global_position.y and a.point_at(a.lifetime).y > game.building.floor_y(1): roof_count += 1
-	_check(roof_count == 5,"Half the meteor shower falls from the roof through all four floors")
-	_fresh(DisasterWaveManager.Mode.FIRE)
+		if a.cross_floor and a.origin.y < game.building.global_position.y and a.floor_index in [0,1]: roof_count += 1
+	_check(roof_count == 3,"Three delayed quake rocks fall from the roof into lower-floor water")
+	# Isolated legacy fire-helper coverage, outside final-only difficulty tuning.
+	_fresh(DisasterWaveManager.Mode.FLOOD)
 	var meteor: HazardAttack = w._attack(HazardAttack.Kind.METEOR,0,Vector2.ZERO,Vector2.ZERO)
 	meteor.source = 3
 	meteor.leaves_fire = true
@@ -207,7 +196,8 @@ func _hazards() -> void:
 
 func _movement() -> void:
 	_fresh()
-	for boss: DisasterBoss in game.waves.bosses():
+	# The final titan is anchored around the building; it is covered by Step49Smoke.
+	for boss: DisasterBoss in [game.storm,game.earthquake,game.flood]:
 		boss.set_active(true)
 		boss.transition_pose(1.0,false)
 		var initial: Vector2 = boss.position
@@ -224,39 +214,33 @@ func _movement() -> void:
 	var heads: Array = game.flood.hydra_rig()["heads"]
 	game.flood.advance(.25)
 	_check(game.flood.hydra_rig()["heads"] != heads,"Three hydra heads animate independently")
-	_fresh(DisasterWaveManager.Mode.FIRE)
+	_fresh(DisasterWaveManager.Mode.CATACLYSM)
 	for index: int in range(3):
-		game.fire.reposition(game.waves,index,index)
-		for i: int in range(60): game.fire.advance(1.0/60)
-		if index < 2: _check(game.fire.position.x < 431 if index == 0 else game.fire.position.x > 2031,"Fire dash alternates facade %d" % index)
-		else: _check(game.fire.position.y < 900 and game.fire.scale.x > .95 and not game.fire.z_as_relative and game.fire.z_index < 0,"Full-sized fire titan looms behind roof with lower body occluded")
-	var arms: Array = game.fire.titan_rig()["arms"]
-	game.fire.advance(.25)
-	_check(game.fire.titan_rig()["arms"].size() == 4 and game.fire.titan_rig()["arms"] != arms,"Four fire arms/wing joints animate independently")
+		game.titan.reposition(game.waves,index,index)
+		for i: int in range(60): game.titan.advance(1.0/60)
+		_check(absf(game.titan.position.x-game.building.center_x()) < 100 and game.titan.z_index < 0,"Final body remains behind the apartment through anchor %d" % index)
+	var arms: Array = game.titan.cataclysm_rig()["vortex"]
+	game.titan.advance(.25)
+	_check(game.titan.cataclysm_rig()["vortex"].size() == 6 and game.titan.cataclysm_rig()["vortex"] != arms,"Final storm sleeve has six independently animated rings")
 
 func _controls_and_enrage() -> void:
 	game.player.set_physics_process(true)
 	game.reset_game()
 	game.waves.autoplay = false
-	await _tap(KEY_4)
-	_check(game.waves.wave_number == 0,"Normal key 4 cannot skip the campaign")
-	await _tap(KEY_F9)
-	await _tap(KEY_4)
-	_check(game.waves.mode == DisasterWaveManager.Mode.FLOOD and game.waves.wave_number == 4,"Debug key 4 selects flood")
+	await _tap(KEY_3)
+	_check(not game.waves.debug_enabled and game.waves.mode == DisasterWaveManager.Mode.FLOOD and game.waves.wave_number == 3,"Key 3 selects flood directly")
 	await _tap(KEY_5)
-	_check(game.waves.mode == DisasterWaveManager.Mode.FIRE and game.waves.wave_number == 5,"Debug key 5 selects fire")
-	game.waves.advance_wave(1.2)
-	game.waves.siege_remaining = 10.02
-	game.waves._marathon_clock = 1.0
-	game.waves.advance_wave(.01,.01)
-	_check(not game.waves.enrage and is_equal_approx(game.waves._marathon_clock,.99),"Enrage is off before final ten seconds")
+	_check(game.waves.mode == DisasterWaveManager.Mode.FLOOD,"Removed key 5 cannot launch a fire phase")
+	await _tap(KEY_4)
+	game.waves.advance_wave(game.waves.intro_duration())
+	game.waves.siege_remaining = 15.01
 	game.waves.advance_wave(.02,.02)
-	_check(game.waves.enrage and game.fire.enraged and is_equal_approx(game.waves._marathon_clock,.965),"Final ten seconds accelerate attack beat exactly 25 percent")
+	_check(game.waves.nova and game.titan.enraged,"Final combined boss keeps its last-fifteen-second overload")
 	game._apply_atmosphere()
-	_check(game.weather.inferno == 1.0,"Enrage drives the crimson smoke atmosphere")
+	_check(game.weather.inferno == 0.0 and game.weather.storminess > 0.0,"Final atmosphere contains storm and water, with no inferno")
 	game.waves.finish_wave()
 	game.waves.advance_wave(1.0)
-	_check(game.waves.victory and game.waves.completed_waves == 5 and DisasterWaveManager.VICTORY_TEXT == "5 BÜYÜK AFET KUŞATMASI ATLATILDI! TAM HAZIRLIK ZAFERİ!","Five-wave marathon ends at requested victory")
+	_check(game.waves.victory and game.waves.completed_waves == 4 and not game.upgrades.pending,"Fourth retreat ends the campaign in victory")
 	_check(game.projectiles.active_count() == 0 and game.telegraphs.pending.is_empty() and Engine.time_scale == 1.0,"Victory cleans all attacks, delayed warnings and time scale")
 
 func _capture(directory: String) -> void:
@@ -265,23 +249,22 @@ func _capture(directory: String) -> void:
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
 	root.size = Vector2i(1920,1080)
 	await _frames(10)
-	for mode: int in range(5):
+	for mode: int in range(4):
 		_fresh(mode as DisasterWaveManager.Mode)
 		game.waves.state = DisasterWaveManager.State.WAVE_INTRO
-		game.waves.transition_remaining = 1.2
+		game.waves.transition_remaining = game.waves.intro_duration()
 		for boss: DisasterBoss in game.waves.bosses():
 			boss.set_process(false)
 			if boss.visible: boss.transition_pose(.5,false)
 		await _save(directory,"intro-%d.png" % (mode+1))
-		game.waves.advance_wave(1.2)
-		if mode < 3:
+		game.waves.advance_wave(game.waves.intro_duration())
+		if mode < 2:
 			if mode == 0: game.waves.storm_burst()
 			elif mode == 1: game.waves.quake_burst()
-			else: game.waves.chaos_burst()
 			await _save(directory,"battle-%d.png" % (mode+1))
 		else:
-			var boss: DisasterBoss = game.flood if mode == 3 else game.fire
-			var count: int = 5 if mode == 3 else 6
+			var boss: DisasterBoss = game.flood if mode == 2 else game.titan
+			var count: int = 6 if mode == 2 else 4
 			for pattern: int in range(count):
 				game.projectiles.clear()
 				game.telegraphs.clear()
@@ -302,8 +285,10 @@ func _capture(directory: String) -> void:
 		game.waves.finish_wave()
 		game.waves.advance_wave(.5)
 		await _save(directory,"outro-%d.png" % (mode+1))
-	game.waves.advance_wave(.5)
-	await _save(directory,"victory-five-waves.png")
+	_fresh(DisasterWaveManager.Mode.CATACLYSM)
+	game.waves.finish_wave()
+	game.waves.advance_wave(1.0)
+	await _save(directory,"victory-six-waves.png")
 	_fresh()
 	game.waves.debug_enabled = true
 	game.waves.test_upgrades()

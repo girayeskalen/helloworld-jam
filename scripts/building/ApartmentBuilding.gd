@@ -136,7 +136,8 @@ func _process(delta: float) -> void:
 		if child is RoomDiorama or child is BuildingProp or child is RoomLighting:
 			if not _visual_origin.has(child): _visual_origin[child] = child.position
 			child.position = Vector2(_visual_origin[child]) + sway
-	queue_redraw()
+	# CanvasItem command lists stay cached; sway moves their common transform.
+	if _facade != null: _facade.position = sway
 
 ## During a siege, already damaged rooms keep crumbling slowly unless repaired.
 func erode(delta: float, rate: float) -> void:
@@ -165,13 +166,25 @@ var floor_bodies: Array[StaticBody2D] = []
 ## Additive lamp cones above rooms/props, below the pillars.
 var lighting: RoomLighting
 var darkness: Color = Color.WHITE
+var _cache_source: bool = false
+var _facade: Sprite2D
+var _static_cache: SubViewport
 
 func _ready() -> void:
+	if _cache_source: return
 	if art_assets != null and art_assets.building != null:
 		custom_sprite = art_assets.building
 	_build_rooms()
 	_build_pillars()
 	_build_collisions()
+	_static_cache = StaticCanvasCache.create(self,Rect2(-60,-120,building_width+120,floor_count*floor_height+180))
+	StaticCanvasCache.painter(_static_cache,self,["custom_sprite","building_width","floor_count","floor_height"])
+	_facade = Sprite2D.new()
+	_facade.name = "CachedFacade"
+	_facade.centered = false
+	_facade.offset = Vector2(-60,-120)
+	_facade.texture = _static_cache.get_texture()
+	add_child(_facade)
 	for prop: BuildingProp in props:
 		prop.authored_condition = prop.condition
 	lighting = RoomLighting.new()
@@ -192,6 +205,7 @@ func set_darkness(tint: Color) -> void:
 		return
 	darkness = tint
 	self_modulate = tint
+	if _facade != null: _facade.modulate = tint
 	for room: RoomDiorama in rooms:
 		room.modulate = tint
 	for prop: BuildingProp in props:
@@ -412,6 +426,7 @@ func _solid(node_name: String, point: Vector2, size: Vector2) -> StaticBody2D:
 	return body
 
 func _draw() -> void:
+	if not _cache_source and _static_cache != null: return
 	draw_set_transform(sway)
 	var height: float = floor_count * floor_height
 	if custom_sprite != null:

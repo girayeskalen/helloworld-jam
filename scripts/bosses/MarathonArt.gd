@@ -157,7 +157,16 @@ static func projectile(p: HazardProjectile) -> void:
 	if a.is_area():
 		for world_area: Rect2 in a.area_segments():
 			var area: Rect2 = Rect2(world_area.position-p.global_position,world_area.size)
-			if a.kind == HazardAttack.Kind.WHIRLPOOL:
+			if a.kind == HazardAttack.Kind.STEAM_COLUMN:
+				# Scalding steam: a pale column of rising puffs that thins out at the end.
+				var fade_steam: float = clampf((a.lifetime-p.age)*4,0,1)
+				p.draw_rect(area,Color(Color("d9eeee"),.28*fade_steam))
+				for i: int in range(9):
+					var rise: float = fposmod(p.age*260+i*41,area.size.y)
+					var puff: Vector2 = Vector2(area.get_center().x+sin(p.age*6+i*1.7)*area.size.x*.3,area.end.y-rise)
+					CelArt.ellipse(p,puff,Vector2(16+i%3*5,12+i%2*4),Color(Color("eef8f4"),(.85-rise/area.size.y*.6)*fade_steam),2)
+				p.draw_line(Vector2(area.position.x,area.end.y),Vector2(area.end.x,area.end.y),Color(FOAM,fade_steam),4)
+			elif a.kind == HazardAttack.Kind.WHIRLPOOL:
 				for i: int in range(5):
 					p.draw_set_transform(Vector2.ZERO,0,Vector2(1,.32))
 					p.draw_arc(Vector2.ZERO,32+i*26,p.age*5+i,p.age*5+i+PI*1.4,28,Color(color,.5),5)
@@ -194,6 +203,11 @@ static func projectile(p: HazardProjectile) -> void:
 			_:
 				p.draw_polyline(PackedVector2Array([Vector2(-26,-4),Vector2(-12,8),Vector2(4,-7),Vector2(26,5)]),CelArt.INK,8)
 				p.draw_polyline(PackedVector2Array([Vector2(-26,-4),Vector2(-12,8),Vector2(4,-7),Vector2(26,5)]),FOAM,3)
+	elif a.kind == HazardAttack.Kind.WIND_BLADE:
+		# Firenado blade: a hooked crescent of flame leading its path.
+		p.draw_set_transform(Vector2.ZERO,a.velocity.angle())
+		CelArt.poly(p,PackedVector2Array([Vector2(-30,-30),Vector2(12,-20),Vector2(32,0),Vector2(10,22),Vector2(-30,30),Vector2(-8,10),Vector2(2,0),Vector2(-10,-12)]),EMBER,2.5)
+		CelArt.poly(p,PackedVector2Array([Vector2(-6,-14),Vector2(14,-8),Vector2(24,0),Vector2(10,10)]),HOT,1.5)
 	elif a.kind == HazardAttack.Kind.HARPOON:
 		CelArt.poly(p,PackedVector2Array([Vector2(-27,-3),Vector2(9,-4),Vector2(15,-10),Vector2(29,0),Vector2(15,10),Vector2(9,4),Vector2(-27,3)]),FOAM,2.5)
 	elif a.source == 2:

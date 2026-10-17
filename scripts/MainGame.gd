@@ -30,14 +30,22 @@ extends Node2D
 @onready var earthquake: DisasterBoss = $World/Viewport/EarthquakeBoss
 @onready var loot: LootSystem = $World/Viewport/LootSystem
 @onready var flood: DisasterBoss = $World/Viewport/FloodBoss
-@onready var fire: DisasterBoss = $World/Viewport/FireBoss
+@onready var titan: DisasterBoss = $World/Viewport/CataclysmBoss
+## Keys 1-6 in DisasterWaveManager.Mode order.
+const BOSS_SHORTCUTS: Array[StringName] = [&"storm_test", &"quake_test", &"flood_test", &"final_test"]
+var cinematic: BossCinematic
 var sprite_overrides: Dictionary = {}
+var sound: SoundManager
+var pause_menu: PauseMenu
 var mechanics: SiegeMechanics
 var upgrades: SiegeUpgrades
 var upgrade_overlay: UpgradeOverlay
 
 func _ready() -> void:
 	_configure_pixel_view()
+	# World/Viewport has finished setting up children, so sibling caches can be
+	# warmed here without parenting them underneath an invisible pooled shot.
+	projectiles.warm_body_cache()
 	_clip_bosses_at_ground()
 	# W/Up: jump, second press in the air = floor up. S/Down: floor down / fast fall.
 	# Space joins Shift and right mouse as the 8-way i-frame dash (user request, Step 3).
@@ -52,9 +60,14 @@ func _ready() -> void:
 	_bind_action(&"start_wave", [KEY_F])
 	_bind_action(&"storm_test", [KEY_1])
 	_bind_action(&"quake_test", [KEY_2])
-	_bind_action(&"chaos_test", [KEY_3])
-	_bind_action(&"flood_test", [KEY_4])
-	_bind_action(&"fire_test", [KEY_5])
+	_bind_action(&"card_third", [KEY_3])
+	_bind_action(&"flood_test", [KEY_3])
+	_bind_action(&"final_test", [KEY_4])
+	# Held Tab/H shows the small controls card; the HUD bottom stays clean otherwise.
+	_bind_action(&"controls_help", [KEY_TAB, KEY_H])
+	# Step 5: ESC/P pause menu and M mute (handled by the always-processing PauseMenu).
+	_bind_action(&"pause_toggle", [KEY_ESCAPE, KEY_P])
+	_bind_action(&"mute_toggle", [KEY_M])
 	_bind_action(&"repair", [KEY_E])
 	_bind_action(&"upgrade_test", [KEY_U])
 	player.building = building
@@ -65,7 +78,8 @@ func _ready() -> void:
 	hud.waves = waves
 	hud.loot = loot
 	labels.configure(self)
-	waves.configure(building, player, game_camera, telegraphs, projectiles, storm, earthquake, flood, fire)
+	waves.configure(building, player, game_camera, telegraphs, projectiles, storm, earthquake, flood, titan)
+	waves.fusion_burst.connect(Callable(self, "_on_fusion_burst"))
 	loot.configure(building, player, waves)
 	upgrades = SiegeUpgrades.new()
 	upgrades.name = "SiegeUpgrades"
@@ -82,6 +96,21 @@ func _ready() -> void:
 	upgrade_overlay.name = "UpgradeOverlay"
 	$Interface.add_child(upgrade_overlay)
 	upgrade_overlay.configure(upgrades)
+	cinematic = BossCinematic.new()
+	cinematic.name = "BossCinematic"
+	$Interface.add_child(cinematic)
+	cinematic.configure(self)
+	sound = SoundManager.new()
+	sound.name = "SoundManager"
+	add_child(sound)
+	sound.configure(self)
+	hud.sound = sound
+	# The paused HUD still redraws its speaker when M is pressed in the pause menu.
+	sound.settings_changed.connect(hud.queue_redraw)
+	pause_menu = PauseMenu.new()
+	pause_menu.name = "PauseMenu"
+	add_child(pause_menu)
+	pause_menu.configure(self)
 	projectiles.dodged.connect(Callable(feedback, "show_dodge"))
 	player.damaged.connect(Callable(self, "_on_player_damaged"))
 	if art_assets != null:
@@ -102,7 +131,7 @@ func _clip_bosses_at_ground() -> void:
 	mask.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	mask.z_index = 5
 	world_viewport.add_child(mask)
-	for boss: DisasterBoss in [storm, earthquake, flood, fire]:
+	for boss: DisasterBoss in [storm, earthquake, flood, titan]:
 		boss.reparent(mask, true)
 		boss.z_index = 0
 
@@ -115,11 +144,15 @@ func world_to_screen(point: Vector2) -> Vector2:
 	return world_container.position + (world_viewport.get_canvas_transform() * point) * float(pixel_scale)
 
 func _process(_delta: float) -> void:
+	hud.show_help = Input.is_action_pressed(&"controls_help")
 	_apply_atmosphere()
 
 func _apply_atmosphere() -> void:
-	weather.inferno = (1.0 if waves.enrage else .25) if fire.visible else 0.0
+	weather.inferno = 0.0
 	weather.storminess = 1.0 - storm.retreat if storm.visible else 0.0
+	if titan.visible:
+		# The amalgam brings both the ember sky and the storm deck.
+		weather.storminess = (1.0 - titan.retreat) * .85
 	var ambient: Color = night_tint
 	building.set_darkness(ambient.lerp(flash_tint, weather.flash * 0.6))
 	building.lighting.tremor = clampf((game_camera.shake_strength() - 3.0) / 10.0, 0.0, 1.0)
@@ -146,7 +179,7 @@ func _input(event: InputEvent) -> void:
 			reset_game()
 		else:
 			for slot: int in range(3):
-				if event.is_action_pressed(["storm_test", "quake_test", "chaos_test"][slot]):
+				if event.is_action_pressed(["storm_test", "quake_test", "card_third"][slot]):
 					upgrades.choose(slot)
 	get_viewport().set_input_as_handled()
 
@@ -170,17 +203,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		loot.repair_current_room()
 	elif event.is_action_pressed("start_wave"):
 		waves.start_next_wave()
-	elif waves.debug_enabled and event.is_action_pressed("storm_test"):
-		waves.start_siege(DisasterWaveManager.Mode.STORM, true)
-	elif waves.debug_enabled and event.is_action_pressed("quake_test"):
-		waves.start_siege(DisasterWaveManager.Mode.EARTHQUAKE, true)
-	elif waves.debug_enabled and event.is_action_pressed("chaos_test"):
-		waves.start_siege(DisasterWaveManager.Mode.CHAOS, true)
+	else:
+		# Step 4.9: 1-6 jump straight to a boss with a fresh world. Inside the card
+		# modal _input has already consumed 1/2/3 as card choices.
+		for mode: int in range(BOSS_SHORTCUTS.size()):
+			if event.is_action_pressed(BOSS_SHORTCUTS[mode]):
+				waves.start_siege(mode as DisasterWaveManager.Mode, true)
+				return
 
-	elif waves.debug_enabled and event.is_action_pressed("flood_test"):
-		waves.start_siege(DisasterWaveManager.Mode.FLOOD, true)
-	elif waves.debug_enabled and event.is_action_pressed("fire_test"):
-		waves.start_siege(DisasterWaveManager.Mode.FIRE, true)
+func _on_fusion_burst() -> void:
+	weather.trigger_flash(1.0)
 
 func _on_dash_started() -> void:
 	game_camera.apply_shake(2.0, 0.09)

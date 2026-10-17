@@ -5,11 +5,15 @@ extends RefCounted
 enum Kind { GLASS, POT, CHAIR, WIND_BLADE, BRICK, CONCRETE, CHANDELIER, SHOCKWAVE, BOOK,
 	WIND_ORB, SHARD, ROW_SWEEP, WARDROBE, KNIFE, PLATE, SAW, TOOL, TOY, DEBRIS,
 	FLOOD_ZONE, TIDAL_WALL, WATER_BLADE, HYDRO_ORB, WATER_SHARD, HARPOON,
-	FLOATING_DEBRIS, WHIRLPOOL, METEOR, FIRE_ZONE, FIREBALL, FIRE_DART, FIRE_BEAM, LOW_FLAME }
+	FLOATING_DEBRIS, WHIRLPOOL, METEOR, FIRE_ZONE, FIREBALL, FIRE_DART, FIRE_BEAM, LOW_FLAME,
+	STEAM_COLUMN }
 enum Motion { LINEAR, ARC, WAVE, BOUNCE, SPIRAL, REFLECT, HELIX }
 enum Pattern { FAN, FURNITURE, GROUND_WAVE, CLUSTER, FULL_ROW, ROOM_OBJECT, SPLINTER,
 	VORTEX, CROSSFIRE, CORRIDOR_WAVE, RISING_FLOOD, BILATERAL_TIDE, HYDRO_BOUNCE,
-	WHIRLPOOL_PULL, DEBRIS_CROSS, METEOR_SHOWER, NAPALM, DOUBLE_HELIX, EMBER_DETONATION, BACKDRAFT }
+	WHIRLPOOL_PULL, DEBRIS_CROSS, METEOR_SHOWER, NAPALM, DOUBLE_HELIX, EMBER_DETONATION, BACKDRAFT,
+	STEAM_TSUNAMI, STEAM_BURST, FIRENADO, SEISMIC_TIDE, QUADRANT_SEAL, CATACLYSM_NOVA }
+## The elemental seal is the one 0.8 s telegraph requested for the final boss.
+const SEAL_WARNING: float = 0.8
 
 var kind: Kind = Kind.GLASS
 var motion: Motion = Motion.LINEAR
@@ -51,15 +55,33 @@ var path_points: PackedVector2Array = PackedVector2Array()
 var cross_floor: bool = false
 var leaves_fire: bool = false
 var effect_strength: float = 0.0
+var final_tuned: bool = false
+var difficulty_damage_scale: float = 1.0
+var warning_extension: float = 0.0
+## Warning geometry is made once after freezing the path, then drawn in one batch.
+var warning_lines: PackedVector2Array = PackedVector2Array()
 
 func is_area() -> bool:
-	return kind in [Kind.FLOOD_ZONE, Kind.FIRE_ZONE, Kind.WHIRLPOOL]
+	return kind in [Kind.FLOOD_ZONE, Kind.FIRE_ZONE, Kind.WHIRLPOOL, Kind.STEAM_COLUMN]
 
 func is_wall() -> bool:
 	return kind in [Kind.ROW_SWEEP, Kind.TIDAL_WALL, Kind.FIRE_BEAM]
 
 func minimum_warning() -> float:
-	return 1.0 if pattern in [Pattern.FULL_ROW, Pattern.EMBER_DETONATION] or is_wall() or kind == Kind.FLOOD_ZONE else 0.55
+	if pattern == Pattern.QUADRANT_SEAL: return SEAL_WARNING+warning_extension
+	return (1.0 if pattern in [Pattern.FULL_ROW, Pattern.EMBER_DETONATION] or is_wall() or kind == Kind.FLOOD_ZONE else 0.55)+warning_extension
+
+## Stretch time without changing the endpoint, bounce geometry or warning path.
+func scale_travel_speed(factor: float) -> void:
+	if is_area(): return
+	velocity *= factor
+	gravity *= factor*factor
+	frequency *= factor
+	bounce_decay *= factor
+	spiral_spin *= factor
+	spiral_speed *= factor
+	lifetime /= factor
+	for i: int in range(path_times.size()): path_times[i] /= factor
 
 ## Three real boundary reflections, followed by a short readable final travel.
 ## Storing the piecewise path makes warning, collision and split point identical.
@@ -94,7 +116,7 @@ func frozen_copy() -> HazardAttack:
 		copy.set(field, get(field))
 	copy.safe_areas.assign(safe_areas)
 	copy.bounce_decay = bounce_decay
-	for field: String in ["area", "warning_delay", "leaves_fire", "effect_strength", "cross_floor"]:
+	for field: String in ["area", "warning_delay", "leaves_fire", "effect_strength", "cross_floor", "final_tuned", "difficulty_damage_scale", "warning_extension"]:
 		copy.set(field, get(field))
 	copy.path_times = path_times.duplicate()
 	copy.path_points = path_points.duplicate()

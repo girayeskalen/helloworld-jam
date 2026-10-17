@@ -1,5 +1,5 @@
 extends SceneTree
-## Full 90-second fights at 60 simulated physics ticks/sec, not skipped phase timers.
+## Full 60-second fights at 60 simulated physics ticks/sec, not skipped phase timers.
 ## --headless --fixed-fps 60 disables wall-clock waiting without increasing delta.
 
 var _failures: int = 0
@@ -48,14 +48,16 @@ func _run() -> void:
 		await physics_frame
 		ticks += 1
 	_report_rooms("after full campaign")
-	_check(_modes == [0,1,2,3,4], "Normal campaign runs exactly storm, quake, double boss, flood, fire; no repeats")
-	_check(_game.waves.completed_waves == 5 and _game.waves.victory and not _game.waves.failed, "All five full 90-second battles complete with earned-resource repairs")
+	_check(_modes == [0,1,2,3], "Campaign runs storm, quake, flood and three-disaster finale exactly once")
+	_check(_game.waves.completed_waves == 4 and _game.waves.victory and not _game.waves.failed, "All four full 60-second battles complete with earned-resource repairs")
 	_check(max_alerts <= 3, "Real attack scheduling never exceeds three simultaneous repair alerts")
-	_check(abs(int(phase_ticks.get(DisasterWaveManager.State.SIEGE_PHASE,0))-27000) <= 3, "Five battles contain exactly 450 seconds of simulated fight time")
-	_check(abs(int(phase_ticks.get(DisasterWaveManager.State.BUILD_PREPARATION_PHASE,0))-1680) <= 3, "Four full construction windows contain 28 seconds total")
+	_check(abs(int(phase_ticks.get(DisasterWaveManager.State.SIEGE_PHASE,0))-14400) <= 3, "Four battles contain exactly 240 seconds of simulated fight time")
+	_check(abs(int(phase_ticks.get(DisasterWaveManager.State.BUILD_PREPARATION_PHASE,0))-1260) <= 3, "Three construction windows contain 21 seconds total")
 	_check(_game.building.integrity < 100 and _game.building.integrity > 0 and repairs > 0, "Visible wear is managed with real collected supplies")
 	print("SOAK_DRIVER ticks=%d repairs=%d collected=%d max_alerts=%d phases=%s" % [ticks,repairs,supplies_collected,max_alerts,phase_ticks])
-	_check(_types.size() == HazardAttack.Kind.size(), "Every hazard kind appears in real wave scheduling")
+	var fire_free: bool = true
+	for kind: int in [HazardAttack.Kind.FIREBALL,HazardAttack.Kind.FIRE_DART,HazardAttack.Kind.FIRE_BEAM,HazardAttack.Kind.FIRE_ZONE,HazardAttack.Kind.LOW_FLAME,HazardAttack.Kind.METEOR]: fire_free = fire_free and not _types.has(kind)
+	_check(fire_free and _types.has(HazardAttack.Kind.FLOOD_ZONE) and _types.has(HazardAttack.Kind.SHOCKWAVE) and _types.has(HazardAttack.Kind.WIND_ORB), "Whole real campaign contains all three disaster elements and no fire/meteor attacks")
 	_check(_bad_warning == 0, "Every actual wave projectile was telegraphed for the required interval")
 	_check(_game.projectiles.get_child_count() == 128 and _game.projectiles.peak_active < 128, "Long fights keep the fixed pool bounded with spare capacity")
 	_check(_game.projectiles.rejected_count == 0, "Normal scheduling never exhausts the pool")
@@ -64,6 +66,9 @@ func _run() -> void:
 	print("STEP2_SOAK failures=%d" % _failures)
 	_game.queue_free()
 	await process_frame
+	await process_frame
+	# Drain the audio driver after deferred scene destruction.
+	OS.delay_msec(80)
 	quit(0 if _failures == 0 else 1)
 
 ## Scripted integration driver: how worn are the 16 rooms?
@@ -80,8 +85,8 @@ func _report_rooms(label: String) -> void:
 func _on_attack(attack: HazardAttack) -> void:
 	_types[attack.kind] = true
 	var required: float = attack.minimum_warning()
-	var maximum: float = 1.0 if required == 1.0 else .75
-	if attack.warning_elapsed < required - 0.00001 or attack.warning_elapsed > maximum + 0.017:
+	# Compare to the actual frozen duration, including final +.2 and radar +.25.
+	if not attack.is_armed() or attack.warning_elapsed < required - 0.00001 or attack.warning_elapsed > attack.warning_duration + 0.017:
 		_bad_warning += 1
 
 func _on_phase() -> void:

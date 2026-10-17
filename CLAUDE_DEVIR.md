@@ -2,6 +2,18 @@
 
 17 Ekim 2026. Kullanıcı sonraki geliştirmeyi Claude ile sürdürecek. Bu dosya, beş dalgalı maraton ve Adım 4.8 değişiklikleriyle aynı teslim commitindedir. Yeni görev henüz verilmedi; aşağıdaki bekleyen işler kendiliğinden kapsam sayılmaz.
 
+## Adım 4.9 güncellemesi (Claude, 17 Ekim 2026)
+
+Bu dosyanın aşağısı Adım 4.8 devridir; şu kurallar artık değişti (ayrıntı [STATUS.md](STATUS.md) ve [README.md](README.md)):
+
+- **6 dalga:** yangından sonra kart + 7 sn inşaat ve **Dalga 6 — Kataklizma Titanı** (`Mode.CATACLYSM`, `DisasterBoss.Kind.CATACLYSM`, sahnede `CataclysmBoss`). Final girişi **2,0 sn** birleşme (`FINAL_INTRO_DURATION`, %55'te `fusion_burst`). Zafer altıncı çıkıştadır; kampanyada 5 kart seçimi olur.
+- **Her savaş 60 sn** (`siege_duration`); ilk hazırlık 8 sn, inşaat 7 sn değişmedi.
+- **1–6 doğrudan boss kısayolu** (F9 gerekmez; kart modalında 1/2/3 yine yalnız kart seçer). `U` hâlâ F9 ister.
+- **Minimal HUD:** başlık/sağ kutu/alt kontrol tablosu kaldırıldı; Tab/H basılıyken yardım. E istemi oyuncu üstünde kısa metin.
+- Final yetenekleri `scripts/combat/CataclysmPatterns.gd`, çizim `scripts/bosses/CataclysmArt.gd`. Mühür uyarısı tam **0,8 sn** (`HazardAttack.SEAL_WARNING`). Yeni tür `STEAM_COLUMN`; yeni desenler `STEAM_TSUNAMI … CATACLYSM_NOVA`.
+- Yeni test `tests/Step49Smoke.gd`.
+- **Adım 5:** `ESC`/`P` duraklatma paneli (`scripts/ui/PauseMenu.gd`, `PROCESS_MODE_ALWAYS`), `M` sessiz, `-`/`+` seviye. Ses dosyası yok: `scripts/audio/SoundRecipes.gd` (51 tarif) → `SoundSynth.gd` (sentez) → `SoundManager.gd` (olaylar, miks, müzik nabzı). Yeni sinyaller: `Player.jumped/landed`, `LootSystem.landed`, `DisasterBoss.cued`, `SiegeMechanics.blocked`. Yeni test `tests/Step5Smoke.gd`; artık **13 paket** çalıştırılır.
+
 ## Önce doğru projeyi aç
 
 - Repo: <https://github.com/girayeskalen/helloworld-jam>
@@ -82,7 +94,7 @@ Linux'ta (kendi motor yolunu kullan):
 ```sh
 GODOT_BIN=/tmp/siege-tools/Godot_v4.3-stable_linux.x86_64
 "$GODOT_BIN" --headless --path . --editor --import --quit
-for suite in Step1Smoke Step2Smoke Step25Smoke Step3Smoke Step27Smoke Step3LootSmoke CampaignSmoke Step45Smoke MarathonSmoke Step48Smoke Step2Soak; do
+for suite in Step1Smoke Step2Smoke Step25Smoke Step3Smoke Step27Smoke Step3LootSmoke CampaignSmoke Step45Smoke MarathonSmoke Step48Smoke Step49Smoke Step5Smoke Step2Soak; do
   "$GODOT_BIN" --headless --fixed-fps 60 --path . --script "res://tests/$suite.gd" || break
 done
 "$GODOT_BIN" --path . --script res://tests/Step48Smoke.gd -- --capture=/tmp/siege48-captures
@@ -104,4 +116,4 @@ Kullanıcının yeni isteğini bekle; mevcut mekanikleri değiştirmek için bu 
 
 ## Claude'a verilecek başlangıç mesajı
 
-> AFET KUŞATMASI Godot projesine devam edeceğiz. Önce CLAUDE_DEVIR.md, AGENTS.md, STATUS.md, README.md, BEYAN.md ve SOURCES.md'yi oku; git status ile doğru dal/çalışma ağacını doğrula. Aktif proje feat/disaster-siege-step1 dalındaki Godot sürümü; eski ARTÇI/TypeScript main çalışma ağacına dokunma. Beş dalga,90/7 saniye,16 oda,2xW fizik yayı,dört ekipman,19 kart ve1 hazırlık+2 aksiyon kuralını koru. Yeni görevimi verdikten sonra yalnız o kapsamda çalış; uygun testleri çalıştırıp sonucu Türkçe bildir.
+> AFET KUŞATMASI Godot projesine devam edeceğiz. Önce CLAUDE_DEVIR.md, AGENTS.md, STATUS.md, README.md, BEYAN.md ve SOURCES.md'yi oku; git status ile doğru dal/çalışma ağacını doğrula. Aktif proje feat/disaster-siege-step1 dalındaki Godot sürümü; eski ARTÇI/TypeScript main çalışma ağacına dokunma. Altı dalga (final Kataklizma Titanı), 60/7 saniye, minimal HUD, doğrudan 1–6 kısayolları, 16 oda, 2xW fizik yayı, dört ekipman, 19 kart ve 1 hazırlık+2 aksiyon kuralını koru. Yeni görevimi verdikten sonra yalnız o kapsamda çalış; uygun testleri çalıştırıp sonucu Türkçe bildir.

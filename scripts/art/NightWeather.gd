@@ -5,8 +5,8 @@ extends Node2D
 
 @export var view_size: Vector2 = Vector2(1920, 1080)
 @export var ground_y: float = 917.0
-@export var rain_count: int = 260
-@export var ash_count: int = 70
+@export_range(0,40) var rain_count: int = 40
+@export_range(0,10) var ash_count: int = 10
 @export var rain_speed: float = 1500.0
 @export var rain_slant: float = 0.32
 ## Seconds between ambient strikes; a visible storm boss shortens the wait.
@@ -25,13 +25,19 @@ var _branch: PackedVector2Array = PackedVector2Array()
 var _drops: PackedVector3Array = PackedVector3Array()
 var _ash: PackedVector3Array = PackedVector3Array()
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var _rain_segments: PackedVector2Array = PackedVector2Array()
 
 func _ready() -> void:
 	_rng.seed = 7741
+	rain_count = clampi(rain_count,0,40)
+	ash_count = clampi(ash_count,0,10)
+	_drops.resize(rain_count)
+	_ash.resize(ash_count)
+	_rain_segments.resize(rain_count*2)
 	for i: int in range(rain_count):
-		_drops.append(Vector3(_rng.randf_range(-60.0, view_size.x + 60.0), _rng.randf_range(-60.0, ground_y), _rng.randf_range(0.7, 1.3)))
+		_drops[i] = Vector3(_rng.randf_range(-60.0, view_size.x + 60.0), _rng.randf_range(-60.0, ground_y), _rng.randf_range(0.7, 1.3))
 	for i: int in range(ash_count):
-		_ash.append(Vector3(_rng.randf_range(0.0, view_size.x), _rng.randf_range(0.0, ground_y), _rng.randf_range(0.0, TAU)))
+		_ash[i] = Vector3(_rng.randf_range(0.0, view_size.x), _rng.randf_range(0.0, ground_y), _rng.randf_range(0.0, TAU))
 
 func _process(delta: float) -> void:
 	advance(delta)
@@ -90,11 +96,14 @@ func _draw() -> void:
 				draw_polyline(stroke, Color(0.92, 0.96, 1.0, flash), 6.0, true)
 	var rain: Color = Color(0.42, 0.52, 0.66, 0.30 + flash * 0.35)
 	var slant: Vector2 = Vector2(rain_slant, 1.0).normalized()
-	for drop: Vector3 in _drops:
+	for i: int in range(_drops.size()):
+		var drop: Vector3 = _drops[i]
 		var fall: float = _clock * rain_speed * drop.z
 		var y: float = fposmod(drop.y + 60.0 + fall, span) - 60.0
 		var x: float = fposmod(drop.x + 60.0 + fall * rain_slant, w) - 60.0
-		draw_line(Vector2(x, y), Vector2(x, y) + slant * (22.0 + drop.z * 10.0), rain, 2.6)
+		_rain_segments[i*2] = Vector2(x,y)
+		_rain_segments[i*2+1] = Vector2(x,y)+slant*(22.0+drop.z*10.0)
+	if not _rain_segments.is_empty(): draw_multiline(_rain_segments,rain,2.6)
 	for mote: Vector3 in _ash:
 		var drift: float = _clock * (28.0 + fmod(mote.z * 13.0, 22.0))
 		var x: float = fposmod(mote.x + drift + sin(_clock * 1.3 + mote.z) * 18.0, view_size.x)

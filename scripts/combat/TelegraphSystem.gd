@@ -30,13 +30,13 @@ var _next_id: int = 1
 func _ready() -> void:
 	process_physics_priority = 10
 
-func warn_gust(area: Rect2, floor_lines: PackedFloat32Array, direction: float, strength: float, duration: float, seconds: float = 0.65) -> void:
+func warn_gust(area: Rect2, floor_lines: PackedFloat32Array, direction: float, strength: float, duration: float, seconds: float = 0.65, extension: float = 0.0) -> void:
 	gust_area = area
 	gust_floors = floor_lines
 	gust_direction = signf(direction) if not is_zero_approx(direction) else 1.0
 	gust_strength = strength
 	gust_duration = duration
-	gust_warning_total = clampf(seconds, MIN_WARNING, MAX_WARNING) + warning_bonus
+	gust_warning_total = clampf(seconds, MIN_WARNING, MAX_WARNING) + warning_bonus + extension
 	gust_warning_left = gust_warning_total
 	gust_active_left = 0.0
 	queue_redraw()
@@ -44,10 +44,18 @@ func warn_gust(area: Rect2, floor_lines: PackedFloat32Array, direction: float, s
 func warn(attack: HazardAttack, seconds: float = 0.65) -> int:
 	# The trajectory cannot be retargeted after this copy is placed on screen.
 	attack = attack.frozen_copy()
-	attack.warning_duration = (1.0 if attack.minimum_warning() == 1.0 else clampf(seconds, MIN_WARNING, MAX_WARNING)) + warning_bonus
+	# Long minimums (1.0 sweeps/floods, 0.8 elemental seal) replace the normal clamp.
+	var required: float = attack.minimum_warning()-attack.warning_extension
+	attack.warning_duration = (required if required > MAX_WARNING else clampf(seconds, MIN_WARNING, MAX_WARNING)) + warning_bonus + attack.warning_extension
 	attack.warning_elapsed = 0.0
 	attack.warning_confirmed = false
 	attack.warning_id = _next_id
+	if not attack.is_area() and not attack.is_wall() and not attack.is_vertical_warning():
+		var previous: Vector2 = attack.origin
+		for sample: int in range(1,33):
+			var next: Vector2 = attack.point_at(attack.lifetime*float(sample)/32.0)
+			_append_dashes(attack.warning_lines,previous,next)
+			previous = next
 	_next_id += 1
 	pending.append(attack)
 	queue_redraw()
@@ -134,18 +142,16 @@ func _draw() -> void:
 				draw_circle(attack.origin,9,Color("fff1a2"))
 			if attack.pattern == HazardAttack.Pattern.VORTEX and attack.lead:
 				draw_vortex_eye(self, attack.origin, attack.warning_elapsed * 6.0, 0.35 + progress * 0.55, 0.4 + progress * 0.6)
+			if attack.pattern in [HazardAttack.Pattern.QUADRANT_SEAL, HazardAttack.Pattern.CATACLYSM_NOVA] and attack.lead:
+				draw_element_orb(self, attack.origin, color, progress, attack.warning_elapsed)
 			if attack.pattern == HazardAttack.Pattern.SPLINTER:
 				for fragment: int in range(3):
 					var p: Vector2 = attack.origin + Vector2((fragment - 1) * 11, -4 - fragment % 2 * 5)
 					CelArt.poly(self, PackedVector2Array([p + Vector2(-5, 3), p + Vector2(0, -5), p + Vector2(6, 2)]), Color("8f8370"), 1.5)
-			var previous: Vector2 = attack.origin
-			for sample: int in range(1, 33):
-				var next: Vector2 = attack.point_at(attack.lifetime * float(sample) / 32.0)
-				_dashes(previous, next, color)
-				previous = next
+			if not attack.warning_lines.is_empty(): draw_multiline(attack.warning_lines,color,3.2)
 			if attack.kind == HazardAttack.Kind.WIND_BLADE:
 				draw_line(attack.origin, attack.point_at(attack.lifetime), Color(color, 0.08), attack.radius * 2, true)
-			if (attack.pattern not in [HazardAttack.Pattern.VORTEX,HazardAttack.Pattern.EMBER_DETONATION]) or attack.lead:
+			if (attack.pattern not in [HazardAttack.Pattern.VORTEX,HazardAttack.Pattern.EMBER_DETONATION,HazardAttack.Pattern.QUADRANT_SEAL,HazardAttack.Pattern.CATACLYSM_NOVA,HazardAttack.Pattern.STEAM_BURST]) or attack.lead:
 				_icon(attack.origin + Vector2(0, -31), color, pulse)
 
 func _draw_gust() -> void:
@@ -192,16 +198,31 @@ static func draw_vortex_eye(canvas: CanvasItem, center: Vector2, spin: float, sc
 		canvas.draw_arc(center, r, spin + ring * 2.1, spin + ring * 2.1 + PI * 1.1, 18, Color(STORM_WARNING, alpha * 0.3), 8.0, true)
 		canvas.draw_arc(center, r, spin + ring * 2.1, spin + ring * 2.1 + PI * 1.1, 18, Color(Color("d8f4ff"), alpha * 0.8), 2.6, true)
 
+## Final-boss emitter: an element orb whose ring fills during its exact warning.
+static func draw_element_orb(canvas: CanvasItem, center: Vector2, color: Color, progress: float, clock: float) -> void:
+	canvas.draw_circle(center, 31.0, Color(color, 0.12 + progress * 0.18))
+	canvas.draw_circle(center, 21.0, Color("140f14"))
+	canvas.draw_arc(center, 21.0, 0, TAU, 24, CelArt.INK, 4.0)
+	canvas.draw_arc(center, 28.0, -PI / 2, -PI / 2 + TAU * maxf(0.01, progress), 28, color, 5.0)
+	canvas.draw_circle(center, 7.0 + progress * 8.0, color.lightened(0.45))
+	for i: int in range(4):
+		var p: Vector2 = center + Vector2.from_angle(clock * 3.0 + i * TAU / 4) * 40.0
+		canvas.draw_colored_polygon(PackedVector2Array([p + Vector2(0, -6), p + Vector2(6, 0), p + Vector2(0, 6), p + Vector2(-6, 0)]), Color(color, 0.85))
+
 func _dashes(start: Vector2, end: Vector2, color: Color) -> void:
+	var points: PackedVector2Array = PackedVector2Array()
+	_append_dashes(points,start,end)
+	if not points.is_empty(): draw_multiline(points,color,3.2)
+
+static func _append_dashes(points: PackedVector2Array, start: Vector2, end: Vector2) -> void:
 	var length: float = start.distance_to(end)
 	var direction: Vector2 = start.direction_to(end)
 	var cursor: float = 0.0
-	var halo: Color = Color(color, color.a * 0.22)
 	while cursor < length:
 		var a: Vector2 = start + direction * cursor
 		var b: Vector2 = start + direction * minf(cursor + 11, length)
-		draw_line(a, b, halo, 8.0, true)
-		draw_line(a, b, color, 3.2, true)
+		points.append(a)
+		points.append(b)
 		cursor += 18.0
 
 ## Diamond with a drawn "!" glyph (no font), crisp on the low-res pixel grid.

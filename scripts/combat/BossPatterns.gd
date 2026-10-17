@@ -175,8 +175,9 @@ static func room_objects(w: DisasterWaveManager, serial: int) -> void:
 static func splinters(w: DisasterWaveManager, parent: HazardAttack, impact: Vector2) -> void:
 	# Impact opens a new, non-damaging 0.55 s warning, then 3 shards hop away.
 	# This is intentionally not an unannounced same-frame secondary collision.
-	for i: int in range(3):
-		var a: HazardAttack = w._attack(HazardAttack.Kind.SHARD, parent.floor_index, Vector2(impact.x, parent.floor_y - 8), Vector2(-300 + i * 270, 0))
+	var pieces: int = CataclysmPatterns.count(3) if w.mode == DisasterWaveManager.Mode.CATACLYSM else 3
+	for i: int in range(pieces):
+		var a: HazardAttack = w._attack(HazardAttack.Kind.SHARD, parent.floor_index, Vector2(impact.x, parent.floor_y - 8), Vector2(lerpf(-300,240,float(i)/maxi(1,pieces-1)), 0))
 		a.source = parent.source
 		a.pattern = HazardAttack.Pattern.SPLINTER
 		a.motion = HazardAttack.Motion.BOUNCE

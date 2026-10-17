@@ -6,13 +6,16 @@ const INK: Color = Color("111518")
 const PAPER: Color = Color("ece0c3")
 const GOLD: Color = Color("efb961")
 const TEAL: Color = Color("65b9a0")
+## At the game's 0.39 world scale, 14 vertices retain the pixel silhouette of 24.
+const ELLIPSE_SEGMENTS: int = 14
+static var _ellipse_unit: PackedVector2Array = PackedVector2Array()
 
 static func poly(canvas: CanvasItem, points: PackedVector2Array, color: Color, width: float = 2.5) -> void:
 	canvas.draw_colored_polygon(points, color)
 	if width > 0.0:
 		var closed: PackedVector2Array = points.duplicate()
 		closed.append(points[0])
-		canvas.draw_polyline(closed, INK, width, true)
+		canvas.draw_polyline(closed, INK, width, false)
 
 static func rect(canvas: CanvasItem, area: Rect2, color: Color, width: float = 2.5) -> void:
 	canvas.draw_rect(area, color)
@@ -20,13 +23,14 @@ static func rect(canvas: CanvasItem, area: Rect2, color: Color, width: float = 2
 		canvas.draw_rect(area, INK, false, width)
 
 static func line(canvas: CanvasItem, start: Vector2, end: Vector2, color: Color, width: float = 2.0) -> void:
-	canvas.draw_line(start, end, color, width, true)
+	canvas.draw_line(start, end, color, width, false)
 
 static func ellipse(canvas: CanvasItem, center: Vector2, radius: Vector2, color: Color, width: float = 2.5) -> void:
 	var points: PackedVector2Array = PackedVector2Array()
-	for i: int in range(24):
-		var angle: float = TAU * float(i) / 24.0
-		points.append(center + Vector2(cos(angle), sin(angle)) * radius)
+	if _ellipse_unit.is_empty():
+		for i: int in range(ELLIPSE_SEGMENTS): _ellipse_unit.append(Vector2.from_angle(TAU*float(i)/ELLIPSE_SEGMENTS))
+	points.resize(ELLIPSE_SEGMENTS)
+	for i: int in range(ELLIPSE_SEGMENTS): points[i] = center+_ellipse_unit[i]*radius
 	poly(canvas, points, color, width)
 
 static func box(canvas: CanvasItem, area: Rect2, color: Color, depth: Vector2 = Vector2(9.0, -8.0)) -> void:

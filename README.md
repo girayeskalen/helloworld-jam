@@ -1,12 +1,18 @@
 # AFET KUŞATMASI / Disaster Siege
 
-Doğal afet hazırlığı ve farkındalık temalı, Fallout Shelter esinli apartman kesitini bullet-hell hareketiyle birleştiren Godot oyunu. 4 kat × 4 oda = 16 benzersiz odalı apartmanda merdivensiz dolaş: çift zıplamayla üst kata süzül, S ile alt kata in, sekiz yönlü takla at, fırtına, deprem, çifte kuşatma, sel ve yangın bosslarının paternlerinden kaçın.
+Doğal afet hazırlığı ve farkındalık temalı, Fallout Shelter esinli apartman kesitini bullet-hell hareketiyle birleştiren Godot oyunu. 4 kat × 4 oda = 16 benzersiz odalı apartmanda merdivensiz dolaş: çift zıplamayla üst kata süzül, S ile alt kata in, sekiz yönlü takla at, **FIRTINA → DEPREM → SEL → DEPREM • SEL • FIRTINA** sırasındaki dört bossun paternlerinden kaçın.
 
 **Adım 2.7 — karanlık afet gecesi:** Oyun artık kasvetli bir pixel-art gecesinde geçer. Yağmur, kül ve soğuk şimşekler; elektrik kesintisinde karanlık odalar, titreyen amber/acil kırmızı lambalar, baret feneri, yazısız sade bina, çok parçalı canlı bosslar, neon parlayan mermiler ve daha hızlı, tok bir karakter hareketi.
 
 **Adım 4.8:** Reflektörlü kurtarma uzmanı, ağırlıklı çanta/ceket animasyonu ve dört boss için üç tonlu yüzeyler; dört anlaşılır ekipman, 19 kartlık havuz ve her seçimde solda bir hazırlık + iki aksiyon kartı.
 
-Claude ile devam için önce [devir notunu](CLAUDE_DEVIR.md) oku.
+**Adım 5.5:** Dört faz, özgün ve kesintisiz Re minör oyun müziği, her bossa ayrı 2,5 sn sinematik giriş (final 2,8 sn), alt ortada geniş boss HP/süre barı. `ESC/P` duraklatır, `M` sesi kapatır, `-/+` seviyeyi ayarlar.
+
+**Adım 6:** Statik oda/eşya/gölge/güçlendirme/arka plan önbellekleri, 50 hava parçacığı, dört noktalı mermi izleri ve ortak mermi dokuları. Her kare canlı müzik sentezinin yerini ayrı −5 dB WAV döngüsü aldı. Yalnız finalde saldırı arası ×1,3; mermi adedi yaklaşık ×0,7 (tam sayıya yuvarlanır), hız ×0,8, oyuncu/bina hasarı ×0,7, uyarı +0,20 sn. Bu katsayılar beraber uygulanır; toplam insan zorluğunun tek başına tam %30 değiştiği iddia edilmez.
+
+**Güncel HUD:** Sol üstte kalp/enerji/bina barları, sol altta üç ekipman slotu; boss adı ve 60 sn kuşatma barı alt ortadadır. Girişte sinematik siyah şeritler ve tek büyük boss adı görünür. `1/2/3/4` doğrudan boss testi; `5/6` kaldırıldı.
+
+Codex ile devam için önce [kısa devir notunu](CODEX_DEVIR.md), Claude için [Claude devir notunu](CLAUDE_DEVIR.md) oku.
 
 ## Oyunu aç
 
@@ -37,17 +43,36 @@ Yukarıdaki EXE yolunu kendi kurulumunla değiştir. Oyun artık yerel web sayfa
 | Shift, Space veya sağ tık + yön tuşları | Yerde/havada sekiz yöne takla (dash, 1150 px/s); 0,25 sn dokunulmazlık, 0,304 sn bekleme |
 | T | Kamera sarsıntısını test et |
 | F | Hazırlık süresini atlayıp sıradaki dalgayı başlat |
-| 1 / 2 / 3 | Kart ekranında seçim; normal oyunda dalgayı değiştirmez |
-| F9 | Test modunu aç/kapat; açıkken 1/2/3/4/5 boss testi yapar |
+| 1 / 2 / 3 | Kart ekranında seçim (kart ekranı açıkken boss kısayolu çalışmaz) |
+| 1 – 4 | Doğrudan, taze dünya: `1` FIRTINA, `2` DEPREM, `3` SEL, `4` DEPREM • SEL • FIRTINA. Kart ekranında 1/2/3 yalnız seçim yapar. |
+| Tab veya H (basılı tut) | Küçük kontrol yardımı; bırakınca ekranın altı yine temiz |
+| ESC veya P | Oyunu duraklat / devam et (duraklatma paneli ve tuş rehberi) |
+| M | Sesi kapat / aç (oyunda ve duraklatma panelinde) |
+| - / + | Ses seviyesi (10 kademe; klavye düzeninden bağımsız, sayısal tuş takımı da olur) |
+| F9 | Test modunu aç/kapat (yalnız `U` kart denemesi için gerekir) |
 | E | Kuşatmada yalnız `[!] ONAR [E]` görünen odada kolon kitiyle onarım veya sabitleme/barikat kurulumu; inşaat evresinde onarım veya bir güçlendirme kiti kurma |
 | U (F9 açıkken) | Kart + inşaat denemesi; normal kampanyada etkisiz |
 | R | Oyuncuyu, odaları, loot'u ve dalga döngüsünü başa al |
 
-**Adım 3'te Space yeniden takladır** (kullanıcı isteği); zıplama W/↑'dır. A/D ile yatay, W/S ile dikey takla yönünü seç; örneğin W+D+Shift sağ üst çapraza atılır. Yön basmazsan bakış yönüne atılırsın. Havada bir takla ve bir ikinci zıplama hakkı vardır; yere inince yenilenir. Her takla 32 enerji tüketir; enerji kısa gecikmeden sonra dolar. Sağ üstte can, takla enerjisi ve **binanın ayrı dayanıklılık barı** görünür.
+**Adım 3'te Space yeniden takladır** (kullanıcı isteği); zıplama W/↑'dır. A/D ile yatay, W/S ile dikey takla yönünü seç; örneğin W+D+Shift sağ üst çapraza atılır. Yön basmazsan bakış yönüne atılırsın. Havada bir takla ve bir ikinci zıplama hakkı vardır; yere inince yenilenir. Her takla 32 enerji tüketir; enerji kısa gecikmeden sonra dolar.
+
+**Minimal HUD (Adım 5.5):** Sol üstte can/enerji/bina barları; alt ortada 1020×22 px kalın siyah konturlu boss barı, üstünde yalnız boss adı, sağında kalan saniye ve yüzde. Sol alttaki KOLON / SABİTLE / GÜVENLİK slotlarıyla çakışmaz. Tab/H yardımı, E istemi ve sağ üst M/ESC ipuçları korunur. Sinematik girişte HUD gizlenir; başlık ve letterbox görünür.
 
 **Merdiven yoktur.** Kat geçişi her X konumunda çalışır. **Yukarı (2x W, Adım 3-B):** karakter güçlü bir dikey hızla fırlar; yükselirken yalnızca üst katın döşemesi onu yok sayar (duvarlar çarpışmaya devam eder). Döşeme hizasında yapışmaz: yaklaşık 32 px daha yükselip tepe noktasına çıkar, orada dikey hızı sıfırlanır, döşeme çarpışması geri açılır ve normal yerçekimiyle alçalarak yumuşak bir basılma (squash) ve tozla iner. Tepeye varış ~0,35 sn sürer. **Aşağı (S):** 0,11 sn'lik ease-out fazlama döşemeden süzülür. Geçişte rüzgâr izi, hayalet iz ve döşeme tozu çıkar; yükselirken takla başlatılamaz, tepe noktasından sonra hava taklası kullanılabilir. A/D ile yatay kontrol sürer. Tek zıplama yerçekimi, değişken yükseklik, 0,1 sn coyote time ve kısa giriş tamponu kullanır; yukarı takla da tavanın altında durur. Çelik Halat Kancası seçilirse yalnız takla sırasında duvar/kat geçişi açılır; takla bitince çarpışma geri gelir.
 
 Karakter zıplarken dikey uzar, yere veya yeni kata inince basılır (squash & stretch), koşarken hareket yönüne eğilir; havada bacaklarını toplar, mont etekleri, detaylı afet çantası ve baret kayışı hıza göre gecikerek hareket eder. Bunlar yalnızca görseldir; çarpışma kutusu değişmez. Baretin feneri baktığın yöne sıcak bir ışık konisi uzatır ve karanlık odaları aydınlatır (koni bulunduğun odanın duvarlarında kesilir).
+
+## Duraklatma ve ses (Adım 5)
+
+**ESC veya P** bütün oyunu durdurur (`get_tree().paused`): savaş sayacı, saldırılar, uyarılar, loot süresi ve oyuncu donar. Panel ve ses yöneticisi `PROCESS_MODE_ALWAYS` ile çalışmaya devam eder. Yarı saydam `#0b0e14` karartmanın üstünde kalın `#111518` konturlu panelde ikonlu tuş rehberi tablosu (koşu, zıplama/2x W, S, takla, E, F, 1–4, Tab/H, R, M, ESC/P) ve alt sırada **[ESC / P] DEVAM ET**, **[M] SES: AÇIK/KAPALI**, **-** / ses göstergesi / **+** ve **[R] YENİDEN BAŞLAT** düğmeleri vardır; hepsi fareyle ve klavyeyle (ok tuşları + Enter dahil) çalışır. Kart ekranının üstünde de duraklatılabilir; devam edince kart seçimi olduğu gibi bekler. HUD'un sağ üst köşesinde küçük `[H] YARDIM  [ESC] DURAKLAT  🔈 [M] SES` ipucu durur; sessizde hoparlör çarpılı ve `SES KAPALI` olur. Ses ayarı bu oturum boyunca geçerlidir (diske yazılmaz).
+
+**Ses motoru (`scripts/audio/`):** Harici ses/müzik dosyası kullanılmaz. Mevcut `SoundRecipes`/`SoundSynth` 51 efekt/atmosfer tarifini arka plan iş parçacığında 22,05 kHz 16-bit PCM'e pişirir. Asıl BGM ayrı `MusicScore` ile açılışta bir kez üretilir; oyun sırasında örnek sentezi veya generator tamponu doldurma işi yoktur.
+
+- **Asıl oyun müziği:** Özgün Re minör dark synth/chiptune; ritmik D–F–G–A–Bb–A bası (0,32), kick/snare/hat (0,25), D–F–A–G–E–F–D üst melodi (0,22) ve loş akorlar. 120 BPM / 8 adet 4/4 ölçü = **16 saniye**; istekteki 12,8 sn bu tempo/ölçüyle uyuşmadığından müzikal döngü korundu. 22.050 Hz, 16-bit mono WAV, `LOOP_FORWARD`, `loop_end = örnek sayısı`. Ayrı `bgm_player`, Master, −5 dB, ALWAYS; dalga/menü/yeni oyun sesi kesmez. Beklenmedik durma watchdog ile toparlanır; M kasıtlı sessizi korur. Pause'ta BGM sürer, yalnız eski atmosfer kanalı filtrelenir. SFX miks kuralları korunur; kulakla öznel beğeni ayrıca değerlendirilmelidir.
+- **Boss giriş/çıkış sesleri:** FIRTINA için rüzgâr/gök gürültüsü, DEPREM için sismik uğultu ve iki yumruk darbesi, SEL için basınçlı su/köpük, final için üç afetin birleşme darbesi. Önceki oyuncu, onarım, loot, uyarı, darbe, arayüz ve duraklatma efektleri korunur.
+- **Saldırı:** Her boss hazırlığında kısa radar uyarı tınısı; fırlatmada element sesi (fırtına hava yarılması, deprem balyoz darbesi, sel basınçlı su, yangın ateş topu patlaması) ve yumuşak savrulma; çarpmada cam / ahşap / taş / metal / su / ateş sesi. Panjurlu odaya gelen fırtına/sel/yangın darbesi ve türbin engellemesi metalik **BLOKLANDI** sesi çalar.
+- **Oyuncu ve dünya:** Zıplama, 2x W yükselme süpürmesi, S inişi ve sert inişte tok ayak sesi, takla hava yarılması, DODGE! parlak çınlama, hasarda tok darbe + kısa kalp atışı, loot düşme/toplama (çantada ferahlatıcı akor, güvenlik kitinde tıslama), E onarımında çekiç-somun-hidrolik kilit + onay tınısı, kart ekranı açılış/seçim sesi, oda ve bina çöküşü, zafer akoru ve yenilgi.
+- **Miks kuralları:** Her çalmada 0,94–1,06 rastgele perde; aynı ses için 0,05–0,5 sn kısıtlama (mermi fırlatma 0,12 sn, çarpma türü başına 0,11 sn); mermi fırlatma/çarpma sesleri ana efektlerden (−9 dB) **8 dB daha kısık** (−17 dB). Music / SFX / UI bus'ları, Master'da sınırlayıcı; 18 efekt + 4 nabız + 4 arayüz sesi sabit havuzdur, savaşta yeni ses düğümü oluşmaz.
 
 ## Oda hasarı, malzeme ve güçlendirme
 
@@ -64,13 +89,13 @@ Odalar başlangıçta 100 HP'dir. Sağlam: en az %70; hasarlı: %35–70 arası;
 | Afet & İlk Yardım Çantası (`EMERGENCY_BAG`) | Yeşil | Anında +25 can ve tam takla enerjisi; su, kuru gıda, sargı bezi, düdük etiketi |
 | Yangın Tüpü & Gaz Kesici Vana (`SAFETY_KIT`) | Kırmızı/turuncu | Toplandığı odaya otomatik kurulur: aktif/uyarıdaki/gelecek zemin suyu ve alevi engeller, ısıyı temizler, gaz/elektrik kaynaklı ikincil oda hasarını keser |
 
-Alt HUD'da **ONARIM KİTİ / SABİTLEME KİTİ**, sayıları ve kısa işlevleri görünür. Çanta anında tüketilir; güvenlik sayacı korunan benzersiz odaları gösterir. Drone/mıknatıs uzaktan toplasa da güvenlik sistemi loot'un **ilk düştüğü odada** kurulur; komşu odayı temizlemez. Kit, zemin alanını oda sınırlarından böler; çizim ve gerçek kapsül çarpışması aynı parçaları kullanır. Girdap çekimi ve havadaki mermiler güvenlik kitinden etkilenmez.
+Sol alttaki **KOLON / SABİTLE / GÜVENLİK** slotları adetleri gösterir. Çanta anında tüketilir; güvenlik sayacı korunan benzersiz odaları gösterir. Drone/mıknatıs uzaktan toplasa da güvenlik sistemi loot'un **ilk düştüğü odada** kurulur; komşu odayı temizlemez. Kit, zemin alanını oda sınırlarından böler; çizim ve gerçek kapsül çarpışması aynı parçaları kullanır. Girdap çekimi ve havadaki mermiler güvenlik kitinden etkilenmez.
 
 **İnşaat evresinde E:** Eksik HP varsa kolon kitiyle onarır. Sonra henüz kurulmayan kolon veya birleşik sabitleme/barikat kitini takar. Kolon bir, birleşik kit iki mevcut destek bileşenini doldurur; üç LED ve “TAM ODA DESTEĞİ” bunları gösterir. Aynı bileşen tekrar satın alınmaz. Bu bir gerçek bina güvenliği belgesi değildir. Kuşatmada sağlam odada E sessiz kalır; yıkık odalar kurulamaz.
 
 ## Afet hazırlık bülteni: 19 kart
 
-İlk dört dalga sonunda **sol kart kesinlikle 5 hazırlık paketinden biri**, orta/sağ kartlar ise **14 aksiyon modülünden farklı ikisi** olur. Alınmış kart tekrar sunulmaz. 1/2/3 veya fareyle birini seç; süre ve hareket seçim sırasında durur. Her kartta net etki ve tek cümlelik “Afet Farkındalık Notu” vardır. Yaklaşık %35 farkındalık / %65 aksiyon hedefi kart yuvalarına uygulanır; eski aktif mekanikler korunur.
+İlk üç faz sonunda **sol kart kesinlikle 5 hazırlık paketinden biri**, orta/sağ kartlar ise **14 aksiyon modülünden farklı ikisi** olur. Alınmış kart tekrar sunulmaz. 1/2/3 veya fareyle birini seç; süre ve hareket seçim sırasında durur. Her kartta net etki ve tek cümlelik “Afet Farkındalık Notu” vardır. Yaklaşık %35 farkındalık / %65 aksiyon hedefi kart yuvalarına uygulanır; eski aktif mekanikler korunur.
 
 | Hazırlık paketi | Oyun etkisi |
 | --- | --- |
@@ -111,7 +136,7 @@ Global kart indirimleriyle oda kitinin kaynak koruması çarpılarak birleşir; 
 
 Kurtarma uzmanında lacivert/antrasit üç tonlu mont, turuncu/sarı reflektör, vizörlü baret/fener, matara ve ilk yardım işaretli afet çantası, kemer/alet, eldiven ve koruyucu botlar vardır. Çanta yay/sönüm ile hareketi gecikmeli takip eder; koşu, hava ve takla pozu mevcut ayak pivotuna bağlıdır. Hitbox ve normal hareket değerleri değişmez.
 
-Dört bossun yüzeyleri derin gölge, ana ton ve parlak kenarla katmanlanır: fırtınada bulut lobları, elektrik gözü/çatallı damarlar, bıçak kenarları/kiremitler; golemde asimetrik bazalt yüzey, fay dalları, çakıl/toz, dişli çene ve yumruk demirleri; hidrada lacivert su, turkuaz akıntılar, beyaz köpük taçları/avcı gözler/varil; titanda kömür plakaları, magma çatlakları/çekirdek, omuz alev örtüsü/boynuz ve sarmal korlar.
+Dört bossun yüzeyleri derin gölge, ana ton ve parlak kenarla katmanlanır: fırtınada bulut lobları, elektrik gözü/çatallı damarlar, bıçak kenarları/kiremitler; golemde asimetrik bazalt yüzey, fay dalları, çakıl/toz, dişli çene ve yumruk demirleri; selde lacivert su, turkuaz akıntı ve köpük; birleşik finalde bazalt, hortum halkaları, köpüklü su jetleri ve şimşek damarları.
 
 
 - **Sismik Golem (sağ):** Kalça, nefes alan gövde, iki omuz, dirsekleri dışa bükülen iki eklemli kollar, dev yumruklar, baş, ayrı menteşeli çene ve etrafında yerçekimsiz dönen kayalar ayrı ayrı ve faz farkıyla hareket eder. Beklerken ağır nefes alır, omuzları kalkıp iner, çenesi açılınca boğazındaki lav parlar ve ağzından duman/köz çıkar. Saldırı uyarısı boyunca kollarını başının üstüne kaldırıp geriye yaslanır, gözleri kor gibi parlar; mermi çıktığı anda yumruklarını apartmanın dibine indirir (çarpma flaşı, toz ve kaya parçası patlaması, şok halkası).
@@ -145,26 +170,29 @@ Her eşyanın kimliği (`f<kat>_<ad>`), katı, durumu ve sprite atama yolu ayrı
 
 Oyun **8 saniyelik ilk hazırlıkla** başlar; F ile erken başlayabilirsin. Sonlu akış şöyledir:
 
-1. **Dalga 1 — Yıkıcı Fırtına:** 90 saniye hayatta kal.
-2. Kart seç → **tam 7 saniye inşaat** veya F.
-3. **Dalga 2 — Sismik Golem:** 90 saniye; ardından kart + 7 sn inşaat.
-4. **Dalga 3 — Çifte Felaket:** İki boss farklı katlarda ortak 2,8 sn saldırı temposuyla kuşatır. Ardından kart + 7 sn inşaat.
-5. **Dalga 4 — Abisal Taşkın Hidrası:** 90 saniye, 1,8 sn saldırı aralığı; ardından kart + 7 sn inşaat.
-6. **Dalga 5 — Piroklastik Kor Titanı:** 90 saniyelik final; 1,6 sn saldırı aralığı, son 10 saniyede saldırı hızı %25 artar (aralık 1,28 sn). Kızıl-beyaz kor ve duman cinneti görünür kılar.
-7. Oyuncu ve bina ayaktaysa **“5 BÜYÜK AFET KUŞATMASI ATLATILDI! TAM HAZIRLIK ZAFERİ!”**. Altıncı dalga yoktur.
+1. **FIRTINA:** 2,5 sn rüzgâr/şimşek sinematiği → 60 sn savaş → 1 sn çıkış.
+2. Kart seçimi + 7 sn inşaat (F ile erken bitir) → **DEPREM:** 2,5 sn zemin çatlağı, yükselen kayalar ve iki yumruk sinematiği → 60 sn savaş.
+3. Kart + 7 sn inşaat → **SEL:** 2,5 sn yükselen köpüklü su ve iki cephe tsunami sinematiği → 60 sn savaş.
+4. Son kart + 7 sn inşaat → **DEPREM • SEL • FIRTINA:** 2,8 sn üç afetin birleşme sinematiği → 60 sn final → çıkış ve zafer. Beşinci faz yoktur.
 
-Her dalgada **1,2 sn giriş → tam 90 sn savaş → 1,0 sn çıkış** vardır; geçişler savaş sayacını tüketmez. Kart seçimi 7 saniyeyi tüketmez. Fırtına dönerek gökten iner/yükselir; golem toz ve sarsıntıyla yükselip parçalanarak gömülür; hidra köpüklü su olarak kabarıp çekilir; titan alev sütunu/kor ile belirip küle dağılır. Bosslar hedef katlara kayar ve hamle yapar; hidra iki cepheyi, titan iki cepheyi ve çatının arkasını kullanır. Çatıdaki titan tam boy çizilir; alt gövdesini bina örter.
+Girişte oyuncu hareketi kilitlenir, saldırı veya hasar üretilmez; kamera hafif odaklanır, üst/alt siyah şeritler ve büyük boss adı görünür. Savaş başlayınca eski kadraj ve kontroller geri gelir. Giriş/çıkış 60 saniyeyi, kart seçimi 7 saniyeyi tüketmez.
 
-**Selin beş şeması:** 3,5 sn zemin taşkını (bazen Kat 00 + 01), farklı katlara çift cephe su duvarı/bıçak, üç kez gerçek sınır sekmesinden sonra altı parçaya ayrılan basınç küreleri, merkeze çeken girdap + yedi zıpkın ve sinüs yolunda varil/kütük/kablo. Taşkında zıplamak zemin hasarından kurtarır; üst katlara geçmek de mümkündür.
+**Selin beş şeması:** Zemin taşkını, iki cepheden su duvarları, gerçek üç sekmeli basınç küreleri, girdap/zıpkın ve sinüs yolunda varil/kütük. Uyarı, yerel güvenlik kitleri ve kaçınma yolları korunur.
 
-**Yangının altı şeması:** Çatıdan/üst çaprazdan meteor ve darbe kıvılcımları, odaya 3 sn alev bırakan napalm, iki karşı fazlı ateş helezonu, 1 sn dolan halkadan sekiz yöne patlayan beş kor çekirdeği, termal çekimden sonra katı süpüren alev duvarı + komşu katlarda zıplanabilen alçak alevler, çift cephe ateş hücumu. Yanan odanın oyun içi sıcaklığı ve HP hasarı artar. Sürekli tehlikeler mevcut bir saniyelik isabet korumasına tabidir.
+**Finalin birleşik saldırıları — ateş elementi yoktur:**
 
-Bütün yeni saldırılar aynı dondurulmuş yol/alan verisini uyarı ve gerçek çarpışmada paylaşır. Kat duvarları, taşkın ve kor bombaları **1 sn**, diğerleri 0,55–0,75 sn uyarılır. İkincil kıvılcım/su parçaları da ayrı 0,55 sn uyarı alır. 128 mermilik havuz büyümez. Eski üç odalık onarım sınırı, 4 sn loot ve 2x W fizik yayı korunur.
+- Alt iki kata taşkın + üç gecikmeli çatı kayası. Canlı suya çarpan beton, 0,75 sn ayrı uyarıyla basınç sütunu + iki su/iki kaya parçası saçar; kuru zeminde iki kaya parçası.
+- Rüzgâr çekimi + iki yedi mermilik su/rüzgâr girdap halkası ve bir çapraz rüzgâr bıçağı.
+- Bir sismik zemin şoku + tsunami duvarı + üç kez seken bir basınç küresi + tavan enkazı.
+- Dört köşedeki üç afet kaynağından **1,0 sn uyarılı 20 mermi**; daha geniş kaçış aralıkları.
+- Son 15 sn Nova: üç afetli **iki 11'lik halka**, yer değiştirme, ortak sınırdan geçen oda hasarı ve ek kolon/çanta loot'u.
 
-Dalga geçişinde saldırılar temizlenir; oda hasarı, güçlendirmeler, can, envanter ve kartlar korunur. **F9 test modu:** `1` fırtına, `2` deprem, `3` çifte kuşatma, `4` sel, `5` yangın; `U` kart denemesi. Test başlangıcı taze dünya kurar; kart ekranında 1/2/3 yalnız seçim yapar. `F` hazırlığı bitirir, `R` kampanyayı sıfırlar. Oyuncu ateş etmez.
+Birleşik bossun bazalt/kaya gövdesi, hortum kolu, su kaplı kaya eli, köpük taçları, girdapları ve şimşekleri binayı çevreler. Alev/lav çizimleri, yangın bossu ve eski çifte faz oyun akışından kaldırıldı. Korunmuş eski yangın tehlikesi yardımcıları ve ekipman direnç verileri normal kampanyada çağrılmaz.
+
+Her saldırı aynı dondurulmuş uyarı/hitbox yolunu kullanır; havuz 128 ile sınırlıdır. Fazlar arasında oda hasarı, envanter ve kartlar korunur; boss testleri taze dünya kurar. `1/2/3/4` boss, kartta `1/2/3` seçim; `F9+U` kart denemesi, `F` hazırım, `R` yeni oyun.
 
 - **Zemin şoku:** Golem alçak dalgaları sağdan sola veya ortadan iki yana gönderir. Üstünden zıpla veya dash ile geç.
-- **Fırtına döngüsü (Adım 3):** Fırtına 1,95 sn'de bir, altı vuruşluk döngüyle saldırır (üçüncü dalgada iki bossun ortak temposu 2,8 sn). Saniyedeki uyarılı mermi sayısı Adım 2.5'e göre yaklaşık 1,8 katıdır.
+- **Fırtına döngüsü (Adım 3):** Fırtına 1,95 sn'de bir, altı vuruşluk döngüyle saldırır (final üç afetin kendi birleşik döngüsünü kullanır). Saniyedeki uyarılı mermi sayısı Adım 2.5'e göre yaklaşık 1,8 katıdır.
   - **Girdap halkası:** Oyuncunun üstünde olmayan bir odada mini hortum gözü açılır; 10 veya 12 cam/rüzgâr küresi dönerek genişleyen bir halka çizer. Halka kendi katının yüksekliğinde basıktır, alt kısmı ayaktaki oyuncuya değer; aralıkları kolla, zıpla veya takla at. Her döngüde dönüş yönü değişir.
   - **Çapraz yaylım:** Sol pencerelerden ve sağdaki çatı hava akımından gelen sığ çapraz atışlar katın ortasında X çizer; bir yaylım alttan yükselir, sonraki üstten dalar. Yanında uçan bir saksı ve rüzgâr bıçağı vardır.
   - **Hortum koridoru:** Bulunduğun kat 1,0 sn uyarıyla boydan boya süpürülür. 2x W ile üste ya da S ile alta kaç; komşu katlarda zeminden yuvarlanan alçak enkaz/saksı dalgası vardır, onun üstünden zıpla.
@@ -178,7 +206,7 @@ Dalga geçişinde saldırılar temizlenir; oda hasarı, güçlendirmeler, can, e
 - Normal isabet can azaltır; kısa kırmızı ekran parlaması, kamera sarsıntısı ve **1 saniyelik yanıp sönen hasar koruması** verir. Bu sürede koşu/kat geçişi kontrolü devam eder.
 - Her çarpma düştüğü odayı aşındırır (yukarıdaki "Oda hasarı" bölümü). Can sıfırlanırsa, 4 oda yıkılırsa veya bina %0'a düşerse saldırılar durur; R ile yeniden dene.
 
-Kasırga kategorisi, 7.4 golem etiketi, girdap/çapraz yaylım/rüzgâr itmesi, kat fazlaması, 8/7/90 saniye süreler, dash, oda HP değerleri, 4 oda çöküş kuralı ve "kit ile anında onarım" fantastik oyun tasarımıdır; gerçek afet davranışı, bina güvenliği tahmini veya güçlendirme tavsiyesi değildir. Kartlardaki oranlar, FRP etiketi ve fantastik ekipmanlar oyun dengesidir; uygulamalı yapı güçlendirme talimatı değildir.
+Kasırga kategorisi, 7.4 golem etiketi, dört afetin tek canavarda birleşmesi, buhar sütunu/mühür/nova, girdap/çapraz yaylım/rüzgâr itmesi, kat fazlaması, 8/7/60 saniye süreler, dash, oda HP değerleri, 4 oda çöküş kuralı ve "kit ile anında onarım" fantastik oyun tasarımıdır; gerçek afet davranışı, bina güvenliği tahmini veya güçlendirme tavsiyesi değildir. Kartlardaki oranlar, FRP etiketi ve fantastik ekipmanlar oyun dengesidir; uygulamalı yapı güçlendirme talimatı değildir.
 
 ## Dosyalar
 
@@ -194,29 +222,34 @@ scripts/building/RoomLighting.gd Additive lamba konileri, sallanma ve titreme
 scripts/player/Player.gd CharacterBody2D, hızlı koşu, 2x W üst kat / S alt kat fazlaması, squash & stretch, baret feneri, 8 yön dash
 scripts/camera/          Camera2D, apply_shake ve sarsıntı gücü
 scripts/ui/              Sabit ekran HUD'u ve keskin dünya etiketleri (WorldLabels)
-scripts/bosses/          Dört çok parçalı, üç tonlu boss
+scripts/bosses/          Dört çok parçalı, üç tonlu boss + final Titan (CataclysmArt.gd)
 assets/sprites/          İsteğe bağlı el yapımı sprite klasörü
 scripts/combat/          Dalga, oda hasar tablosu, çöküş kuralı, telgraf, sabit havuz, mermi ve DODGE
 scripts/loot/LootSystem.gd Süreli 4 ekipman, toplama, faza bağlı E onarımı/inşaat
 scripts/combat/SiegeUpgrades.gd On dokuz kartın kataloğu ve seçimi
 scripts/combat/SiegeMechanics.gd Dron, kule, türbin, zincir, manyetizma ve zaman bükme
 scripts/ui/UpgradeOverlay.gd Fare/klavye ile üç kart seçimi
+scripts/ui/PauseMenu.gd   ESC/P duraklatma paneli, tuş rehberi, ses düğmeleri
+scripts/audio/            SoundManager (olaylar/miks), SoundSynth/SoundRecipes (SFX), MusicScore (bir kez pişen BGM)
 scripts/combat/BossPatterns.gd Fırtına girdap/çapraz/koridor, deprem paternleri ve uyarılı sekme zinciri
 scripts/art/FurnitureArt.gd 16 odaya özgü detaylı prosedürel mobilya çizimleri
 resources/VisualAssets.tres Kalıcı sprite atama alanları
 tests/Step1Smoke.gd      Godot içinde giriş/fizik/durum kontrolleri
 tests/Step2Smoke.gd      Kuşatma/uyarı/çarpışma/havuz kontrolleri ve görsel yakalama
-tests/Step2Soak.gd       Beş tam 90 sn savaş, dört 7 sn ara, gerçek malzeme/onarım
+tests/Step2Soak.gd       Dört tam 60 sn savaş, üç 7 sn ara, gerçek malzeme/onarım
 tests/Step25Smoke.gd     16 oda, gerçek jump/2x W/S/air-dash, paternler ve PNG kaydı
 tests/Step3Smoke.gd      Ekrana sığma, fırtına bullet-hell paternleri, rüzgâr ve PNG kaydı
 tests/Step27Smoke.gd     Karanlık atmosfer, ışıklar, sprite yükleyici, akıcı hareket, boss iskeletleri, 1920×1080 PNG
 tests/Step3LootSmoke.gd  2x W yayı, oda HP/durumları, çöküş, loot ve E onarımı, 1920×1080 PNG
-tests/CampaignSmoke.gd   4 sn ömür, inşaat, kart modal input, 5 dalga, zafer, görsel kayıtlar
-tests/Step45Smoke.gd     90/7 sn, giriş/çıkış, hasar sınırı, dokuz aktif kart ve görsel kayıtlar
+tests/CampaignSmoke.gd   4 sn ömür, inşaat, kart modal input, 6 dalga, zafer, görsel kayıtlar
+tests/Step45Smoke.gd     60/7 sn, giriş/çıkış (final 2,0 sn), hasar sınırı, aktif kartlar ve görsel kayıtlar
 scripts/combat/MarathonPatterns.gd Sel/yangın paternleri, kalıcı alanlar, ikincil saldırılar
 scripts/bosses/MarathonArt.gd Çok parçalı hidra/titan ve su/ateş çizimleri
 tests/MarathonSmoke.gd    Yeni paternler, sekmeler, alan hasarı, kartlar, hareket, cinnet, native PNG
-tests/Step48Smoke.gd      Dört kit, yerel güvenlik, 19 kart, 200 seçim, sayısal etkiler ve native PNG
+tests/Step48Smoke.gd      Dört kit, yerel güvenlik, 19 kart, 250 seçim, sayısal etkiler ve native PNG
+scripts/combat/CataclysmPatterns.gd Final Titan'ın beş birleşik yeteneği, buhar etkileşimi ve nova
+tests/Step49Smoke.gd      Minimal HUD, 60 sn, 1–4 kısayolları, birleşme girişi, beş yetenek, nova, gerçek 60 sn final ve native PNG
+tests/Step5Smoke.gd       Duraklatma (klavye/fare), M/-/+, sentez kalitesi, miks kuralları, olay sesleri, kesintisiz PCM müziği ve native PNG
 ```
 
 Görünür bileşenlerde Inspector'daki **Custom Sprite** alanına Texture2D sürüklenebilir; atanmazsa detaylı prosedürel çizim kullanılır. Bina bütünü için sprite atanırsa oda/eşya çizimleri gizlenir, fizik ve durum verisi korunur. Eşyalar `UNSECURED`, `REINFORCED`, `DAMAGED` durumlarını tutar; oda durumu değişince pencere kırılır/kepenk alır, eşyalar eğilir veya L-demirle sabitlenir; R yazılmış ilk durumlara döndürür.
@@ -240,26 +273,37 @@ Boss sprite'ı için `assets/sprites/` klasörünü ya da sahnedeki `World/Viewp
 & 'C:\Godot\Godot_console.exe' --headless --fixed-fps 60 --path . --script res://tests/Step45Smoke.gd
 & 'C:\Godot\Godot_console.exe' --headless --fixed-fps 60 --path . --script res://tests/MarathonSmoke.gd
 & 'C:\Godot\Godot_console.exe' --headless --fixed-fps 60 --path . --script res://tests/Step48Smoke.gd
+& 'C:\Godot\Godot_console.exe' --headless --fixed-fps 60 --path . --script res://tests/Step49Smoke.gd
+& 'C:\Godot\Godot_console.exe' --headless --fixed-fps 60 --path . --script res://tests/Step5Smoke.gd
+& 'C:\Godot\Godot_console.exe' --headless --fixed-fps 60 --path . --script res://tests/Step55Smoke.gd
+& 'C:\Godot\Godot_console.exe' --headless --fixed-fps 60 --path . --script res://tests/Step6Smoke.gd
 ```
 
 Linux'ta tüm paketler (kurulumuna göre `godot` yerine motor dosyasını yaz):
 
 ```sh
 godot --headless --editor --path . --import --quit
-for suite in Step1Smoke Step2Smoke Step25Smoke Step3Smoke Step27Smoke Step3LootSmoke CampaignSmoke Step45Smoke MarathonSmoke Step48Smoke Step2Soak; do
+for suite in Step1Smoke Step2Smoke Step25Smoke Step3Smoke Step27Smoke Step3LootSmoke CampaignSmoke Step45Smoke MarathonSmoke Step48Smoke Step49Smoke Step5Smoke Step55Smoke Step6Smoke Step2Soak; do
   godot --headless --fixed-fps 60 --path . --script "res://tests/$suite.gd" || break
 done
 godot --path . --script res://tests/Step48Smoke.gd -- --capture=/tmp/siege48-captures
+godot --path . --script res://tests/Step49Smoke.gd -- --capture=/tmp/siege49-captures
 ```
+
+Step49 native testi minimal HUD'u (hazırlık, kuşatma, Tab/H yardımı), birleşme girişinin dört karesini, Titan'ı, beş yeteneğin uyarı/aktif hâllerini, Nova'yı, geri çekilmeyi ve dört faz zaferini 1920×1080 kaydeder.
 
 Step48 native testi 1920×1080 sabit render viewport'unda dört bossun bekleme/hazırlığını, karakterin dört pozunu, loot/HUD ve 19 kartın tamamını kaydeder. Yakın karakter karelerinde yalnız test kamerası büyütülür. Küçük pencerenin gerçek ölçek dönüşümü üzerinden sentetik fare girişi ayrıca sınanır; testteki PNG tasarım çözünürlüğündedir.
 
 Farklı Godot sürümleri arasında geçiş yaptıysan testten önce o sürümle `--editor --quit` çalıştır; aksi hâlde sınıf önbelleği eski kalabilir.
 
-Görsel kontrol için aynı test, `--headless` olmadan `-- --capture=C:/Temp/disaster-siege` ile çalıştırılabilir. Yalnızca gerçek renderer görüntü üretebilir. `Step27Smoke` ve `Step3Smoke` görüntü alırken exclusive fullscreen'e geçer ve tam 1920×1080 kare kaydeder (ekran 1080p ise). `MarathonSmoke` tüm bossların giriş/çıkışlarını, yeni paternlerin uyarı/aktif hallerini, cinneti, iki yeni kartı ve beş dalga zaferini kaydeder. 1920×1080 fullscreen ve ölçeklenmiş pencerede gerçek fare seçimi kontrol edilir. Adım4.8 [görsel kanıt dizini](captures/step48/README.md) yerel kopyada bulunur (Git dışında). Test veya görsel sonuçları [STATUS.md](STATUS.md) içinde gerçek motor sürümüyle kaydedilir.
+Görsel kontrol için aynı test, `--headless` olmadan `-- --capture=C:/Temp/disaster-siege` ile çalıştırılabilir. Yalnızca gerçek renderer görüntü üretebilir. `Step27Smoke` ve `Step3Smoke` görüntü alırken exclusive fullscreen'e geçer ve tam 1920×1080 kare kaydeder (ekran 1080p ise). `MarathonSmoke` tüm bossların giriş/çıkışlarını, yeni paternlerin uyarı/aktif hallerini, cinneti, iki yeni kartı ve dört faz zaferini kaydeder. 1920×1080 fullscreen ve ölçeklenmiş pencerede gerçek fare seçimi kontrol edilir. Adım4.8 [görsel kanıt dizini](captures/step48/README.md) yerel kopyada bulunur (Git dışında). Test veya görsel sonuçları [STATUS.md](STATUS.md) içinde gerçek motor sürümüyle kaydedilir.
 
 `--fixed-fps 60`, tam dalga testinde gerçek zamanı beklemeyi kaldırır; simülasyon yine 60 Hz adımlarla bütün dalgaları işler. Uzun testte oyuncu canı yalnızca test sahnesinde yükseltilir, böylece tüm saldırılar denetlenir. Test sürücüsü gerçek düşen malzemeleri toplar ve kazanılan kolon kitiyle onarım API'sini kullanır; insan refleksleri veya kaçınma zorluğunun kanıtı değildir. Normal oyunun can ayarı değişmez.
 
 Güne başlamadan temiz çalışma ağacında `git fetch origin`, ardından görev dalına göre uygun güncelleme yap. Yeni işe ayrı `feat/...` dalında başla. Dosyalarını kaydet, Git farkını kontrol et, yalnızca ilgili dosyaları commit et ve kendi dalına pushla. İki kişi aynı dosyada eşzamanlı çalışmasın. Push, bir dalın otomatik olarak `main` ile birleşmesi değildir. Commit/push görevleri kullanıcı isteğiyle yapılır.
 
 Önceki ARTÇI web sürümü kullanıcı isteğiyle kaldırıldı; `2647179` commitinde geçmiş kaydı korunur. Yeni kaynaklar bu sürümle karıştırılmaz. [AI/kaynak beyanı](BEYAN.md), [kaynaklar](SOURCES.md), [teslim kontrolü](SUBMISSION.md).
+
+Adım 5.5 kontrolleri: `tests/Step55Smoke.gd` dört faz/sinematik/alt HUD ve gerçek BGM PCM ölçümlerini içerir. Native kanıt: `--script res://tests/Step55Smoke.gd -- --capture=C:/Temp/step55 --audio=C:/Temp/step55-music.wav` (headless olmadan). Müzik kodu `scripts/audio/MusicScore.gd`, sinematik kodu `scripts/ui/BossCinematic.gd`. Son test sonuçları STATUS.md içindedir.
+
+Adım 6: `tests/Step6Smoke.gd` önbellek yenileme/dormant havuz/uyarı geometrisi/final katsayıları/WAV watchdog'unu kontrol eder. Gerçek ses sürücüsünde iki döngü sınırı ve Master çıkış enerjisi: `--script res://tests/Step6Smoke.gd -- --audio-live --capture=C:/Temp/step6`. FPS karşılaştırması: **headless ve fixed-fps kullanmadan** `--script res://tests/PerformanceBench.gd -- --live --capture=C:/Temp/step6-perf`. Test gerçek makinenin kare süresi/p95/çizim çağrılarını raporlar; tüm bilgisayarlar için FPS garantisi vermez. Statik önbellekler `UPDATE_ONCE` sonrası kapanır; Compatibility/pixel_scale=2 korunur. Sonuçlar STATUS.md'dedir.

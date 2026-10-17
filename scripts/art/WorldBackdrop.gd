@@ -3,7 +3,10 @@ extends Node2D
 ## Static night sky, blacked-out skyline and ground. Rain, ash and lightning live
 ## in NightWeather so this layer is drawn once.
 
-@export var custom_sprite: Texture2D
+@export var custom_sprite: Texture2D:
+	set(value):
+		custom_sprite = value
+		refresh_cache()
 ## World area seen by the zoomed-out camera (1920x1080 / camera zoom).
 @export var view_size: Vector2 = Vector2(1920, 1080)
 @export var ground_y: float = 917.0
@@ -14,8 +17,25 @@ const SKY_LOW: Color = Color("141923")
 ## Two low-res pixels at the default zoom (0.39), so dithers land on the pixel grid.
 const DITHER: float = 5.128
 const BAYER: Array[int] = [0, 2, 3, 1]
+var _cache_source: bool = false
+var _static_cache: SubViewport
+var _cache_bounds: Rect2
+
+func _ready() -> void:
+	if _cache_source: return
+	_cache_bounds = Rect2(Vector2(-BLEED,-BLEED),view_size+Vector2.ONE*BLEED*2)
+	_static_cache = StaticCanvasCache.create(self,_cache_bounds)
+	StaticCanvasCache.painter(_static_cache,self,["custom_sprite","view_size","ground_y"])
+
+func refresh_cache() -> void:
+	if _cache_source or _static_cache == null: return
+	StaticCanvasCache.refresh(_static_cache,self,["custom_sprite","view_size","ground_y"])
+	queue_redraw()
 
 func _draw() -> void:
+	if not _cache_source and _static_cache != null:
+		draw_texture_rect(_static_cache.get_texture(),_cache_bounds,false)
+		return
 	var w: float = view_size.x
 	var h: float = view_size.y
 	if custom_sprite != null:

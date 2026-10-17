@@ -145,6 +145,7 @@ static func zone(w: DisasterWaveManager, kind: HazardAttack.Kind, f: int, area: 
 static func split(w: DisasterWaveManager, parent: HazardAttack, point: Vector2) -> void:
 	var water: bool = parent.kind == HazardAttack.Kind.HYDRO_ORB
 	var count: int = 6 if water else 4
+	if w.mode == DisasterWaveManager.Mode.CATACLYSM: count = CataclysmPatterns.count(count)
 	for i: int in range(count):
 		var a: HazardAttack = w._attack(HazardAttack.Kind.WATER_SHARD if water else HazardAttack.Kind.FIRE_DART, parent.floor_index, point, Vector2.from_angle(i * TAU / count + (PI if not water else .2)) * (590 if water else 620))
 		a.source = parent.source

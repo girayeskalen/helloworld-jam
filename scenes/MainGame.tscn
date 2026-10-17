@@ -74,9 +74,9 @@ position = Vector2(194, 1232)
 script = ExtResource("8_boss")
 kind = 2
 
-[node name="FireBoss" type="Node2D" parent="World/Viewport"]
+[node name="CataclysmBoss" type="Node2D" parent="World/Viewport"]
 visible = false
-position = Vector2(2240, 1232)
+position = Vector2(1231, 1247)
 script = ExtResource("8_boss")
 kind = 3
 

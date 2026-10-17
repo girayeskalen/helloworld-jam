@@ -15,6 +15,7 @@ var spawn_count: int = 0
 var rejected_count: int = 0
 var peak_active: int = 0
 var last_spawn_warning: float = 0.0
+var body_textures: Dictionary = {}
 
 func _ready() -> void:
 	process_physics_priority = 20
@@ -25,12 +26,31 @@ func _ready() -> void:
 		add_child(projectile)
 		entries.append(projectile)
 
+func warm_body_cache() -> void:
+	if not body_textures.is_empty(): return
+	# Warm all ordinary spinning silhouettes before combat. Area/wall/orb artwork
+	# remains live; no cache viewport or projectile node is allocated in a battle.
+	for kind: int in [HazardAttack.Kind.GLASS,HazardAttack.Kind.POT,HazardAttack.Kind.CHAIR,HazardAttack.Kind.WIND_BLADE,HazardAttack.Kind.BRICK,HazardAttack.Kind.CONCRETE,HazardAttack.Kind.CHANDELIER,HazardAttack.Kind.SHOCKWAVE,HazardAttack.Kind.BOOK,HazardAttack.Kind.WIND_ORB,HazardAttack.Kind.SHARD,HazardAttack.Kind.WARDROBE,HazardAttack.Kind.KNIFE,HazardAttack.Kind.PLATE,HazardAttack.Kind.SAW,HazardAttack.Kind.TOOL,HazardAttack.Kind.TOY,HazardAttack.Kind.DEBRIS,HazardAttack.Kind.WATER_SHARD,HazardAttack.Kind.HARPOON,HazardAttack.Kind.FLOATING_DEBRIS]:
+		var view: SubViewport = StaticCanvasCache.create(get_parent(),HazardProjectile.BODY_BOUNDS)
+		var painter: HazardProjectile = HazardProjectile.new()
+		painter._cache_source = true
+		painter.process_mode = Node.PROCESS_MODE_DISABLED
+		painter.active = true
+		painter.attack = HazardAttack.new()
+		painter.attack.kind = kind as HazardAttack.Kind
+		painter.attack.source = 2 if kind >= HazardAttack.Kind.FLOOD_ZONE else 0
+		painter.attack.radius = 27 if kind == HazardAttack.Kind.CONCRETE else 12
+		painter.attack.velocity = Vector2.RIGHT
+		view.add_child(painter)
+		body_textures[kind] = view.get_texture()
+
 func spawn(attack: HazardAttack) -> HazardProjectile:
 	if not attack.is_armed():
 		rejected_count += 1
 		return null
 	for projectile: HazardProjectile in entries:
 		if not projectile.active:
+			projectile.body_texture = body_textures.get(attack.kind) if (attack.source >= 2) == (attack.kind >= HazardAttack.Kind.FLOOD_ZONE) and attack.kind != HazardAttack.Kind.SHOCKWAVE else null
 			if projectile.activate(attack):
 				spawn_count += 1
 				last_spawn_warning = attack.warning_elapsed

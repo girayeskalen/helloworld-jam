@@ -5,6 +5,8 @@ extends Node2D
 @export var custom_sprite: Texture2D
 const CYAN: Color = Color("71e5e1")
 const AMBER: Color = Color("ffc17a")
+## The deflector turbine stopped a projectile at a reinforced window.
+signal blocked(point: Vector2)
 var game: MainGame
 var drone_position: Vector2
 var drone_target: RoomDiorama
@@ -248,6 +250,7 @@ func intercept(shot: HazardProjectile, previous: Vector2) -> bool:
 		var center: Vector2 = prop.global_position - Vector2(0, prop.prop_size.y * 0.5)
 		if Geometry2D.get_closest_point_to_segment(center, previous, shot.global_position).distance_to(center) <= 42.0 + shot.attack.radius:
 			beam(center, shot.global_position, CYAN)
+			blocked.emit(shot.global_position)
 			game.projectiles.dissolve(shot)
 			game.player.stamina = minf(100.0, game.player.stamina + 6.0)
 			fragment_count += 1
@@ -288,7 +291,11 @@ func retreat_dust(delta: float) -> void:
 			particles.append({"p": game.earthquake._home + Vector2(-150+i*90,-15), "v": Vector2(-55+i*35,-65), "life": 1.1, "color": Color("817e76"), "size": 18.0+i*3.0, "dust": true})
 	if game.storm.visible:
 		burst(game.storm.global_position + Vector2(cos(_clock*11)*90,-350), Color("8eafc1"), 5)
-	for boss: DisasterBoss in [game.flood,game.fire]:
+	if game.titan.visible:
+		# The amalgam sinks into its own tide: four element sprays at once.
+		for i: int in range(4):
+			burst(game.titan.global_position + Vector2((i - 1.5) * 520.0 + sin(_clock*13+i)*60.0, -180.0 - (i % 2) * 520.0), CataclysmArt.ELEMENTS[i % 3], 5)
+	for boss: DisasterBoss in [game.flood]:
 		if not boss.visible: continue
 		var color: Color = Color("72e9d7") if boss.kind == DisasterBoss.Kind.FLOOD else Color("ff8b43")
 		burst(boss.global_position + Vector2(sin(_clock*13)*110,-150),color,10)

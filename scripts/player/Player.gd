@@ -5,6 +5,9 @@ signal dash_started
 signal floor_transition_started(target_floor: int)
 signal floor_changed(floor_index: int)
 signal damaged(remaining_health: float)
+## Audio/feedback hooks: a ground or top-floor air jump, and a landing (0..1 impact).
+signal jumped(air: bool)
+signal landed(impact: float)
 
 @export var custom_sprite: Texture2D
 @export var sprite_size: Vector2 = Vector2(64, 88)
@@ -226,6 +229,7 @@ func _physics_process(delta: float) -> void:
 		var impact: float = clampf(falling / fast_fall_speed, 0.25, 1.0)
 		visual_scale = Vector2(1.0 + 0.32 * impact, 1.0 - 0.3 * impact)
 		_burst(Vector2.ZERO, 6)
+		landed.emit(impact)
 	_was_on_floor = is_on_floor()
 	_update_pose(delta)
 	queue_redraw()
@@ -264,6 +268,7 @@ func try_jump() -> bool:
 	_fast_falling = false
 	visual_scale = Vector2(0.78, 1.26)
 	_emit_dust()
+	jumped.emit(false)
 	return true
 
 ## The second W in the air: phase up one floor, or a plain air jump on the top floor.
@@ -278,6 +283,7 @@ func try_air_jump() -> bool:
 	_fast_falling = false
 	visual_scale = Vector2(0.8, 1.22)
 	_burst(Vector2(0, -6), 8)
+	jumped.emit(true)
 	return true
 
 func _press_down() -> bool:
@@ -400,6 +406,7 @@ func _update_shift(delta: float, direction: float) -> void:
 		visual_scale = Vector2(1.28, 0.74)
 		_burst(Vector2.ZERO, 6)
 		floor_changed.emit(current_floor)
+		landed.emit(0.8)
 
 func try_dash(direction: Vector2 = Vector2.ZERO) -> bool:
 	if health <= 0 or is_shifting or is_dashing or _cooldown > 0.0 or stamina < dash_cost:

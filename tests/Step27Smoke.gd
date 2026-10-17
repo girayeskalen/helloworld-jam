@@ -41,7 +41,7 @@ func _run() -> void:
 	# --- 3. Night palette, weather and lightning.
 	_check(WorldBackdrop.SKY_TOP.get_luminance() < 0.08 and WorldBackdrop.SKY_LOW.get_luminance() < 0.12, "Night sky palette #0b0e14 - #141923")
 	var weather: NightWeather = game.weather
-	_check(weather._drops.size() >= 200 and weather._ash.size() >= 50, "Slanted downpour and drifting ash/embers")
+	_check(weather._drops.size() == 40 and weather._ash.size() == 10, "Fifty preallocated rain/ash particles retain the storm atmosphere")
 	game._apply_atmosphere()
 	var dark: Color = b.rooms[0].modulate
 	_check(dark.r <= 0.56 and dark.g <= 0.6 and dark.b <= 0.66 and dark.v >= 0.4, "Rooms keep ~50%% of their painted brightness (%s)" % dark)
@@ -115,9 +115,12 @@ func _run() -> void:
 	for room: RoomDiorama in b.rooms:
 		tiles = tiles and room.wall_texture == found["tileset"]
 	_check(p.custom_sprite == found["player"] and game.storm.boss_sprite == found["boss_storm"] and game.earthquake.boss_sprite == found["boss_quake"] and tiles, "Dropped sprites replace the procedural player, bosses and room walls")
-	w.start_siege(DisasterWaveManager.Mode.CHAOS, true)
-	w.advance_wave(DisasterWaveManager.INTRO_DURATION)
+	w.start_siege(DisasterWaveManager.Mode.CATACLYSM, true)
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
+	# Direct sprite drawing fixture; campaign itself never starts a double phase.
+	game.storm.set_active(true)
+	game.earthquake.set_active(true)
 	game.storm.cue_attack(0.5)
 	await _frames(12)
 	game.storm.strike()
@@ -312,10 +315,10 @@ func _run() -> void:
 	var quake_glow: Color = probe.glow_color()
 	probe.attack = null
 	_check(storm_glow.b > storm_glow.r and quake_glow.r > quake_glow.b and HazardProjectile.CORE.r > 0.9 and HazardProjectile.CORE.g < 0.4, "Electric-blue storm rim, ember quake rim, bright red core")
-	_check(HazardProjectile.TRAIL_LENGTH >= 10, "Long motion trails")
+	_check(HazardProjectile.TRAIL_LENGTH == 4, "Four-point motion trails bound projectile drawing cost")
 	_check(TelegraphSystem.STORM_WARNING.b > TelegraphSystem.STORM_WARNING.r and TelegraphSystem.QUAKE_WARNING.r > TelegraphSystem.QUAKE_WARNING.b, "Warnings use neon storm-blue and ember colours")
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-	w.advance_wave(DisasterWaveManager.INTRO_DURATION)
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
 	p.current_floor = 1
 	game.storm.plan_pattern(w, 3, 1)
@@ -329,6 +332,9 @@ func _run() -> void:
 	print("STEP27_RESULT checks=%d failures=%d" % [checks, failures])
 	game.queue_free()
 	await process_frame
+	await process_frame
+	# Drain the audio driver after deferred scene destruction.
+	OS.delay_msec(80)
 	quit(0 if failures == 0 else 1)
 
 func _capture(directory: String) -> void:
@@ -363,8 +369,8 @@ func _capture(directory: String) -> void:
 	await _save(directory, "floor-up-phase.png")
 	_key(KEY_D, false)
 	await _frames(30)
-	w.start_siege(DisasterWaveManager.Mode.CHAOS, true)
-	w.advance_wave(DisasterWaveManager.INTRO_DURATION)
+	w.start_siege(DisasterWaveManager.Mode.CATACLYSM, true)
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
 	await _frames(30)
 	w.storm_burst()

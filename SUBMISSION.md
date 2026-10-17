@@ -1,13 +1,13 @@
 # AFET KUŞATMASI — teslim taslağı
 
-Bu belge teslim yapıldığı anlamına gelmez. Adım 1 + 2 + 2.5 + 3 + 2.7 + 3-B; oda hasarı/çöküş, rastgele odaya düşen loot ve E ile onarım/güçlendirme, doğal üst kat zıplama yayı, karanlık pixel-art afet gecesi atmosferi, çok parçalı bosslar, 4×4 = 16 benzersiz odalı oynanabilir diorama, merdivensiz 2x W üst kat / S alt kat geçişi, sekiz yönlü takla, uyarılı fırtına (girdap, çapraz yaylım, koridor, rüzgâr) ve deprem paternleri, kaçınma ve hasar temelidir. Güncel ek: hasarlı odada onarım, süreli 5 malzeme, üç kademeli inşaat, 9 kartlık hazırlık bülteni ve sonlu üç boss + zafer akışı. Adım 4.5: 90 sn × 3 savaş, aralarda 15 sn inşaat, boss giriş/çıkışları, üç odalık onarım sınırı ve dokuz aktif mekanik kartı. Kartların etkileri fantastik oyun dengesidir.
+Bu belge teslim yapıldığı anlamına gelmez. Güncel Adım 6: Godot 4.3+ / Compatibility üzerinde 4×4 karanlık apartman, mevcut kurtarma karakteri ve 2x W fizik yayı, dört ekipman/19 kart/onarım/loot; FIRTINA → DEPREM → SEL → DEPREM • SEL • FIRTINA şeklinde dört adet 60 sn savaş ve üç adet 7 sn inşaat. Her bossa 2,5 sn (final 2,8) saldırısız sinematik giriş, alt boss HP/süre barı, özgün sürekli mono WAV BGM ve mevcut SFX/duraklatma. Statik çizimler önbellekte; final yoğunluğu/hızı/hasarı düşürülmüş, uyarı süresi uzatılmıştır. Final yalnız rüzgâr/kaya/su kullanır. Test ve sınırlar STATUS.md, AI katkıları BEYAN/SOURCES içindedir.
 
 - Oyun adı: AFET KUŞATMASI / Disaster Siege
 - Tema: Afete hazırlık ve farkındalık
 - Motor: Godot 4.x / GDScript / Compatibility
 - Takım üyeleri: Ekip dolduracak
 - Public repo: https://github.com/girayeskalen/helloworld-jam
-- Son teslim commit/dalı: Henüz belirlenmedi; yerel değişiklikler pushlanmadı
+- Son yarışma teslim commit'i: Henüz seçilmedi; güncel geliştirme dalı `feat/disaster-siege-step1`, sürüm kimliği `git log -1 --oneline` ile görülür
 - Oynanabilir dağıtım/HTTPS bağlantısı: Hazırlanmadı
 - Platform ve export sonucu: Henüz doğrulanmadı
 - Tanıtım videosu: Hazırlanmadı

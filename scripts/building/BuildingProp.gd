@@ -14,16 +14,22 @@ enum Condition { UNSECURED, REINFORCED, DAMAGED }
 @export var custom_sprite: Texture2D:
 	set(value):
 		custom_sprite = value
+		invalidate_static()
 		queue_redraw()
 @export var kind: Kind = Kind.TABLE
 @export var condition: Condition = Condition.UNSECURED:
 	set(value):
+		if condition == value: return
 		condition = value
 		if is_inside_tree() and value != Condition.UNSECURED:
 			stop_shaking()
 		queue_redraw()
+		invalidate_static()
 @export var prop_size: Vector2 = Vector2(90, 70)
-@export var palette: Color = Color("ad7655")
+@export var palette: Color = Color("ad7655"):
+	set(value):
+		palette = value
+		invalidate_static()
 @export var floor_index: int = 0
 @export var object_id: StringName = &"prop"
 ## Pendulum angle of hanging lamps (radians around the ceiling mount); set by RoomLighting.
@@ -43,18 +49,43 @@ var authored_condition: Condition = Condition.UNSECURED
 var _rest_position: Vector2 = Vector2.ZERO
 var _shake_left: float = 0.0
 var _shake_clock: float = 0.0
+var _cache_source: bool = false
+var _static_cache: SubViewport
+var _cache_bounds: Rect2
+var _visual_dirty: bool = false
+var static_revision: int = 0
+const CACHE_FIELDS: Array[String] = ["custom_sprite","kind","condition","prop_size","palette","floor_index","object_id"]
 
 func _ready() -> void:
 	_rest_position = position
+	set_process(false)
+	if _cache_source: return
+	_cache_bounds = Rect2(Vector2(-prop_size.x*.5-28,-prop_size.y-28),prop_size+Vector2(56,56))
+	_static_cache = StaticCanvasCache.create(self,_cache_bounds)
+	StaticCanvasCache.painter(_static_cache,self,CACHE_FIELDS)
+	static_revision += 1
+
+func invalidate_static() -> void:
+	if _cache_source or _static_cache == null or _visual_dirty: return
+	_visual_dirty = true
+	call_deferred("_refresh_static")
+
+func _refresh_static() -> void:
+	_visual_dirty = false
+	StaticCanvasCache.refresh(_static_cache,self,CACHE_FIELDS)
+	static_revision += 1
+	queue_redraw()
 
 func shake_unsecured(duration: float) -> void:
 	if condition == Condition.UNSECURED:
 		_shake_left = maxf(_shake_left, duration)
+		set_process(true)
 
 func stop_shaking() -> void:
 	_shake_left = 0.0
 	rotation = tilt
 	position = _rest_position
+	set_process(false)
 
 func _process(delta: float) -> void:
 	if _shake_left <= 0:
@@ -70,6 +101,14 @@ func state_record() -> Dictionary:
 	return {"id": String(object_id), "kind": kind, "condition": condition, "floor": floor_index}
 
 func _draw() -> void:
+	if not _cache_source and _static_cache != null:
+		if kind == Kind.LAMP:
+			draw_set_transform(Vector2(0,-59),sway)
+			draw_texture_rect(_static_cache.get_texture(),Rect2(_cache_bounds.position+Vector2(0,59),_cache_bounds.size),false)
+			draw_set_transform(Vector2.ZERO)
+		else:
+			draw_texture_rect(_static_cache.get_texture(),_cache_bounds,false)
+		return
 	if custom_sprite != null:
 		draw_texture_rect(custom_sprite, Rect2(Vector2(-prop_size.x * 0.5, -prop_size.y), prop_size), false)
 		return

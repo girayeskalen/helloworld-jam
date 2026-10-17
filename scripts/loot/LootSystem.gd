@@ -6,6 +6,8 @@ extends Node2D
 signal collected(kind: int)
 signal repaired(room: RoomDiorama)
 signal manual_action(room: RoomDiorama)
+## A dropped supply touched the floor (end of its 0.45 s fall).
+signal landed(kind: int)
 
 enum Kind { COLUMN_KIT, BARRICADE_KIT, EMERGENCY_BAG, SAFETY_KIT }
 enum RepairResult { REPAIRED, NO_MATERIAL, NOT_NEEDED, COLLAPSED, REINFORCED }
@@ -89,7 +91,9 @@ func advance(delta: float) -> void:
 	for i: int in range(items.size() - 1, -1, -1):
 		var item: Dictionary = items[i]
 		var fall_left: float = maxf(0.0, (1.0 - float(item["drop"])) * DROP_TIME)
+		var falling: bool = float(item["drop"]) < 1.0
 		item["drop"] = minf(1.0, float(item["drop"]) + delta / DROP_TIME)
+		if falling and float(item["drop"]) >= 1.0: landed.emit(int(item["kind"]))
 		item["age"] = float(item["age"]) + delta
 		item["ground_age"] = float(item["ground_age"]) + maxf(0.0, delta - fall_left)
 		if building.rooms[int(item["room"])].is_collapsed() or float(item["ground_age"]) + 0.000001 >= loot_lifetime:
@@ -220,6 +224,21 @@ func interaction_hint() -> String:
 		var kind: int = next_component(room)
 		if kind >= 0: return "[E] " + short_name(kind) + " KUR · " + purpose(kind)
 		return "ODA DESTEĞİ %d/3 · ONARIM / SABİTLEME KİTİ TOPLA" % room.reinforcement_level
+	return ""
+
+## Two-word prompt drawn over the player; empty when E would do nothing.
+func short_hint() -> String:
+	var room: RoomDiorama = current_room()
+	if room == null or room.is_collapsed(): return ""
+	if repair_alert(room):
+		if column_kits > 0: return "[E] ONAR"
+		if barricade_kits > 0 and next_component(room) == Kind.BARRICADE_KIT: return "[E] SABİTLE"
+		return ""
+	if can_build():
+		if room.hp < room.max_hp and column_kits > 0: return "[E] ONAR"
+		var kind: int = next_component(room)
+		if kind == Kind.COLUMN_KIT: return "[E] KOLON KUR"
+		if kind == Kind.BARRICADE_KIT: return "[E] SABİTLE"
 	return ""
 
 static func short_name(kind: int) -> String:
@@ -366,6 +385,25 @@ func consume_construction() -> bool:
 			grant(kind,-1)
 			return true
 	return false
+
+## Kataklizma Nova supplies obey max 3: the oldest drop makes room, then the
+## normal reachable-room picker runs, falling back to the player's own floor.
+func emergency_drop(kind: int) -> bool:
+	if items.size() >= max_active:
+		var oldest: int = 0
+		for i: int in range(1, items.size()):
+			if float(items[i]["age"]) > float(items[oldest]["age"]): oldest = i
+		items.remove_at(oldest)
+	var placed: bool = spawn(kind)
+	if not placed:
+		var column: int = building.column_at(player.global_position.x)
+		for offset: int in [1, -1, 2, -2, 3, -3]:
+			var c: int = column + offset
+			if c >= 0 and c < ApartmentBuilding.COLUMN_COUNT and spawn(kind, player.current_floor * ApartmentBuilding.COLUMN_COUNT + c):
+				placed = true
+				break
+	if placed: _message(Vector2(items[-1]["position"]) + Vector2(-70, -60), "ACİL YARDIM · " + short_name(kind), AURA[kind])
+	return placed
 
 func reflex_drop() -> void:
 	# The perfect-dodge reward obeys max 3; replace the oldest drop when full.

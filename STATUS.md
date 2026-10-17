@@ -1,5 +1,141 @@
 # AFET KUŞATMASI — proje durumu
 
+## Güncel — Adım 6 (17 Ekim 2026, Codex)
+
+Kullanıcının performans/BGM/final zorluğu isteği uygulandı. 16 oda kimliği, gece/pixel görünümü, karakter/2x W fizik yayı, mevcut loot/onarım/19 kart/SFX/dört faz ve kontroller korunur. Adım 5.5 ve Claude kayıtları aşağıda tarihçedir.
+
+**Git kayıt paketi (17 Ekim 2026):** Kullanıcının commit/push isteğiyle Claude'un Adım 4.9/5 devri ve Codex'in Adım 5.5/6 çalışmaları birlikte kayda hazırlanmıştır. Gönderim hedefi `origin/feat/disaster-siege-step1`; sürüm kimliği için `git log -1 --oneline`, uzak dal eşitliği için `git fetch origin` ardından `git rev-list --left-right --count HEAD...origin/feat/disaster-siege-step1` kullanılır. Test/görüntü kayıtları ve motor önbellekleri Git dışındadır. Yarışma için export/yayın ayrı ve henüz tamamlanmamıştır.
+
+| Değişiklik | Uygulama |
+| --- | --- |
+| Statik önbellek | `StaticCanvasCache`: oda duvarı/hasar kademesi, AO, mobilya, cephe, arka plan ve çelik kiriş/kepenk/sabitleme kurulumları ayrı dokularda. Durum/onarım/kurulum/sprite değişimi yalnız ilgili dokuyu kirletir. `UPDATE_ONCE` sunucuda tüketilir; Node özelliğinin ONCE olarak okunması sürekli render anlamına gelmez. ALWAYS/WHEN_VISIBLE cache yok. Lambalar/ışıklar/toz/uyarı etiketleri ayrı; mobilya yalnız sallanırken process açar. |
+| Hava/mermi | 260 yağmur +70 kül yerine 40+10, sabit yağmur segment dizisi/tek toplu çizim. İz en fazla dört nokta ve tek halo. 128 havuz girdisi değişmez; pasif girdiler hidden/process off. 21 ortak mermi gövdesi MainGame hazır olurken önceden pişirilir, savaşta yeni cache/mermi düğümü oluşturulmaz. Uyarı yolu bir kez örneklenip kesikli çizgiler toplu çizilir. |
+| Boss çizimi | Final girdap 10→6, basınç küresi 5→3, köpük tepesi 14→8; dalga/cephe mikro detayları ve parçacık sıklığı azaltıldı. Kesintisiz kol silueti ve bağımsız baş/çene/kol/dalga animasyonları kalır. Final rig aynı karede yeniden hesaplanmaz. CelArt elipsi 24→14 köşe; piksel ölçeğinde gereksiz kenar yumuşatma maliyeti kaldırıldı. Compatibility ve ana pixel_scale=2 korunur. |
+| BGM | `MusicScore` artık saf yardımcı; başlangıçta bir kez 22.050 Hz 16-bit mono WAV besteler. D minör bas (0,32), kick/snare/hat (0,25), üst melodi (0,22), loş akor. `SoundManager.bgm_player`: Master/−5 dB/ALWAYS; LOOP_FORWARD, begin=0, end=352.800 **örnek**, veri=705.600 byte. Watchdog beklenmedik duruşu toparlar, M kasıtlı sessizi korur. Müzik pause/faz/R sırasında kesilmez; her kare sentez/tampon doldurma yok. |
+| Süre/tempo tercihi | İstekteki 12,8 sn / 8 ölçü / 120 BPM birlikte mümkün değildi. 120 BPM ve sekiz 4/4 ölçü korundu: 16,0 sn kesintisiz döngü (12,8 sn için 150 BPM gerekirdi). |
+| Yalnız final | Skill arası ×1,3; salvo adedi round(base×0,7); hız ×0,8; oyuncu/bina/alan/slam/Nova oda hasarı ×0,7; her uyarı +0,20 sn. Radar +0,25 ayrıca toplanır; eski clamp bonusu yutmaz. Dalga 1–3 sayısal dengesi değişmedi. Hız değişimi uç noktayı koruyacak biçimde yolun bütün zaman parametrelerini ölçekler. Tune donmuş kopyalarda ikinci kez uygulanmaz. |
+
+### Ölçülen performans
+
+Aynı makine / NVIDIA GeForce RTX 4070 Laptop GPU / Compatibility / Godot 4.7.2 / 1920×1080 native, pixel_scale=2, VSync kapalı, editör dışında. `PerformanceBench.gd`: her sahnede 1 sn ısınma + yaklaşık 4 sn örnek. Önce/sonra aynı sabit 64 mermi +24 uyarı yükü; sonuçlar anlık FPS yerine gerçek kare sürelerinden hesaplandı. FPS koşusu sırasında başka test çalıştırılmadı.
+
+| Sahne | Önce ortalama FPS / kare | Sonra ortalama FPS / kare | Sonra p95 |
+| --- | --- | --- | --- |
+| Hazırlık | 21,6 / 46,22 ms | 221,4 / 4,52 ms | 5,39 ms |
+| Final +64 mermi +24 uyarı | 11,2 / 89,04 ms | 69,9 / 14,31 ms | 17,12 ms |
+| Canlı final kısa örneği | Ölçülmedi | 69,5 / 14,40 ms | 24,75 ms |
+| Canlı Nova kısa örneği | Ölçülmedi | 66,1 / 15,13 ms | 17,61 ms |
+
+Hazırlık çizim çağrıları ~6.965→471, final stresinde ~9.241→1.374; final primitifleri ~340.866→22.953. Dokular dururken tekrar odaları çizmediği gerçek native karede ayrıca 470 çizim çağrısıyla kontrol edildi. Canlı kısa örneklerde oyuncu hasar testi için can yükseltildi; FPS karşılaştırmasının sabit yükünden ayrı raporlandı. Bunlar bütün bilgisayarlarda kilitli 60 FPS garantisi veya insan oynanış dengesi sonucu değildir; p95 bazı karelerin 16,67 ms'yi aşabildiğini gösterir.
+
+### Doğrulama
+
+- **Godot 4.7.2.stable.official.ed1daf0bf ve 4.3.stable.official.77dcf97d8:** her motorda **15 paket / 1.148 kontrol geçti**, sıfır başarısız kontrol ve sıfır çalışma zamanı hatası; tüm paketler çıkış kodu 0. Paketler: Step1 129, Step2 53, Step25 145, Step3 44, Step27 61, Step3Loot 76, Campaign 69, Step45 103, Marathon 91, Step48 68, Step49 94, Step5 70, Step55 77, Step6 57, Step2Soak 11. Son kayıtlar `%TEMP%/step6-verified-<472|43>-<paket>.log` içindedir.
+- Native Step6: **4.7.2'de 62/62**, gerçek ses sürücüsünde iki WAV döngü sınırı, kasıtlı 300 ms ana iş parçacığı duruşunda kesintisiz çalma, watchdog/mute/pause ve cache yenileme. **4.3 native 59/59** (uzun ses döngüsü seçeneği olmadan); onun hasar/güçlendirme görüntüsü de incelendi. Master efekt noktasında RMS **0,1039 (−19,7 dBFS)**; bu nokta Master ses seviyesi öncesidir. Varsayılan %80 Master sonrası tahmini RMS ~0,083 (−21,6 dBFS). SFX tarifleri/miks havuzları korunur. Motor geçişleri sırayla yapıldı, sonunda kurulu 4.7.2 ile yeniden import hatasız tamamlandı.
+- BGM ham PCM: tepe **0,5951**, RMS **0,1846**, DC yaklaşık 0, ardışık örnek farkı en çok 0,1738; ilk/son örnek farkı <0,003. Bir kez sentez ~465–470 ms; olağan karede ek sentez yok. Step55 native **94/94**, 17 yenilenmiş sinematik/HUD/pause PNG ve tam 16 sn WAV. Güçlendirilmiş/hasarlı oda, final girişi, 64 mermi/uyarı ve canlı Nova görüntüleri incelendi.
+- Son gerçek 60 sn final: **489 atış / tepe45 / bina%85,4 / 6 ek ikmal / zafer** (önce 986 /74 /%74,7). Tam kampanya: **1.358 atış / tepe49 / bina%86,8**, dört gerçek 60 sn savaş ve üç 7 sn ara; max3 onarım uyarısı ve 128 havuz korunur. İnsan zorluğu tam %30 olarak ölçülmez; istenen ayrı katsayılar birlikte uygulanır, tam sayı adetleri yuvarlanır.
+- Yerel kayıtlar Git dışındadır: `%TEMP%/step6-before-perf.log`, `step6-final-perf.log`, `step6-native.log`, `step6-native-cinematics.log`, `siege-step6-final-perf/`, `siege-step6-native/`, `siege-step6-cinematics/`, `siege-step6-bgm.wav`. Başlangıç kopyası `%TEMP%/siege-step6-baseline-20261017-095809/`.
+- Kalan sınırlar: insanın hoparlör/kulaklıkla öznel dinlemesi, insanla zorluk dengesi, ikinci bilgisayar ve bağımsız export/HTTPS teslimi doğrulanmadı. Fiziksel klavye yerine Godot girdi olayları kullanıldı. Harici asset/müzik/bağımlılık eklenmedi; önceki ekip değişiklikleri korundu.
+
+## Adım 5.5 (17 Ekim 2026, Codex)
+
+Claude'un Adım 4.9/5 temelindeki bina, karakter, 19 kart, dört ekipman, onarım/loot, uyarı/havuz, duraklatma ve SFX korundu. Aşağıdaki eski sürüm kayıtlarının altı dalga/yangın/üst bar/müzik nabzı açıklamaları tarihçedir.
+
+| İş | Sonuç |
+| --- | --- |
+| Dört faz | FIRTINA → DEPREM → SEL → DEPREM • SEL • FIRTINA. 60 sn savaş, üç kez 7 sn inşaat, 8 sn ilk hazırlık. Dördüncü çıkış zaferdir. Çifte faz, yangın bossu/sahne düğümü ve 5/6 kısayolları kaldırıldı; 1/2/3/4 güncellendi. |
+| Ateşsiz birleşik final | Üç element kaynağı 0/1/2; su/kaya yağmuru, su-rüzgâr halkaları, sismik gelgit, 28'li mühür ve üç afetli Nova. Çatlayan kaya eli, basınç küreleri, köpük jetleri ve şimşek; alev/lav ve ateşli meteor yok. Eski yangın direnç/tehlike yardımcıları uyumluluk için saklıdır, normal kampanyada çağrılmaz. |
+| Sinematik | Normal girişler 2,5 sn, final 2,8 sn. Letterbox, tek büyük kesin boss adı ve hafif kamera odağı. Fırtınada kararma/rüzgâr/şimşek; depremde zemin çatlakları/kayalar/iki yumruk; selde köpüklü dalgalar/ilk su baskını; finalde üç enerjinin birleşmesi. Girişte kontroller kilitli, saldırı ve hasar yok; savaşta kadraj/kontrol geri gelir. |
+| Alt boss barı | Rect2(450,1016,1020,22), alt ortada kalın kontur; üstünde boss adı, sağında saniye ve yüzde. Sol alt ekipmanla çakışmaz, üst ortada şerit yok. Sinematikte HUD gizlenir. Yardım ve pause 1–4 der. |
+| Gerçek BGM | Özgün 16 ölçü / 88 BPM Re minör bestesi; sıcak bas, stereo akor pedleri, yumuşak davul/hat, yankılı arpej. Açılışta AudioStreamGenerator'a doğrudan sentez; SFX pişirmesini beklemez. Hazırlık/kuşatma/ayrı final akorları 1,1 sn yumuşak geçer; transport resetlenmez, döngüde boşluk yok. BGM −11,5 dB, yağmur −31 dB. M/-/+ ve pause filtresi korunur. |
+| Ses kapanışı | 4.3 hızlı headless kapanışında PCM verisi mixer stop komutundan önce bırakıldığında çökme görüldü. Önce sesler durdurulup bir audio block beklendikten sonra PCM bırakılıyor; testler deferred sahne yıkımı sonrasında da audio driver'ı boşaltıyor. Yeniden tam 4.3 kampanya normal çıkışla geçti. |
+
+### Doğrulama
+
+- Godot **4.3.stable.official.77dcf97d8** ve kurulu **4.7.2.stable.official.ed1daf0bf** ile import/parse hatasız; aşağıdaki **14 paketin her iki motorda da 1.089/1.089 kontrolü geçti**. Son 4.3 uzun kampanya ve 4.7.2 tam koşusu normal çıkış kodu 0 ile tamamlandı.
+
+| Paket | Kontrol |
+| --- | --- |
+| Step1Smoke | 129 |
+| Step2Smoke | 53 |
+| Step25Smoke | 145 |
+| Step3Smoke | 44 |
+| Step27Smoke | 61 |
+| Step3LootSmoke | 76 |
+| CampaignSmoke | 69 |
+| Step45Smoke | 103 |
+| MarathonSmoke | 91 |
+| Step48Smoke | 68 |
+| Step49Smoke | 94 |
+| Step5Smoke | 70 |
+| Step55Smoke | 75 |
+| Step2Soak | 11 |
+
+- **Tam kampanya:** 16.999 fizik adımı; 14.400 savaş adımı = 4×60 sn; 1.260 inşaat = 3×7 sn; 618 giriş adımı (3×2,5 + 2,8 sn), 240 çıkış. **1.837 uyarılı mermi, 28 tür, 72/128 tepe, 0 taşma, max 3 onarım uyarısı.** 26 manuel onarım / 35 test toplaması; final bina **%81,4 / 0 yıkık oda**. Oyun içi sayaçlar atlanmadı. Test sürücüsü gerçek loot toplar/onarım için konum ayarlar ve canı yükseltir; insan zorluk değerlendirmesi değildir.
+- **Gerçek 60 sn final:** 3.600 savaş adımı; bütün beş birleşik yetenek ve basınç etkileşimi; 986 uyarılı atış, 74/128 tepe, 0 taşma, 6 ek Nova loot'u; final bina %74,7 ve zafer. Yeni test bütün aktif paternleri ve Nova'yı source=3/alev/meteor yokluğu açısından ayrıca denetler.
+- **BGM:** Üç düzenlemenin gerçek PCM'inde stereo fark, RMS/tepe/DC, ardışık örnek geçişi ve 16 ölçü döngü sınırı kontrol edildi. Bu makinede 3 sn ses ~0,66–0,77 sn'de sentezlendi; gerçek zamandan hızlıdır. SFX tariflerinin mevcut tepe/tık/DC/filtre, ses havuzu ve olay testleri korunur.
+- **Native:** Gerçek sürücü/Compatibility renderer ile Step55 **93/93** geçti: 12 sinematik karesi + 4 savaş/HUD + pause = 17 PNG; üç düzenlemenin 9 sn WAV önizlemesi. Yerel kanıtlar: `C:/Users/halil/AppData/Local/Temp/siege-step55-captures/`, `C:/Users/halil/AppData/Local/Temp/siege-step55-music.wav`. Görsel incelemede sel duvarları zenginleştirildi ve letterbox altında yarım kalan HUD gizlendi; yenilenen sel/final sinematiği, final alt HUD'u ve pause kareleri de incelendi.
+- **Sınırlar:** AI kulakla dinlemedi; uzun süreli müzik beğenisi/yorgunluğu, insanla final dengesi, ikinci bilgisayar ve bağımsız export/HTTPS teslimi doğrulanmadı. Fiziksel tuşlar yerine motor giriş olayları kullanıldı.
+- Bu adımda yeni harici asset, ses dosyası, font, servis veya bağımlılık eklenmedi. Test çıktıları Git dışındadır. Kullanıcının/Claude'un önceki değişiklikleri korunur; çalışma ağacındaki mevcut yığının üzerine geliştirme yapıldı. Başlangıç yedeği `C:/Users/halil/AppData/Local/Temp/siege-step55-baseline-20261017-092144/`.
+
+
+## Adım 5 — duraklatma paneli ve prosedürel ses/müzik motoru (17 Ekim 2026, Claude)
+
+Bu bölüm Claude'un Adım 5 teslimindeki tarihsel kayıttır; o sırada Adım 4.9 (minimal HUD, 60 sn, 6 dalga) korunmuştu. O teslimde commit/push yapılmadı. Güncel uygulama ve doğrulama yukarıdaki Adım 5.5 bölümündedir.
+
+| İş | Sonuç |
+| --- | --- |
+| Duraklatma | `ESC`/`P` → `get_tree().paused`; `PauseMenu` CanvasLayer (katman 40) `PROCESS_MODE_ALWAYS`. Yarı saydam `#0b0e14` karartma, kalın `#111518` konturlu panel, ikonlu 11 satırlık tuş rehberi (tuş kapakları + satır ikonları), alt sırada DEVAM ET / SES: AÇIK-KAPALI / - / 10 kademeli gösterge / + / YENİDEN BAŞLAT düğmeleri; fare, klavye ve odak (ok + Enter) ile çalışır. R panelde kampanyayı yeniden başlatır. Kart ekranının üstünde de duraklatılır, seçim bozulmaz. HUD sağ üstünde küçük `[H] YARDIM  [ESC] DURAKLAT  🔈 [M] SES` ipucu; sessizde çarpılı hoparlör ve `SES KAPALI`. Tab/H kartına ESC/P ve M/-/+ satırları eklendi. |
+| Ses ayarı | `M` her yerde sessiz (Master mute). `-`/`+` yazılan karaktere (TR/US düzeni fark etmez) veya numpad'e göre 0–10 seviye; Master seviyesi `linear_to_db(seviye/10)`. Ayar oturum boyunca geçerli, diske yazılmaz. |
+| Ses motoru | Ses/müzik dosyası yok. `SoundRecipes` 51 tarif (3 müzik döngüsü + 48 efekt/arayüz); `SoundSynth` ADSR, beyaz/pembe/kahverengi gürültü + durum-değişkenli filtre süpürmesi, ≤3,6 kHz harmonikli sıcak tonlar (Chebyshev yinelemesi), çıtırtı/kabarcık/enkaz katmanları; son aşamada alçak geçiren, DC temizleme, yumuşak doyum, tepe normalizasyonu ve tık önleyici giriş/çıkış. 22,05 kHz 16-bit mono `AudioStreamWAV`; açılışta arka plan thread'inde ~3,3 sn pişirme (oyun donmaz). |
+| Müzik | Sürekli yağmur + karanlık bas drone döngüsü; hazırlıkta 40 BPM uzak kalp atışı; kuşatmada gerilim pedi ve endüstriyel nabız (kick + ara tık + 4'te bir yumuşak metal), 86 → 106 BPM dalga başına artar, Nova 116. Duraklatınca müzik 650 Hz alçak geçiren ile boğuklaşır, −5 dB kısılır, nabız durur. |
+| Olay sesleri | Beş boss tipi için ayrı giriş/çıkış (çifte kuşatma fırtına+deprem, 3 dB kısık), final %55 birleşme patlaması; boss hazırlığında radar tınısı; element bazlı fırlatma (hava yarılması / balyoz / basınçlı su / ateş topu) + yumuşak savrulma; cam/ahşap/taş/metal/su/ateş çarpma; panjurlu oda ve türbin için metalik BLOKLANDI; zıplama, 2x W süpürmesi, S/sert iniş ayak sesi, takla, DODGE çınlaması, hasar + kalp atışı, loot düşme/toplama/çanta akoru/güvenlik tıslaması, E onarım dizisi, kart açılış/seçim, oda/bina çöküşü, zafer, yenilgi. Bağlantılar mevcut sinyallerle; yeni sinyaller: `Player.jumped/landed`, `LootSystem.landed`, `DisasterBoss.cued`, `SiegeMechanics.blocked`. |
+| Miks | Her çalma 0,94–1,06 rastgele perde; anahtar başına kısıtlama (fırlatma 0,12 sn, çarpma türü 0,11 sn, boss sesleri 0,3 sn); mermi fırlatma/çarpma −17 dB = ana efektler (−9 dB) − 8 dB; Music/SFX/UI bus, Master'da sınırlayıcı (−1 dB tavan); 18 efekt + 4 nabız + 4 arayüz sesi sabit havuz. |
+
+### Doğrulama
+
+- **Godot 4.7.2.stable.official.ed1daf0bf (Windows 11):** 13 headless paket sıfır hata — Step1 129, Step2 53, Step25 145, Step3 44, Step27 61, Step3Loot 76, Campaign 71, Step45 135, Marathon 108, Step48 70, Step49 96, **Step5 72**, Step2Soak 11 = **1.071/1.071**.
+- **Godot 4.3.stable.official.77dcf97d8 (Windows 11):** import/parse temiz; aynı 13 paket son kodla sıfır hata, aynı kontrol sayıları (**1.071/1.071**).
+- **Step5 sentez ölçümleri:** 51 sesin hepsi 16-bit mono 22,05 kHz ve tarif uzunluğunda; tepe −10…−0,6 dBFS, DC ≈ 0; tek seferlik seslerde ilk 0,5 ms ve son 2 ms sessiz (tık yok); parlaklık oranı döngülerde < 0,3, efektlerde < 0,95; üç döngü kesintisiz. Olay testleri gerçek oyuncu zıplama/2x W/S/takla/hasar, loot, E onarımı, kart ekranı, oda/bina çöküşü, zafer ve boss geçişlerinden sesleri doğrular; 20 aynı karede fırlatma tek whoosh üretir; whoosh fire cast'ten tam 8 dB kısık; 60 çalmada ses düğümü sayısı sabit.
+- **Native Step5 (4.7.2, gerçek ses sürücüsü, 1920×1080):** **75/75**, 3 PNG (HUD köşe ipuçları, duraklatma paneli, sessiz panel) incelendi; kopyaları yerel `captures/step5/` altında (Git dışında).
+- `git diff --check` temiz. Yeni harici asset/ses dosyası/bağımlılık yok.
+
+### Kalan sınırlar
+
+- Sesler **kulakla dinlenmedi**: AI ses çıkışını duyamaz; kalite tepe/tık/DC/parlaklık/döngü ölçümleri ve miks kurallarıyla doğrulandı. Gerçek hoparlör/kulaklıkla dinleyip beğenilmeyen sesler tarif bazında (ör. `SoundRecipes.gd` içindeki tek bir giriş) ayarlanmalıdır.
+- Fiziksel klavye/fareyle F5 penceresinde elle deneme yapılmadı; testler Godot giriş olaylarıyla doğrular.
+- Ses ayarı kalıcı değildir; oyun kapanınca varsayılan %80 ve açık sese döner.
+
+## Adım 4.9 — minimal HUD, 60 sn dalgalar ve Kataklizma Titanı (17 Ekim 2026, Claude)
+
+Bu bölüm Claude'un Adım 4.9 teslimindeki tarihsel kayıttır; aşağıdaki Adım 4.8 / maraton kayıtları da kendi tarihlerindeki davranışı (5 dalga, 90 sn, F9'lu kısayollar, eski HUD) anlatır. O teslimde commit/push yapılmadı. Güncel uygulama yukarıdaki Adım 5.5 bölümündedir.
+
+| İş | Sonuç |
+| --- | --- |
+| Minimal HUD | Sol üst başlık, sağ üst durum kutusu ve alt kontrol tablosu/mesaj satırı kaldırıldı. Sol üstte kutusuz, kalın INK konturlu üç bar: piksel kalp + kırmızı→yeşil can (`85/100`), şimşek + ince sarı (dolunca mavi) enerji, kalkan + turkuaz/kehribar bina (`%78`, yıkık odada 4 enkaz noktası). Üst ortada tek satır `DALGA 01 • YIKICI FIRTINA` + ince şerit + `60s` (hazırlıkta `HAZIRLIK • …` ve soluk `[F] HAZIRIM`, Nova'da `• NOVA`). Sol altta üç kare slot KOLON/SABİTLE/GÜVENLİK, `xN` ve tek kelime etiket; E'nin harcayacağı slot parlar. Tab/H basılıyken küçük kontrol kartı; sağ üstte soluk `[H] KONTROLLER`. E istemi oyuncunun üstünde kısa (`[E] ONAR`). Dalga girişi/çıkışı, final adı, Nova, zafer ve yenilgi kısa ortalanmış başlıklardır. |
+| 60 sn | `siege_duration` 60; inşaat 7 sn, ilk hazırlık 8 sn değişmedi (istekte "hazırlık evresi yine 7 saniye kalsın" ifadesi dalga arası inşaat süresine uygulandı; ilk 8 sn'ye dokunulmadı). |
+| 6. dalga | Yangından sonra kart + 7 sn inşaat ve **Kataklizma Titanı**; zafer altıncı çıkışta, kampanyada 5 kart seçimi. Yeni `Mode.CATACLYSM`, `Kind.CATACLYSM`, sahnede `CataclysmBoss` (BossGroundMask içinde). |
+| Birleşme girişi | 2,0 sn: fırtına (sol üst gök), yangın (sağ üst gök), sel (soldan), deprem (sağdan) küreleri hızlanarak cepheye çekilir, gökten şimşek iner; %55'te çarpışma, beyaz patlama, dört renkli şok halkası, 22 güçte sarsıntı ve gök flaşı (`fusion_burst` bir kez); ardından enerji akıntıları gövdeyi besler, Titan belirir. Giriş savaş süresi harcamaz, saldırı yoktur. |
+| Titan sanatı | Gövde binanın arkasında (z −1); çatı üstünde boynuzlu, V kaşlı, magma çatlaklı bazalt kafa, şimşek/lav gözler, kükreyen çene ve alev/şimşek tacı (z 7, mermilerin altında); sol omuz fırtına bulutlu, sağ omuz alevli zırh. Sol kol 10 halkalı hortum + şimşek bıçakları, sağ kol kor damarlı kalın bazalt kol + dört pençe + beş lav topu. Cephenin iki yanında rim ışıklı bazalt gövde kanatları; iki yanda kabarıp alçalan tsunami, köpük tepeleri, girdaplar, çatı arkası serpinti ve kaide köpüğü (binaya sabit). Wind-up çeneyi açar, vuruş iki elden şimşek/lav/kaya saçar; çıkışta Titan kendi dalgasına gömülüp solar (kafa da cephe arkasına iner). |
+| Beş yetenek | (1) Kat 00/01 taşkını + çatıdan 4 gecikmeli meteor; canlı suya düşen meteor 0,55 sn uyarılı buhar sütunu + altı yöne 3 su/3 ateş küresi (döşemeye doğru asla), kuru zeminde normal dört kıvılcım. (2) Hortum koluna doğru uyarılı rüzgâr çekimi + iki ateş hortumu halkası (20 alev topu) + çapraz iki alev bıçağı. (3) Kaya yumruğu sarsıntısı, iki yandan zıplanabilir sismik dalga, iki kat üstte 1,0 sn tsunami duvarı, pencereden giren üç sekmeli/altıya bölünen basınç küreleri, tavan betonu/tuğlası. (4) Sol üst fırtına / sağ üst yangın / sol alt sel / sağ alt deprem küresi, tam **0,8 sn** halka, merkezde kesişen 28 mermilik ağ. (5) Son 15 sn Nova: 1,15 sn tempo, Titan bina çevresinde 5 noktaya ışınlanır, dört elementli 2×16 halka, halka çıkışında odası çatlar; başta kolon kiti + afet çantası, sonra her 3,5 sn dönüşümlü ek loot (max 3 korunur, en eski yer açar). Saldırılar element kaynağını taşır; panjur, kolon, sprinkler/drenaj ve yapı kartları doğal olarak çalışır. |
+| Kısayollar | Modal dışında `1`–`6` F9 olmadan doğrudan boss (taze dünya); kart modalında 1/2/3 yalnız kart seçer, 6 yutulur. `U` hâlâ F9 ister. Eski "1–5 yalnız F9" testleri yeni davranışa çevrildi; kapsam silinmedi. |
+| Korunan sistemler | 4×4 karanlık apartman, karakter/2xW fizik yayı, dört ekipman, max3 hasarlı oda/10 sn koruma, 19 kart + 1 hazırlık/2 aksiyon, 128'lik sabit havuz, dondurulmuş uyarı yolu ve `is_armed` reddi. |
+
+### Doğrulama
+
+- **Godot 4.3.stable.official.77dcf97d8 (Windows 11, Compatibility):** import/parse temiz; 12 headless paketin tamamı sıfır hata — Step1 129, Step2 53, Step25 145, Step3 44, Step27 61, Step3Loot 76, Campaign 71, Step45 135, Marathon 108, Step48 70, **Step49 96**, Step2Soak 11 kontrol = **999/999**.
+- **Godot 4.7.2.stable.official.ed1daf0bf (Windows 11, Compatibility):** aynı 12 paket sıfır hatayla geçti (tam koşuda Step49 94/94; geri çekilme düzeltmesinden sonra Step49 tek başına 96/96).
+- **Native Step49 (4.7.2, exclusive fullscreen, sabit 1920×1080 viewport):** **116/116**, 20 adet 1920×1080 PNG: hazırlık HUD'u, fırtına kuşatma HUD'u, Tab/H yardımı, birleşmenin %20/45/57/80 kareleri, Titan bekleme, dört yeteneğin uyarı/aktif hâli, Nova uyarı/aktif, geri çekilme ve zafer. Kopyaları yerel `captures/step49/` altında (Git dışında). Kareler incelendi; incelemede bulunan iki sorun (Nova'da gövde kanadının düz blok gibi görünmesi/sağ kenarda dalga boşluğu, geri çekilmede kafanın odaların önünde kalması ve son saldırı etiketinin asılı kalması) düzeltilip testlere eklendi.
+- **Gerçek 60 sn final** (Step49, 60 Hz, test oyuncusunun canı yükseltilmiş): 3.600 savaş adımı, 986 uyarılı atış, bütün yetenekler + buhar sütunu gerçek zamanlamada oluştu, uyarı ihlali 0, tepe **72/128**, taşma 0, 6 Nova loot'u, final bina %75,1 ve zafer.
+- **Tam kampanya** (Step2Soak, 4.7.2): 25.021 adım; **21.600 savaş adımı = 6×60 sn**, **2.100 inşaat adımı = 5×7 sn**; 3.345 uyarılı mermi, **34/34 tür** (yeni `STEAM_COLUMN` dahil), tepe 71/128, 0 taşma, en fazla 3 onarım uyarısı, 39 onarım/44 toplama, final bina %80,9 ve 0 yıkık oda. Otomatik sürücü insan oynayışı değildir.
+- `git diff --check` temiz. Yeni harici asset/ses/font/bağımlılık yok.
+
+### Kalan sınırlar
+
+- İnsan oynayışıyla final bossun zorluğu (özellikle 0,8 sn mühür ve Nova halkaları) ve 60 sn tempo dengesi ölçülmedi.
+- Gerçek F5 penceresinde fiziksel klavyeyle 1–6 ve Tab/H elle denenmedi; testler Godot giriş olaylarıyla doğrular.
+- Ses, bağımsız export ve Linux/farklı GPU doğrulaması bu adımda yapılmadı.
+
 ## Git teslimi ve Claude devri — 17 Ekim 2026
 
 Kullanıcı bu sürüm için commit/push ve Claude'a devir istedi. Beş dalgalı maraton ve Adım4.8 aynı teslim commitinde `feat/disaster-siege-step1` dalında yer alır. Devir belgesi [CLAUDE_DEVIR.md](CLAUDE_DEVIR.md); güncel commit `git log -1 --oneline`, uzak eşitliği `git rev-parse HEAD` / `git rev-parse origin/feat/disaster-siege-step1` ile kontrol edilir. Eski `main` çalışma ağacı ve kullanıcı değişiklikleri korunur; main birleştirmesi yapılmaz. Görsel/test kanıtları Git dışında kalır, yeniden üretme komutları devir notundadır.

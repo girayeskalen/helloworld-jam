@@ -141,3 +141,46 @@ Araç: **OpenAI Codex (GPT-6 tabanlı kodlama ajanı)**. Kullanıcının ayrınt
 ## 17 Ekim 2026 — Git teslimi ve Claude devir belgesi
 
 Kullanıcının açık commit/push ve Claude ile devam isteği üzerine OpenAI Codex, `CLAUDE_DEVIR.md` belgesini hazırladı; README/STATUS bağlantılarını ve proje açıklamasındaki kart sayısını güncelledi. AI metin/kod desteği kullanıldı; yeni görsel, ses, font veya oyun bağımlılığı eklenmedi. Git teslim aracı olarak GitHub CLI v2.102.0 kullanıldı (GitHub ve katkıcıları, MIT); resmî yayın arşivi SHA256 kontrolünden geçti. Araç kullanıcı dizininde, lisans bildirimi yanında tutulur; binary/kimlik bilgileri repoya eklenmedi. Hazır kaynak kod/diğer kategorilerine bu geliştirme aracı da dahildir. Bu kayıt önceki geliştirme aşamalarındaki “commit/push yapılmadı” notlarından sonraki teslim talebidir; eski kayıtlar tarihsel olarak korunur. Oyun kodu bu devir görevi sırasında değiştirilmedi. Testlerin geliştirmede alınan sonuçları ile devirde yapılan kontroller belgede ayrılır.
+
+## 17 Ekim 2026 — Adım 4.9 / minimal HUD, 60 sn dalgalar ve Kataklizma Titanı
+
+Araç: **Anthropic Claude Code, Claude Opus 5.5** (`claude-opus-5-5`). Gereksinimler (HUD sadeleştirme, 60 sn faz, final boss tasarımı/yetenekleri, 1–6 kısayolları) kullanıcı tarafından verildi.
+
+| Kategori | Durum | Kapsam |
+| --- | --- | --- |
+| Görsel | Kullanıldı (dolaylı) | Piksel kalp/şimşek/kalkan ikonları, kontur barlar ve slotlar (`scripts/ui/GameHUD.gd`); Titan'ın bazalt kafa/boynuz/taç, hortum kol, magma pençe, gövde kanatları, tsunami tabanı ve birleşme efektleri (`scripts/bosses/CataclysmArt.gd`); buhar sütunu ve alev bıçağı çizimi. Hepsi AI'nın yazdığı prosedürel GDScript çizim kodudur; resim üretim servisi, harici sprite/ikon/font kullanılmadı. |
+| Kod | Kullanıldı | 6. dalga ve 2,0 sn birleşme akışı, 60 sn süre, 0,8 sn mühür uyarı kuralı, beş birleşik yetenek ve buhar etkileşimi (`scripts/combat/CataclysmPatterns.gd`), nova ve ek loot (`LootSystem.emergency_drop`), Titan iskeleti/katmanları (`DisasterBoss.gd`), doğrudan 1–6 ve Tab/H (`MainGame.gd`), yeni `tests/Step49Smoke.gd` ve mevcut testlerin yeni davranışa uyarlanması. |
+| Metin | Kullanıldı | HUD/yetenek/banner metinleri, README/AGENTS/STATUS/CLAUDE_DEVIR ve bu beyan. |
+| Ses | Kullanılmadı | Ses eklenmedi. |
+| Diğer | Kullanıldı | Native 1920×1080 ekran görüntülerinin AI tarafından incelenmesi ve buna göre sanat düzeltmeleri. |
+
+Hazır kaynak: yeni dosya, paket veya eklenti alınmadı. Dead Cells, Celeste ve Enter the Gungeon yalnız kullanıcının HUD için verdiği üslup referanslarıdır; bu oyunlardan kod, görsel, ikon veya ses alınmadı. Dört afetin tek canavarda birleşmesi, buhar sütunu, mühür ve nova kurgusal oyun mekanikleridir; gerçek afet davranışı veya güvenlik tavsiyesi değildir.
+
+## 17 Ekim 2026 — Adım 5 / duraklatma paneli ve prosedürel ses motoru
+
+Araç: **Anthropic Claude Code, Claude Opus 5.5** (`claude-opus-5-5`). Gereksinimler (ESC/P duraklatma, tuş rehberi, M/ses seviyesi, ses kategorileri ve miks kuralları) kullanıcı tarafından verildi.
+
+| Kategori | Durum | Kapsam |
+| --- | --- | --- |
+| Ses | Kullanıldı (dolaylı) | Oyundaki bütün ses efektleri ve atmosfer müziği (yağmur, drone, gerilim pedi, nabız; 51 ses) AI'nın yazdığı GDScript sentez kodu ve tarifleriyle oyun açılışında üretilir: `scripts/audio/SoundSynth.gd`, `SoundRecipes.gd`, `SoundManager.gd`. Hazır ses/müzik dosyası, örnek (sample), ses üretim servisi veya TTS kullanılmadı. Sesler sayısal ölçümlerle (tepe, tık, DC, parlaklık, döngü sürekliliği) test edildi; AI sesleri kulakla dinleyemez, insan dinleme kontrolü ayrıca yapılmalıdır. |
+| Görsel | Kullanıldı (dolaylı) | Duraklatma paneli, tuş kapakları, satır ikonları, ses göstergesi ve HUD köşe hoparlörü prosedürel çizim kodudur (`scripts/ui/PauseMenu.gd`, `GameHUD.gd`). |
+| Kod | Kullanıldı | Duraklatma akışı, ses bus/limiter kurulumu, arka plan pişirme thread'i, olay bağlantıları için yeni sinyaller (oyuncu zıplama/iniş, loot yere değme, boss hazırlığı, türbin engellemesi), `tests/Step5Smoke.gd`. |
+| Metin | Kullanıldı | Panel metinleri, README/AGENTS/STATUS ve bu beyan. |
+
+Hazır kaynak: yeni dosya, paket, ses kütüphanesi veya eklenti alınmadı. Sentezde kullanılan Chamberlin durum-değişkenli filtre ve Paul Kellet pembe gürültü yaklaşımı bilinen DSP formülleridir; kod proje içinde yazıldı (bkz. SOURCES).
+
+## 17 Ekim 2026 — Adım 5.5 (OpenAI Codex)
+
+Claude'un Adım 4.9/5 değişiklikleri ve mevcut SFX/oyuncu/4×4 bina/loot/onarım temel alınarak kullanıcı tasarımı uygulandı. Kampanya FIRTINA → DEPREM → SEL → DEPREM • SEL • FIRTINA olarak dört faza indirildi; yangın bossu ve çifte faz kaldırıldı. Birleşik saldırı/sanat yalnız rüzgâr, kaya ve su kullanır; eski ateş jetleri köpüklü su jetlerine dönüştürüldü. BossCinematic ile ayrı 2,5/2,8 sn giriş, hafif kamera odağı, şimşek/kaya/su sahnelemesi ve letterbox; GameHUD'da alt boss barı eklendi.
+
+Özgün BGM bestesi ve sentez kodu AI yardımıyla MusicScore.gd içinde üretildi: 16 ölçü Re minör, sıcak bas, stereo akor pedleri, yumuşak davul/hat ve arpej, hazırlık/kuşatma/final düzenlemeleri. Ses dosyası veya dış müzik/asset indirilmedi; örnekler çalışma anında AudioStreamGenerator'a üretilir. Mevcut SoundRecipes/SoundSynth efektleri korunur. Test için geçici WAV/PNG çıktıları Git dışındadır. Müzik kalitesi ölçüm ve gerçek sürücüyle çalıştırmayla incelendi; kulakla öznel dinleme yapılmadı. Lisans veya insan bestesi iddiası eklenmedi.
+
+Step55Smoke eklendi; önceki paketlerde kaldırılan dalga/ateşli final/üst HUD beklentileri yeni tasarıma uyarlandı. Motor sürümleri ve gerçek sonuçlar STATUS.md içindedir.
+
+## 17 Ekim 2026 — Adım 6 (OpenAI Codex)
+
+Kullanıcının FPS/BGM/final zorluğu talebi doğrultusunda AI yardımıyla mevcut GDScript değiştirildi: statik oda/mobilya/AO/güçlendirme/arka plan doku önbellekleri; sabit hava parçacıkları, dört noktalı mermi izi, savaş öncesi hazırlanan ortak mermi siluetleri, daha az boss mikro geometrisi ve toplu telgraf çizgileri. Oyuncu hareketi, 16 oda kimliği, loot/onarım/kartlar ve mevcut SFX korunur.
+
+MusicScore artık çalışma karesinde canlı sentez yapmaz; açılışta özgün Re minör bas/davul/melodi/akor katmanlarından 22.050 Hz 16-bit mono AudioStreamWAV üretir. Ayrı Master/−5 dB/ALWAYS oynatıcı, örnek adedine göre ileri döngü ve mute'a saygılı watchdog eklendi. 120 BPM'de sekiz 4/4 ölçü 16 sn olduğundan, çelişen 12,8 sn yerine bu müzikal uzunluk kullanıldı. Dış müzik, ses örneği, servis, asset veya bağımlılık indirilmedi; önbellekler mevcut prosedürel çizimlerin çalışma anındaki kopyalarıdır.
+
+Yalnız finalde cooldown×1,3, adet round(×0,7), hız×0,8, oyuncu/bina hasarı×0,7 ve uyarı+0,20 sn uygulandı. Bu mekanik katsayılar ölçülür; insanın algıladığı toplam zorluğun tam %30 değiştiği iddia edilmez. Step6Smoke ve PerformanceBench eklendi, eski test beklentileri güncellendi. Gerçek test/FPS/ses çıkışı ölçümleri ve sınırlar STATUS.md'dedir; insan kulakla dinleme veya bütün bilgisayarlarda FPS garantisi iddiası yoktur.

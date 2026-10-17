@@ -3,7 +3,7 @@ extends Node2D
 ## Pool entries are never freed during combat. Collision is swept in relative space.
 
 @export var custom_sprite: Texture2D
-const TRAIL_LENGTH: int = 10
+const TRAIL_LENGTH: int = 4
 ## Rim glow: electric blue for the storm, ember orange for the quake; red danger core.
 const STORM_GLOW: Color = Color("5fc8ff")
 const QUAKE_GLOW: Color = Color("ff7b2e")
@@ -16,8 +16,16 @@ var contacted_player: bool = false
 ## Additive neon halo + motion trail, drawn behind the body. Created once with the pool.
 var glow: Node2D
 var _trail: Array[Vector2] = []
+var _trail_line: PackedVector2Array = PackedVector2Array()
+var _cache_source: bool = false
+var body_texture: Texture2D
+const BODY_BOUNDS: Rect2 = Rect2(-70,-70,140,140)
 
 func _ready() -> void:
+	if _cache_source: return
+	set_process(false)
+	set_physics_process(false)
+	visible = false
 	glow = Node2D.new()
 	glow.name = "Glow"
 	glow.show_behind_parent = true
@@ -42,23 +50,33 @@ func activate(specification: HazardAttack) -> bool:
 	global_position = attack.origin
 	rotation = 0.0
 	_trail.clear()
+	_trail_line.clear()
 	active = true
+	# ProjectilePool advances entries centrally; no per-entry callbacks are needed.
+	set_process(false)
+	set_physics_process(false)
 	visible = true
 	queue_redraw()
 	return true
 
 func deactivate() -> void:
 	active = false
+	set_process(false)
+	set_physics_process(false)
 	visible = false
 	attack = null
 	_trail.clear()
+	_trail_line.clear()
 
 func advance(delta: float) -> void:
+	if not active or attack == null: return
 	_trail.push_front(global_position)
 	if _trail.size() > TRAIL_LENGTH:
 		_trail.pop_back()
 	age = minf(age + delta, attack.lifetime)
 	global_position = attack.point_at(age)
+	_trail_line.resize(_trail.size())
+	for i: int in range(_trail.size()): _trail_line[i] = to_local(_trail[i])
 	queue_redraw()
 	glow.queue_redraw()
 
@@ -86,24 +104,26 @@ func _draw_glow() -> void:
 		return
 	var color: Color = glow_color()
 	if attack.is_area(): return
-	# Tapered neon motion trail.
-	var previous: Vector2 = Vector2.ZERO
-	for i: int in range(_trail.size()):
-		var point: Vector2 = to_local(_trail[i])
-		var fade: float = 1.0 - float(i) / float(TRAIL_LENGTH)
-		glow.draw_line(previous, point, Color(color, 0.42 * fade), maxf(3.0, attack.radius * 1.5 * fade), true)
-		previous = point
+	# One bounded four-point strip, one halo; no multilayer trail tessellation.
+	if _trail_line.size() >= 2: glow.draw_polyline(_trail_line,Color(color,.34),maxf(3.0,attack.radius*.65),false)
 	if attack.is_wall():
 		glow.draw_rect(Rect2(-26, -attack.row_height * 0.5 - 6, 52, attack.row_height + 12), Color(color, 0.22))
-		glow.draw_rect(Rect2(-12, -attack.row_height * 0.5, 24, attack.row_height), Color(color, 0.25))
 		return
 	var pulse: float = 0.85 + 0.15 * sin(age * 18.0)
-	glow.draw_circle(Vector2.ZERO, attack.radius * 2.3, Color(color, 0.16 * pulse))
-	glow.draw_circle(Vector2.ZERO, attack.radius * 1.55, Color(color, 0.32 * pulse))
-	glow.draw_circle(Vector2.ZERO, attack.radius * 1.05, Color(color, 0.30 * pulse))
+	glow.draw_circle(Vector2.ZERO, attack.radius * 1.65, Color(color, 0.28 * pulse))
 
 func _draw() -> void:
 	if not active or attack == null:
+		return
+	if body_texture != null and custom_sprite == null:
+		if attack.pattern == HazardAttack.Pattern.VORTEX and attack.lead and age < 1.4:
+			TelegraphSystem.draw_vortex_eye(self,to_local(attack.origin),age*9.0,.9-age*.3,1.0-age/1.4)
+		var angle: float = age*(5.0 if attack.source == 0 else 2.4)
+		if attack.kind == HazardAttack.Kind.WIND_BLADE: angle = attack.velocity.angle()
+		elif attack.kind == HazardAttack.Kind.DEBRIS: angle = age*9.0*signf(attack.velocity.x)
+		draw_set_transform(Vector2.ZERO,angle)
+		draw_texture_rect(body_texture,BODY_BOUNDS,false)
+		draw_set_transform(Vector2.ZERO)
 		return
 	if attack.source >= 2:
 		MarathonArt.projectile(self)
@@ -162,8 +182,8 @@ func _draw() -> void:
 				CelArt.rect(self, Rect2(-8, -11, 17, 23), Color("e2d6b3"), 1)
 			HazardAttack.Kind.WIND_ORB:
 				CelArt.ellipse(self, Vector2.ZERO, Vector2(12, 12), Color("74aeb4"))
-				for i: int in range(3):
-					draw_arc(Vector2.ZERO, 4 + i * 3, age * 6 + i, age * 6 + i + PI, 12, Color("d8e6cb"), 2, true)
+				for i: int in range(2):
+					draw_arc(Vector2.ZERO, 4 + i * 5, age * 6 + i, age * 6 + i + PI, 8, Color("d8e6cb"), 2, false)
 			HazardAttack.Kind.SHARD:
 				CelArt.poly(self, PackedVector2Array([Vector2(-8, 7), Vector2(-5, -7), Vector2(7, -4), Vector2(9, 5)]), Color("b7ad8c"))
 				CelArt.line(self, Vector2(-3, -3), Vector2(5, 2), CelArt.PAPER, 2)

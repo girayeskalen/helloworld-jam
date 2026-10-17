@@ -12,6 +12,7 @@ const NAMES: Array[String] = ["TEKNİK ATÖLYE / KAZAN DAİRESİ", "GİRİŞ LOB
 @export var custom_sprite: Texture2D:
 	set(value):
 		custom_sprite = value
+		invalidate_static()
 		queue_redraw()
 @export var room_size: Vector2 = Vector2(400, 220)
 @export var wall_color: Color = Color("a49c7d")
@@ -21,6 +22,7 @@ const NAMES: Array[String] = ["TEKNİK ATÖLYE / KAZAN DAİRESİ", "GİRİŞ LOB
 @export var wall_texture: Texture2D:
 	set(value):
 		wall_texture = value
+		invalidate_static()
 		queue_redraw()
 
 const DITHER: float = 5.128
@@ -61,20 +63,65 @@ var shaking: bool = false:
 var _shade: Node2D
 ## Animated damage layer (dust, sparks, smoke, rubble, braces) drawn above the pillars.
 var _fx: Node2D
+var _supports: Node2D
+var _support_cache: SubViewport
+var _support_painter: Node2D
 var _fx_clock: float = 0.0
+var _fx_redraw_clock: float = 0.0
+var _cache_source: bool = false
+var _static_cache: SubViewport
+var _shade_cache: SubViewport
+var _visual_dirty: bool = false
+var static_revision: int = 0
+const CACHE_BOUNDS: Rect2 = Rect2(-8,-8,416,236)
+const CACHE_FIELDS: Array[String] = ["custom_sprite","wall_texture","wall_color","room_size","floor_index","room_kind","_state"]
 
 func _ready() -> void:
+	if _cache_source: return
+	_static_cache = StaticCanvasCache.create(self,CACHE_BOUNDS)
+	StaticCanvasCache.painter(_static_cache,self,CACHE_FIELDS)
+	static_revision += 1
 	# Corner occlusion, vignette and dithered shadow sit above the furniture.
 	_shade = Node2D.new()
 	_shade.name = "Shade"
 	_shade.z_index = 1
-	_shade.draw.connect(_draw_shade)
+	_shade_cache = StaticCanvasCache.create(self,Rect2(Vector2.ZERO,room_size))
+	var shade_painter: Node2D = Node2D.new()
+	_shade_cache.add_child(shade_painter)
+	shade_painter.draw.connect(_paint_shade.bind(shade_painter))
+	_shade.draw.connect(func() -> void: _shade.draw_texture_rect(_shade_cache.get_texture(),Rect2(Vector2.ZERO,room_size),false))
 	add_child(_shade)
 	_fx = Node2D.new()
 	_fx.name = "DamageFX"
 	_fx.z_index = 5
 	_fx.draw.connect(_draw_fx)
 	add_child(_fx)
+	_supports = Node2D.new()
+	_supports.name = "StaticReinforcements"
+	_supports.z_index = 5
+	_support_cache = StaticCanvasCache.create(self,CACHE_BOUNDS)
+	_support_painter = Node2D.new()
+	_support_cache.add_child(_support_painter)
+	_support_painter.draw.connect(_paint_supports.bind(_support_painter))
+	_supports.draw.connect(func() -> void: _supports.draw_texture_rect(_support_cache.get_texture(),CACHE_BOUNDS,false))
+	add_child(_supports)
+
+func invalidate_static() -> void:
+	if _cache_source or _static_cache == null or _visual_dirty: return
+	_visual_dirty = true
+	call_deferred("_refresh_static")
+
+func _refresh_static() -> void:
+	_visual_dirty = false
+	StaticCanvasCache.refresh(_static_cache,self,CACHE_FIELDS)
+	static_revision += 1
+	_refresh_supports()
+	queue_redraw()
+
+func _refresh_supports() -> void:
+	if _support_painter == null: return
+	_support_painter.queue_redraw()
+	_support_cache.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func state() -> int:
 	if hp <= 0.0:
@@ -155,9 +202,11 @@ func _refresh_state(force: bool = false) -> void:
 		return
 	_state = current
 	_apply_state_to_props()
+	invalidate_static()
 	queue_redraw()
 	if _fx != null:
 		_fx.queue_redraw()
+	_refresh_supports()
 	state_changed.emit(self, current)
 
 ## Windows crack or get shutters; loose furniture leans with damage or gets bolted down.
@@ -184,18 +233,23 @@ func _apply_state_to_props() -> void:
 			prop.condition = prop.authored_condition
 
 func _process(delta: float) -> void:
+	_fx_redraw_clock += delta
 	if heat > 0.0:
 		heat = maxf(0.0, heat - delta * 4.0)
-		_fx.queue_redraw()
-	if _state >= RoomState.DAMAGED or shaking or auto_protection:
+	if heat > 0.0 or _state >= RoomState.DAMAGED or shaking:
 		_fx_clock += delta
-		_fx.queue_redraw()
+		if _fx_redraw_clock >= .05:
+			_fx_redraw_clock = fmod(_fx_redraw_clock,.05)
+			_fx.queue_redraw()
 
 ## Identity data only; rooms no longer print their names (the furniture tells the story).
 func room_name() -> String:
 	return NAMES[room_kind]
 
 func _draw() -> void:
+	if not _cache_source and _static_cache != null:
+		draw_texture_rect(_static_cache.get_texture(),CACHE_BOUNDS,false)
+		return
 	if custom_sprite != null:
 		draw_texture_rect(custom_sprite, Rect2(Vector2.ZERO, room_size), false)
 		return
@@ -392,31 +446,31 @@ func _blob(center: Vector2, radius: Vector2) -> PackedVector2Array:
 
 ## Ambient occlusion + vignette over the furniture: soft gradients into each corner and
 ## edge, finished with a 2x2 ordered dither band so the falloff reads as pixel shading.
-func _draw_shade() -> void:
+func _paint_shade(canvas: Node2D) -> void:
 	var w: float = room_size.x
 	var h: float = room_size.y
 	var dark: Color = Color(0.01, 0.015, 0.02, 0.62)
 	var clear: Color = Color(0.01, 0.015, 0.02, 0.0)
 	var top: float = 18.0
 	var bottom: float = h - 20.0
-	_gradient(_shade, Rect2(0, 0, w, 58), dark, clear, true)
-	_gradient(_shade, Rect2(0, bottom - 34, w, 34), clear, Color(dark, 0.45), true)
-	_gradient(_shade, Rect2(0, top, 70, bottom - top), dark, clear, false)
-	_gradient(_shade, Rect2(w - 70, top, 70, bottom - top), clear, dark, false)
+	_gradient(canvas, Rect2(0, 0, w, 58), dark, clear, true)
+	_gradient(canvas, Rect2(0, bottom - 34, w, 34), clear, Color(dark, 0.45), true)
+	_gradient(canvas, Rect2(0, top, 70, bottom - top), dark, clear, false)
+	_gradient(canvas, Rect2(w - 70, top, 70, bottom - top), clear, dark, false)
 	for corner: Vector2 in [Vector2(22, 18), Vector2(w - 22, 18), Vector2(22, h - 44), Vector2(w - 22, h - 44)]:
 		for i: int in range(3):
-			_shade.draw_circle(corner, 46.0 - i * 13.0, Color(0.0, 0.0, 0.0, 0.10 + i * 0.06))
+			canvas.draw_circle(corner, 46.0 - i * 13.0, Color(0.0, 0.0, 0.0, 0.10 + i * 0.06))
 	# Dither the inner edge of each band (threshold rises toward the dark side).
 	var c: Color = Color(0.01, 0.015, 0.02, 0.45)
 	for column: int in range(int(w / DITHER)):
 		for row: int in range(4):
 			if BAYER[(row % 2) * 2 + column % 2] >= row:
-				_shade.draw_rect(Rect2(column * DITHER, 58.0 + row * DITHER, DITHER, DITHER), c)
+				canvas.draw_rect(Rect2(column * DITHER, 58.0 + row * DITHER, DITHER, DITHER), c)
 	for row: int in range(int((bottom - top) / DITHER)):
 		for column: int in range(4):
 			if BAYER[(row % 2) * 2 + column % 2] >= column:
-				_shade.draw_rect(Rect2(70.0 + column * DITHER, top + row * DITHER, DITHER, DITHER), c)
-				_shade.draw_rect(Rect2(w - 70.0 - (column + 1) * DITHER, top + row * DITHER, DITHER, DITHER), c)
+				canvas.draw_rect(Rect2(70.0 + column * DITHER, top + row * DITHER, DITHER, DITHER), c)
+				canvas.draw_rect(Rect2(w - 70.0 - (column + 1) * DITHER, top + row * DITHER, DITHER, DITHER), c)
 
 static func _gradient(canvas: CanvasItem, area: Rect2, from: Color, to: Color, vertical: bool) -> void:
 	var points: PackedVector2Array = PackedVector2Array([area.position, Vector2(area.end.x, area.position.y), area.end, Vector2(area.position.x, area.end.y)])
@@ -472,20 +526,11 @@ func _crack(start: Vector2, rng: RandomNumberGenerator, steps: int) -> void:
 
 ## Animated layer above furniture, light cones and pillars.
 func _draw_fx() -> void:
-	if auto_protection and not is_collapsed():
-		EquipmentArt.draw_safety_installation(_fx,room_size,_fx_clock)
 	if heat > 0.0:
 		_fx.draw_rect(Rect2(24, 20, room_size.x-48, room_size.y-40), Color(1.0,.15,.02,heat*.0015))
-	if chain_support and not fortified:
-		for x: float in [16.0, room_size.x - 16.0]:
-			_fx.draw_line(Vector2(x, 55), Vector2(x, room_size.y - 35), Color("4c969c"), 9.0)
-			for y: float in [60.0, room_size.y - 40.0]:
-				_fx.draw_circle(Vector2(x, y), 4.0, Color("9ce4d7"))
 	if custom_sprite != null:
 		return
 	var t: float = _fx_clock
-	if fortified and _state != RoomState.COLLAPSED:
-		_draw_braces()
 	match _state:
 		RoomState.DAMAGED:
 			_draw_falling_dust(t, 6, Color(0.55, 0.52, 0.46, 0.7))
@@ -504,56 +549,65 @@ func _draw_fx() -> void:
 		_draw_falling_dust(t * 2.5, 18, Color(0.5, 0.48, 0.44, 0.9))
 
 ## Full-sized retrofit silhouettes. Colors stay readable under the existing night tint.
-func _draw_braces() -> void:
+func _paint_supports(canvas: Node2D) -> void:
+	if custom_sprite != null: return
+	if auto_protection and not is_collapsed(): EquipmentArt.draw_safety_installation(canvas,room_size,0)
+	if chain_support and not fortified:
+		for x: float in [16.0,room_size.x-16.0]:
+			canvas.draw_line(Vector2(x,55),Vector2(x,room_size.y-35),Color("4c969c"),9)
+			for y: float in [60.0,room_size.y-40.0]: canvas.draw_circle(Vector2(x,y),4,Color("9ce4d7"))
+	if fortified and not is_collapsed(): _draw_braces(canvas)
+
+func _draw_braces(canvas: Node2D) -> void:
 	var bottom: float = room_size.y - 22.0
 	if has_reinforcement(Reinforcement.STEEL):
-		EquipmentArt.draw_carbon_wrap(_fx,room_size)
+		EquipmentArt.draw_carbon_wrap(canvas,room_size)
 		for side: int in range(2):
 			var x: float = 6.0 if side == 0 else room_size.x - 74.0
-			CelArt.box(_fx, Rect2(x, 8, 68, bottom - 8), Color("324957"), Vector2(5, -4))
+			CelArt.box(canvas, Rect2(x, 8, 68, bottom - 8), Color("324957"), Vector2(5, -4))
 			for diagonal: Array in [[Vector2(x + 4, 15), Vector2(x + 64, bottom - 7)], [Vector2(x + 64, 15), Vector2(x + 4, bottom - 7)]]:
-				_fx.draw_line(diagonal[0], diagonal[1], CelArt.INK, 18.0)
-				_fx.draw_line(diagonal[0], diagonal[1], Color("c1d6df"), 12.0)
-				_fx.draw_line(diagonal[0] + Vector2(-2,0), diagonal[1] + Vector2(-2,0), Color("648ba0"), 4.0)
+				canvas.draw_line(diagonal[0], diagonal[1], CelArt.INK, 18.0)
+				canvas.draw_line(diagonal[0], diagonal[1], Color("c1d6df"), 12.0)
+				canvas.draw_line(diagonal[0] + Vector2(-2,0), diagonal[1] + Vector2(-2,0), Color("648ba0"), 4.0)
 			for y: float in [14.0, bottom * 0.5, bottom - 10.0]:
-				CelArt.rect(_fx, Rect2(x - 3, y - 9, 74, 18), Color("f5c84c"), 3.0)
+				CelArt.rect(canvas, Rect2(x - 3, y - 9, 74, 18), Color("f5c84c"), 3.0)
 				for stripe: int in range(5):
 					var sx: float = x + stripe * 14
-					_fx.draw_colored_polygon(PackedVector2Array([Vector2(sx,y-7),Vector2(sx+7,y-7),Vector2(sx+13,y+7),Vector2(sx+6,y+7)]), CelArt.INK)
-				CelArt.bolt(_fx, Vector2(x + 5, y), Color("e1e8d7"))
-				CelArt.bolt(_fx, Vector2(x + 62, y), Color("e1e8d7"))
-		CelArt.box(_fx, Rect2(76, 7, room_size.x - 152, 13), Color("7e9dac"), Vector2(0, -4))
+					canvas.draw_colored_polygon(PackedVector2Array([Vector2(sx,y-7),Vector2(sx+7,y-7),Vector2(sx+13,y+7),Vector2(sx+6,y+7)]), CelArt.INK)
+				CelArt.bolt(canvas, Vector2(x + 5, y), Color("e1e8d7"))
+				CelArt.bolt(canvas, Vector2(x + 62, y), Color("e1e8d7"))
+		CelArt.box(canvas, Rect2(76, 7, room_size.x - 152, 13), Color("7e9dac"), Vector2(0, -4))
 	if has_reinforcement(Reinforcement.SHUTTER):
 		for prop: BuildingProp in props():
 			if prop.kind != BuildingProp.Kind.WINDOW: continue
 			var rect: Rect2 = Rect2(prop.position - Vector2(prop.prop_size.x * 0.5 + 5, prop.prop_size.y + 3), prop.prop_size + Vector2(10, 6))
-			CelArt.box(_fx, rect, Color("697e87"), Vector2(4, -3))
+			CelArt.box(canvas, rect, Color("697e87"), Vector2(4, -3))
 			for y: float in range(int(rect.position.y) + 6, int(rect.end.y), 10):
-				_fx.draw_line(Vector2(rect.position.x + 3, y), Vector2(rect.end.x - 3, y), Color("c0c7b8"), 3.0)
-			CelArt.rect(_fx, Rect2(rect.position.x + 4, rect.position.y + 3, 8, rect.size.y - 6), Color("d3ae43"))
-			CelArt.rect(_fx, Rect2(rect.end.x - 12, rect.position.y + 3, 8, rect.size.y - 6), Color("d3ae43"))
+				canvas.draw_line(Vector2(rect.position.x + 3, y), Vector2(rect.end.x - 3, y), Color("c0c7b8"), 3.0)
+			CelArt.rect(canvas, Rect2(rect.position.x + 4, rect.position.y + 3, 8, rect.size.y - 6), Color("d3ae43"))
+			CelArt.rect(canvas, Rect2(rect.end.x - 12, rect.position.y + 3, 8, rect.size.y - 6), Color("d3ae43"))
 		for row: int in range(2):
 			for bag: int in range(5 - row):
 				var pos: Vector2 = Vector2(86 + bag * 46 + row * 23, bottom - row * 17)
-				CelArt.poly(_fx, PackedVector2Array([pos+Vector2(-3,-12),pos+Vector2(4,-18),pos+Vector2(39,-17),pos+Vector2(44,-9),pos+Vector2(39,0),pos]), Color("b9a77b").lightened(row*.08), 2.5)
-				_fx.draw_line(pos+Vector2(5,-6),pos+Vector2(35,-5),Color("756a4c"),2.0)
+				CelArt.poly(canvas, PackedVector2Array([pos+Vector2(-3,-12),pos+Vector2(4,-18),pos+Vector2(39,-17),pos+Vector2(44,-9),pos+Vector2(39,0),pos]), Color("b9a77b").lightened(row*.08), 2.5)
+				canvas.draw_line(pos+Vector2(5,-6),pos+Vector2(35,-5),Color("756a4c"),2.0)
 	if has_reinforcement(Reinforcement.ANCHOR):
 		for prop: BuildingProp in props():
 			if prop.kind in [BuildingProp.Kind.WINDOW, BuildingProp.Kind.LAMP, BuildingProp.Kind.SKYLIGHT, BuildingProp.Kind.POSTER, BuildingProp.Kind.CURTAINS]: continue
 			var half: float = minf(prop.prop_size.x * .5, 55.0)
 			var center: Vector2 = prop.position - Vector2(0, prop.prop_size.y * .6)
-			_fx.draw_line(center - Vector2(half,0),center + Vector2(half,0), CelArt.INK, 9.0)
-			_fx.draw_line(center - Vector2(half,0),center + Vector2(half,0), Color("80d6c4"), 5.0)
+			canvas.draw_line(center - Vector2(half,0),center + Vector2(half,0), CelArt.INK, 9.0)
+			canvas.draw_line(center - Vector2(half,0),center + Vector2(half,0), Color("80d6c4"), 5.0)
 			for direction: float in [-1.0,1.0]:
 				var pin: Vector2 = center + Vector2(direction * half,0)
-				CelArt.rect(_fx, Rect2(pin-Vector2(5,9),Vector2(10,18)),Color("c0d4ca"),2.0)
-				CelArt.bolt(_fx,pin,Color("e7f0d7"))
+				CelArt.rect(canvas, Rect2(pin-Vector2(5,9),Vector2(10,18)),Color("c0d4ca"),2.0)
+				CelArt.bolt(canvas,pin,Color("e7f0d7"))
 	# Three individual status LEDs make partial and fully completed rooms distinct.
 	for tier: int in range(3):
 		var lit: bool = tier < reinforcement_level
 		var point: Vector2 = Vector2(room_size.x * .5 - 18 + tier * 18, 34)
-		CelArt.rect(_fx,Rect2(point-Vector2(7,5),Vector2(14,10)),Color("72ffb0") if lit else Color("303c39"),2.0)
-		if lit: _fx.draw_circle(point, 13.0, Color(0.3,1.0,.6,.18))
+		CelArt.rect(canvas,Rect2(point-Vector2(7,5),Vector2(14,10)),Color("72ffb0") if lit else Color("303c39"),2.0)
+		if lit: canvas.draw_circle(point, 13.0, Color(0.3,1.0,.6,.18))
 
 func _draw_falling_dust(t: float, count: int, color: Color) -> void:
 	var w: float = room_size.x

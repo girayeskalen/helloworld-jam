@@ -94,3 +94,33 @@ Notların etkilendiği ana dosya `scripts/combat/SiegeUpgrades.gd`; loot kısa e
 
 - [GitHub CLI v2.102.0](https://github.com/cli/cli/releases/tag/v2.102.0), GitHub ve katkıcıları; [MIT lisansı](https://github.com/cli/cli/blob/v2.102.0/LICENSE). Resmî yayın SHA256 listesiyle doğrulandı. Push/oturum açma geliştirme aracı; oyun bağımlılığı veya dağıtılan oyun asseti değildir.
 - [GitHub CLI tarayıcı girişi](https://cli.github.com/manual/gh_auth_login) ve [GitHub noreply commit adresi](https://docs.github.com/en/account-and-profile/reference/email-addresses-reference): yetkili hesabın giriş ve repo kimliği kurulumu. Token veya şifre repo/belgelere alınmadı.
+
+## 17 Ekim 2026 — Adım 4.9
+
+Yeni dış kaynak, asset veya belge kullanılmadı. HUD ikonları, Titan çizimi ve yetenekler proje içinde prosedürel GDScript ile yazıldı; mevcut Godot `CanvasItem` çizim API'leri (draw_rect, draw_string_outline, draw_polyline) ve zaten kaydedilmiş 4.3 belgeleri yeterli oldu. Yeni afet bilgisi metni eklenmedi; final boss mekanikleri kurgusaldır.
+
+## 17 Ekim 2026 — Adım 5 teknik başvuruları
+
+- [AudioStreamWAV — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_audiostreamwav.html): 16-bit PCM veri, örnekleme hızı ve döngü (loop_mode/loop_end).
+- [AudioServer — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_audioserver.html) ve [Audio buses](https://docs.godotengine.org/en/4.3/tutorials/audio/audio_buses.html): Music/SFX/UI bus'ları, sessiz/seviye, bus efektleri (alçak geçiren filtre, sınırlayıcı).
+- [Pausing games and process mode — Godot 4.3](https://docs.godotengine.org/en/4.3/tutorials/scripting/pausing_games.html): `get_tree().paused`, `PROCESS_MODE_ALWAYS` ile çalışan panel.
+- [Thread](https://docs.godotengine.org/en/4.3/classes/class_thread.html) / [Mutex](https://docs.godotengine.org/en/4.3/classes/class_mutex.html) ve [thread-safe API notları](https://docs.godotengine.org/en/4.3/tutorials/performance/thread_safe_apis.html): sahneye dokunmayan saf sentezin arka planda pişirilmesi.
+- DSP yöntemleri: Hal Chamberlin, *Musical Applications of Microprocessors* (1985) durum-değişkenli filtre; Paul Kellet'in yaygın olarak paylaşılan "economy" pembe gürültü katsayıları. Formüller bilgi düzeyinde kullanıldı; kod kopyalanmadı.
+
+Yeni ses/müzik dosyası veya hazır asset yok.
+
+## 17 Ekim 2026 — Adım 5.5 (OpenAI Codex)
+
+Claude'un Adım 4.9/5 değişiklikleri ve mevcut SFX/oyuncu/4×4 bina/loot/onarım temel alınarak kullanıcı tasarımı uygulandı. Kampanya FIRTINA → DEPREM → SEL → DEPREM • SEL • FIRTINA olarak dört faza indirildi; yangın bossu ve çifte faz kaldırıldı. Birleşik saldırı/sanat yalnız rüzgâr, kaya ve su kullanır; eski ateş jetleri köpüklü su jetlerine dönüştürüldü. BossCinematic ile ayrı 2,5/2,8 sn giriş, hafif kamera odağı, şimşek/kaya/su sahnelemesi ve letterbox; GameHUD'da alt boss barı eklendi.
+
+Özgün BGM bestesi ve sentez kodu AI yardımıyla MusicScore.gd içinde üretildi: 16 ölçü Re minör, sıcak bas, stereo akor pedleri, yumuşak davul/hat ve arpej, hazırlık/kuşatma/final düzenlemeleri. Ses dosyası veya dış müzik/asset indirilmedi; örnekler çalışma anında AudioStreamGenerator'a üretilir. Mevcut SoundRecipes/SoundSynth efektleri korunur. Test için geçici WAV/PNG çıktıları Git dışındadır. Müzik kalitesi ölçüm ve gerçek sürücüyle çalıştırmayla incelendi; kulakla öznel dinleme yapılmadı. Lisans veya insan bestesi iddiası eklenmedi.
+
+Step55Smoke eklendi; önceki paketlerde kaldırılan dalga/ateşli final/üst HUD beklentileri yeni tasarıma uyarlandı. Motor sürümleri ve gerçek sonuçlar STATUS.md içindedir.
+
+## 17 Ekim 2026 — Adım 6 (OpenAI Codex)
+
+Kullanıcının FPS/BGM/final zorluğu talebi doğrultusunda AI yardımıyla mevcut GDScript değiştirildi: statik oda/mobilya/AO/güçlendirme/arka plan doku önbellekleri; sabit hava parçacıkları, dört noktalı mermi izi, savaş öncesi hazırlanan ortak mermi siluetleri, daha az boss mikro geometrisi ve toplu telgraf çizgileri. Oyuncu hareketi, 16 oda kimliği, loot/onarım/kartlar ve mevcut SFX korunur.
+
+MusicScore artık çalışma karesinde canlı sentez yapmaz; açılışta özgün Re minör bas/davul/melodi/akor katmanlarından 22.050 Hz 16-bit mono AudioStreamWAV üretir. Ayrı Master/−5 dB/ALWAYS oynatıcı, örnek adedine göre ileri döngü ve mute'a saygılı watchdog eklendi. 120 BPM'de sekiz 4/4 ölçü 16 sn olduğundan, çelişen 12,8 sn yerine bu müzikal uzunluk kullanıldı. Dış müzik, ses örneği, servis, asset veya bağımlılık indirilmedi; önbellekler mevcut prosedürel çizimlerin çalışma anındaki kopyalarıdır.
+
+Yalnız finalde cooldown×1,3, adet round(×0,7), hız×0,8, oyuncu/bina hasarı×0,7 ve uyarı+0,20 sn uygulandı. Bu mekanik katsayılar ölçülür; insanın algıladığı toplam zorluğun tam %30 değiştiği iddia edilmez. Step6Smoke ve PerformanceBench eklendi, eski test beklentileri güncellendi. Gerçek test/FPS/ses çıkışı ölçümleri ve sınırlar STATUS.md'dedir; insan kulakla dinleme veya bütün bilgisayarlarda FPS garantisi iddiası yoktur.

@@ -27,6 +27,9 @@ func _run() -> void:
 	print("CAMPAIGN_RESULT checks=%d failures=%d" % [checks, failures])
 	game.queue_free()
 	await process_frame
+	await process_frame
+	# Drain the audio driver after deferred scene destruction.
+	OS.delay_msec(80)
 	quit(0 if failures == 0 else 1)
 
 func _fresh() -> void:
@@ -41,7 +44,7 @@ func _loot_rules() -> void:
 	loot.advance(30)
 	_check(loot.items.is_empty(), "No unsolicited loot during initial preparation")
 	game.waves.start_next_wave()
-	game.waves.advance_wave(1.5)
+	game.waves.advance_wave(game.waves.intro_duration())
 	game.waves.building.pacing_enabled = false
 	loot.spawn(LootSystem.Kind.COLUMN_KIT, 8)
 	loot.advance(LootSystem.DROP_TIME)
@@ -73,7 +76,7 @@ func _loot_rules() -> void:
 	_check(loot.items.is_empty(), "Intermission drop still expires at the same four-second deadline")
 	_fresh()
 	game.waves.start_next_wave()
-	game.waves.advance_wave(1.5)
+	game.waves.advance_wave(game.waves.intro_duration())
 	game.waves.building.pacing_enabled = false
 	for kind: int in range(4):
 		loot.spawn(kind, 8)
@@ -98,7 +101,7 @@ func _construction() -> void:
 	loot.barricade_kits = 1
 	loot.barricade_kits = 1
 	game.waves.start_next_wave()
-	game.waves.advance_wave(1.5)
+	game.waves.advance_wave(game.waves.intro_duration())
 	game.waves.building.pacing_enabled = false
 	_check(not loot.can_offer_repair() and loot.repair_current_room() == LootSystem.RepairResult.NOT_NEEDED and loot.messages.is_empty(), "Healthy siege room: no repair action, prompt or feedback")
 	room.apply_damage(40)
@@ -124,7 +127,7 @@ func _construction() -> void:
 	var living: RoomDiorama = game.building.room_at(1,0)
 	living.reinforce(RoomDiorama.Reinforcement.ANCHOR)
 	game.waves.start_next_wave()
-	game.waves.advance_wave(1.5)
+	game.waves.advance_wave(game.waves.intro_duration())
 	game.waves.building.pacing_enabled = false
 	BossPatterns.room_objects(game.waves,0)
 	var unsafe: bool = false
@@ -154,7 +157,7 @@ func _campaign() -> void:
 	var w: DisasterWaveManager = game.waves
 	var up: SiegeUpgrades = game.upgrades
 	w.start_next_wave()
-	w.advance_wave(1.5)
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
 	game.loot.column_kits = 2
 	game.building.rooms[0].apply_damage(20)
@@ -174,7 +177,7 @@ func _campaign() -> void:
 	w.advance_wave(6.9)
 	_check(w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE, "Construction remains available for the full 7 seconds")
 	w.advance_wave(.11)
-	w.advance_wave(1.5)
+	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
 	_check(w.wave_number == 2 and game.earthquake.visible and not game.storm.visible, "Build timer automatically starts earthquake wave two")
 	w.finish_wave()
@@ -197,31 +200,31 @@ func _campaign() -> void:
 	await _frames(2)
 	_check(up.has_upgrade(second) and not up.pending, "Mouse click selects the second card through real Control hit testing")
 	await _tap(KEY_F)
-	w.advance_wave(1.5)
-	_check(w.mode == DisasterWaveManager.Mode.CHAOS and w.wave_number == 3 and game.storm.visible and game.earthquake.visible, "F starts the third simultaneous two-boss siege")
-	w.chaos_burst()
+	w.advance_wave(w.intro_duration())
+	_check(w.mode == DisasterWaveManager.Mode.FLOOD and w.wave_number == 3 and game.flood.visible, "F starts flood as the third phase")
+	w.marathon_burst()
 	var sources: Dictionary = {}
 	var target_floors: Dictionary = {}
 	for attack: HazardAttack in game.telegraphs.pending:
 		sources[attack.source] = true
 		if attack.pattern != HazardAttack.Pattern.ROOM_OBJECT: target_floors[attack.floor_index] = true
-	_check(sources.size() == 2 and target_floors.size() >= 2 and game.storm.is_charging() and game.earthquake.is_charging(), "Finale synchronizes both animated bosses with complementary floor targets")
+	_check(sources.has(2) and game.flood.is_charging(), "Flood attacks retain their water source and animated cue")
 	w.finish_wave()
 	w.advance_wave(2.5)
 	_check(not w.victory and up.pending and w.completed_waves == 3, "Third wave continues into flood preparation")
-	for next_wave: int in [3,4]:
+	for next_wave: int in [3]:
 		up.choose(0)
 		w.start_next_wave()
-		w.advance_wave(DisasterWaveManager.INTRO_DURATION)
-		_check(w.mode == next_wave and w.wave_number == next_wave+1, "Campaign continues through flood then fire")
+		w.advance_wave(w.intro_duration())
+		_check(w.mode == next_wave and w.wave_number == next_wave+1, "Campaign continues through flood, fire and the final titan")
 		w.finish_wave()
 		w.advance_wave(DisasterWaveManager.OUTRO_DURATION)
-	_check(w.victory and w.completed_waves == 5 and w.state == DisasterWaveManager.State.VICTORY and not up.pending, "Fifth wave ends in victory, without another card or sixth wave")
+	_check(w.victory and w.completed_waves == 4 and w.state == DisasterWaveManager.State.VICTORY and not up.pending, "Fourth phase ends in victory without a fifth phase")
 	_check(game.projectiles.active_count() == 0 and game.telegraphs.pending.is_empty() and not game.storm.visible and not game.earthquake.visible, "Victory clears active attacks and bosses")
 	w.advance_wave(999)
 	await _tap(KEY_F)
 	await _tap(KEY_E)
-	_check(w.victory and w.wave_number == 5 and game.player.controls_locked, "Victory is terminal until explicit reset or debug shortcut")
+	_check(w.victory and w.wave_number == 4 and game.player.controls_locked, "Victory is terminal until explicit reset or a boss shortcut")
 	await _tap(KEY_R)
 	_check(w.wave_number == 0 and not w.victory and up.selected.is_empty() and game.loot.materials() == 0, "R restores a fresh campaign after victory")
 	await _tap(KEY_F9)
@@ -230,10 +233,9 @@ func _campaign() -> void:
 	await _tap(KEY_3)
 	_check(not up.pending and w.wave_number == 0, "Key 3 selects the third card, not the final boss")
 	await _tap(KEY_R)
-	await _tap(KEY_F9)
 	await _tap(KEY_3)
-	w.advance_wave(1.5)
-	_check(w.mode == DisasterWaveManager.Mode.CHAOS and w.wave_number == 3, "Outside the modal key 3 still launches the final boss test")
+	w.advance_wave(w.intro_duration())
+	_check(not w.debug_enabled and w.mode == DisasterWaveManager.Mode.FLOOD and w.wave_number == 3, "Outside the modal key 3 launches flood directly")
 	game.building.rooms[0].hp = 0
 	game.building.rooms[1].hp = 0
 	game.building.rooms[2].hp = 0
@@ -242,8 +244,8 @@ func _campaign() -> void:
 	w.advance_wave(2.5)
 	_check(w.failed and not w.victory, "A collapsed building cannot win on the same tick as the final deadline")
 	_fresh()
-	w.start_siege(DisasterWaveManager.Mode.FIRE, true)
-	w.advance_wave(1.5)
+	w.start_siege(DisasterWaveManager.Mode.CATACLYSM, true)
+	w.advance_wave(2.5)
 	game.player.health = 0
 	w.finish_wave()
 	w.advance_wave(2.5)
@@ -284,8 +286,8 @@ func _capture(directory: String) -> void:
 	game.loot.barricade_kits = 1
 	game.loot.barricade_kits = 1
 	await _save(directory,"05-construction-tiers.png")
-	game.waves.start_siege(DisasterWaveManager.Mode.CHAOS, true)
-	game.waves.advance_wave(1.5)
+	game.waves.start_siege(DisasterWaveManager.Mode.CATACLYSM, true)
+	game.waves.advance_wave(game.waves.intro_duration())
 	game.building.pacing_enabled = false
 	b.room_at(0,1).apply_damage(50)
 	b.room_at(3,0).apply_damage(80)
@@ -302,8 +304,8 @@ func _capture(directory: String) -> void:
 	game.waves.finish_wave()
 	game.waves.advance_wave(2.5)
 	game.upgrades.choose(0)
-	game.waves.start_siege(DisasterWaveManager.Mode.FIRE,true)
-	game.waves.advance_wave(DisasterWaveManager.INTRO_DURATION)
+	game.waves.start_siege(DisasterWaveManager.Mode.CATACLYSM,true)
+	game.waves.advance_wave(DisasterWaveManager.FINAL_INTRO_DURATION)
 	game.waves.finish_wave()
 	game.waves.advance_wave(DisasterWaveManager.OUTRO_DURATION)
 	await _save(directory,"08-victory.png")

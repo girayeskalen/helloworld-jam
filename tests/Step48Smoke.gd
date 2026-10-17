@@ -27,13 +27,16 @@ func _run() -> void:
 	print("STEP48_RESULT checks=%d failures=%d" % [checks,failures])
 	game.queue_free()
 	await process_frame
+	await process_frame
+	# Drain the audio driver after deferred scene destruction.
+	OS.delay_msec(80)
 	quit(0 if failures == 0 else 1)
 
 func _fresh() -> void:
 	game.reset_game()
 	game.waves.autoplay = false
 	game.waves.start_next_wave()
-	game.waves.advance_wave(DisasterWaveManager.INTRO_DURATION)
+	game.waves.advance_wave(game.waves.intro_duration())
 	game.building.pacing_enabled = false
 	game.player.controls_locked = false
 	game.telegraphs.clear()
@@ -266,13 +269,13 @@ func _offers() -> void:
 	for seed_value: int in range(50):
 		_fresh()
 		game.upgrades._rng.seed = seed_value
-		for wave: int in range(4):
+		for wave: int in range(5):
 			game.upgrades.open_selection()
 			var offers: Array[int] = game.upgrades.offers
 			correct = correct and offers.size() == 3 and SiegeUpgrades.is_awareness(offers[0]) and not SiegeUpgrades.is_awareness(offers[1]) and not SiegeUpgrades.is_awareness(offers[2]) and offers[1] != offers[2]
 			correct = correct and not game.upgrades.selected.has(offers[0]) and not game.upgrades.selected.has(offers[1]) and not game.upgrades.selected.has(offers[2])
 			game.upgrades.choose((seed_value+wave)%3)
-	_check(correct,"200 selections across 50 runs guarantee left awareness, two distinct unowned action cards")
+	_check(correct,"250 selections across 50 runs (five card screens) guarantee left awareness, two distinct unowned action cards")
 	var text: bool = SiegeUpgrades.CATALOG.size() == 19
 	for card: Dictionary in SiegeUpgrades.CATALOG: text = text and card["effect"].length()>20 and card["note"].length()>20
 	_check(text,"All nineteen cards retain an effect plus a short awareness note")
@@ -284,6 +287,10 @@ func _framing() -> void:
 		boss.transition_pose(1.0,false)
 		boss.cue_attack(1.0)
 		var fits: bool = true
+		# Step 4.9 HUD: the titan's crown may rise into the old header area, but never
+		# into the thin boss strip; every other boss keeps the stricter old 165 px line.
+		var top_limit: float = 70.0 if boss.kind == DisasterBoss.Kind.CATACLYSM else 165.0
+		var extent: Rect2 = Rect2()
 		for tick: int in range(60):
 			boss.advance(1.0/60)
 			var box: Rect2 = boss.pose_bounds()
@@ -291,8 +298,9 @@ func _framing() -> void:
 			var right: Vector2 = game.world_to_screen(boss.to_global(box.end))
 			# BossGroundMask intentionally hides every painted part below ground.
 			right.y = minf(right.y,game.world_to_screen(Vector2(0,game.backdrop.ground_y)).y)
-			fits = fits and left.x >= 0 and right.x <= 1920 and left.y >= 165 and right.y <= 990
-		_check(fits,"Boss %d artwork stays within frame through the whole charge" % boss.kind)
+			fits = fits and left.x >= 0 and right.x <= 1920 and left.y >= top_limit and right.y <= 990
+			extent = Rect2(left, right - left) if tick == 0 else extent.merge(Rect2(left, right - left))
+		_check(fits,"Boss %d artwork stays within frame through the whole charge %s" % [boss.kind, extent])
 		boss.set_active(false)
 
 func _reset() -> void:
@@ -318,7 +326,7 @@ func _capture(directory: String) -> void:
 		game.waves.start_siege(mode as DisasterWaveManager.Mode,true)
 		game.waves.advance_wave(1.2)
 		game.building.pacing_enabled = false
-		var boss: DisasterBoss = [game.storm,game.earthquake,game.flood,game.fire][[0,1,3,4].find(mode)]
+		var boss: DisasterBoss = [game.storm,game.earthquake,game.flood,game.titan][[0,1,3,4].find(mode)]
 		boss.advance(.45)
 		await _save(directory,"boss-%d-idle.png" % boss.kind)
 		boss.cue_attack(.75)

@@ -160,6 +160,9 @@ func _run() -> void:
 	print("STEP1_RESULT checks=%d failures=%d" % [_checks, _failures])
 	game.queue_free()
 	await process_frame
+	await process_frame
+	# Drain the audio driver after deferred scene destruction.
+	OS.delay_msec(80)
 	quit(0 if _failures == 0 else 1)
 
 func _capture(game: MainGame, directory: String) -> void:
