@@ -26,6 +26,8 @@ var integrity: float:
 const REPAIR_CAP: int = 3
 const REPAIR_GRACE: float = 10.0
 var pacing_enabled: bool = false
+var structural_factor: float = 1.0
+var secondary_factor: float = 1.0
 var wear_clock: float = 0.0
 var _damage_credit: Dictionary = {}
 var _alert_age: Dictionary = {}
@@ -54,7 +56,7 @@ func damage_integrity(amount: float) -> void:
 		return
 	for room: RoomDiorama in rooms:
 		if not room.is_collapsed():
-			room.apply_damage(amount * room.max_hp / max_integrity)
+			room.apply_damage(amount * room.max_hp / max_integrity * structural_factor,1)
 
 func column_at(x: float) -> int:
 	return clampi(int(floor((x - global_position.x) / room_width)), 0, COLUMN_COUNT - 1)
@@ -62,11 +64,11 @@ func column_at(x: float) -> int:
 func room_at_point(floor_index: int, x: float) -> RoomDiorama:
 	return room_at(clampi(floor_index, 0, floor_count - 1), column_at(x))
 
-func damage_room(floor_index: int, column: int, amount: float) -> float:
-	return room_at(clampi(floor_index, 0, floor_count - 1), clampi(column, 0, COLUMN_COUNT - 1)).apply_damage(amount)
+func damage_room(floor_index: int, column: int, amount: float, source: int = 1) -> float:
+	return room_at(clampi(floor_index, 0, floor_count - 1), clampi(column, 0, COLUMN_COUNT - 1)).apply_damage(amount,source)
 
-func damage_room_at(floor_index: int, x: float, amount: float) -> float:
-	return room_at_point(floor_index, x).apply_damage(amount)
+func damage_room_at(floor_index: int, x: float, amount: float, source: int = 1) -> float:
+	return room_at_point(floor_index, x).apply_damage(amount,source)
 
 func collapsed_count() -> int:
 	var count: int = 0
@@ -122,9 +124,9 @@ func advance_wear(delta: float) -> void:
 			if focus == null or room.hp < focus.hp: focus = room
 		var rate: float = 1.3 if room.needs_repair() else 4.0
 		_damage_credit[room] = minf(1.5, float(_damage_credit.get(room, 0.0)) + rate * delta)
-		room.apply_damage(delta * (0.6 if room.needs_repair() else 0.04))
+		room.apply_damage(delta * (0.6 if room.needs_repair() else 0.04)*structural_factor)
 	if focus != null:
-		focus.apply_damage(delta * 2.0 / (1.0 + repair_count() * 0.65))
+		focus.apply_damage(delta * 2.0 / (1.0 + repair_count() * 0.65)*structural_factor)
 
 ## Sway only painted children; static collision bodies and floor coordinates never move.
 func _process(delta: float) -> void:
@@ -141,14 +143,14 @@ func erode(delta: float, rate: float) -> void:
 	for room: RoomDiorama in rooms:
 		var current: int = room.state()
 		if current == RoomDiorama.RoomState.DAMAGED or current == RoomDiorama.RoomState.CRITICAL:
-			room.apply_damage(rate * delta)
+			room.apply_damage(rate * delta*structural_factor)
 
 ## Secondary electrical/gas damage is separate from structural crumbling.
 ## It never bypasses player telegraphs: only the already damaged room loses HP.
 func secondary_damage(delta: float, rate: float) -> void:
 	for room: RoomDiorama in rooms:
 		if room.needs_repair() and not room.utilities_isolated:
-			room.apply_damage(rate * delta)
+			room.apply_damage(rate * delta*secondary_factor,4)
 
 ## The apartment gives way: every room shakes and sheds dust, lights die.
 func start_collapse() -> void:

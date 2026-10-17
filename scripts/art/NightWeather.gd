@@ -13,6 +13,7 @@ extends Node2D
 @export var flash_interval: Vector2 = Vector2(5.0, 11.0)
 
 var flash: float = 0.0
+var inferno: float = 0.0
 var storminess: float = 0.0
 var flash_count: int = 0
 var _clock: float = 0.0
@@ -75,6 +76,10 @@ func _flash_curve(age: float) -> float:
 	return clampf(exp(-age * 9.0) + 0.7 * exp(-pow((age - 0.18) * 25.0, 2.0)), 0.0, 1.0)
 
 func _draw() -> void:
+	if inferno > 0.0:
+		for i: int in range(9):
+			var y: float = ground_y - fposmod(_clock * (26+i*3) + i*147,ground_y)
+			CelArt.ellipse(self,Vector2(view_size.x*.5+sin(_clock*.3+i)*400,y),Vector2(view_size.x*.62,50+i*8),Color(.6,.07,.025,.065*inferno),0)
 	var w: float = view_size.x + 120.0
 	var span: float = ground_y + 60.0
 	if flash > 0.01:

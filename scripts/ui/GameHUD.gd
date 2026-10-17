@@ -76,8 +76,8 @@ func _draw() -> void:
 	elif absf(player.wind_velocity) > 25.0:
 		message = "RÜZGÂR İTİYOR  /  KOŞ VEYA TAKLA İLE DİREN"
 		message_color = Color("9fd6dc")
-	CelArt.label(self, Vector2(760, 994), message, 14, message_color)
-	CelArt.label(self, Vector2(1430, 994), ("TEST AÇIK: 1/2/3 BOSS · U KART" if waves.debug_enabled else "[F] HAZIRIM · [F9] TEST MODU"), 13, Color("c2cdb8"))
+	CelArt.label(self, Vector2(1004, 994), message, 11, message_color)
+	CelArt.label(self, Vector2(1532, 994), ("TEST AÇIK: 1–5 BOSS · U KART" if waves.debug_enabled else "[F] HAZIRIM · [F9] TEST MODU"), 11, Color("c2cdb8"))
 	CelArt.rect(self, Rect2(150, 1004, 1620, 68), Color("11181d"))
 	CelArt.line(self, Vector2(150, 1004), Vector2(1770, 1004), Color("809283"), 2)
 	for control: Array in CONTROLS:
@@ -87,9 +87,9 @@ func _draw() -> void:
 		if waves.victory:
 			draw_rect(Rect2(0,0,1920,1080),Color(.02,.05,.06,.6))
 			CelArt.rect(self,Rect2(415,375,1090,300),Color("10252a"),3.0)
-			CelArt.label(self,Vector2(464,438),"AFET KUŞATMASI BAŞARIYLA ATLATILDI",32,Color("b0f1c7"))
-			CelArt.label(self,Vector2(464,498),"BİNANIZ HAYATTA KALDI!",39,CelArt.PAPER)
-			CelArt.label(self,Vector2(464,550),"3 / 3 DALGA  ·  AYAKTA KALAN ODA: %d / 16" % [16 - collapsed],22,CelArt.GOLD)
+			CelArt.label(self,Vector2(464,438),"5 BÜYÜK AFET KUŞATMASI ATLATILDI!",32,Color("b0f1c7"))
+			CelArt.label(self,Vector2(464,498),"TAM HAZIRLIK ZAFERİ!",39,CelArt.PAPER)
+			CelArt.label(self,Vector2(464,550),"5 / 5 DALGA  ·  AYAKTA KALAN ODA: %d / 16" % [16 - collapsed],22,CelArt.GOLD)
 			CelArt.label(self,Vector2(464,615),"R: YENİ OYUN     ·     F9: TEST MODU",18,Color("bad5cd"))
 		if waves.failed:
 			CelArt.rect(self, Rect2(609, 442, 702, 163), Color("11181d"))
@@ -101,19 +101,23 @@ func _draw() -> void:
 			else:
 				CelArt.label(self, Vector2(646, 493), "KUŞATMA SONLANDI", 31, Color("e9b981"))
 				CelArt.label(self, Vector2(647, 532), "R ile hazırlan ve yeniden dene.", 22, CelArt.PAPER)
-				CelArt.label(self, Vector2(647, 565), "F9 ile test modunu aç; 1 / 2 / 3 boss seçer.", 17, Color("a7b8a9"))
+				CelArt.label(self, Vector2(647, 565), "F9 ile test modunu aç; 1 / 2 / 3 / 4 / 5 boss seçer.", 17, Color("a7b8a9"))
 
-## Bottom-left supplies: cement and shutter kits waiting to be spent with E.
+## Four readable equipment summaries; the first two are stocked E-action kits.
 func _draw_inventory() -> void:
 	if loot == null:
 		return
-	var x: float = 160.0
 	for kind: int in range(4):
+		var x: float = 169.0+kind*205.0
 		var aura: Color = LootSystem.AURA[kind]
-		var count: int = loot.count_kind(kind)
-		draw_rect(Rect2(x, 980, 12, 14), aura if count > 0 else aura.darkened(.65))
-		CelArt.label(self, Vector2(x + 18, 994), "%s ×%d" % [LootSystem.short_name(kind), count], 14, aura.lightened(.2) if count > 0 else Color("6c7a72"))
-		x += 143.0
+		draw_set_transform(Vector2(x,983),0,Vector2.ONE*.55)
+		EquipmentArt.draw_kit(self,kind,_clock)
+		draw_set_transform(Vector2.ZERO)
+		var title: String = "%s ×%d" % [LootSystem.short_name(kind),loot.count_kind(kind)]
+		if kind == LootSystem.Kind.EMERGENCY_BAG: title = "ÇANTA · +25 CAN"
+		if kind == LootSystem.Kind.SAFETY_KIT: title = "GÜVENLİK · %d ODA" % loot.safety_installs
+		CelArt.label(self,Vector2(x+20,980),title,13,aura)
+		CelArt.label(self,Vector2(x+20,997),LootSystem.purpose(kind),10,Color("adbfba"))
 
 func _draw_wave_bar() -> void:
 	if waves == null:
@@ -129,7 +133,7 @@ func _draw_wave_bar() -> void:
 	CelArt.label(self, Vector2(605, 55), waves.phase_label(), 14, accent)
 	var title: String = "SONRAKİ: " if preparing else "AFET DALGASI %02d: " % waves.wave_number
 	if waves.victory:
-		title = "3 / 3 TAMAMLANDI: "
+		title = "5 / 5 TAMAMLANDI: "
 		ratio = 1.0
 	CelArt.label(self, Vector2(605, 82), title + waves.boss_name(), 18, CelArt.PAPER)
 	CelArt.label(self, Vector2(1310, 55), "ZAFER" if waves.victory else "%02d sn" % ceili(time_left), 19, CelArt.GOLD)

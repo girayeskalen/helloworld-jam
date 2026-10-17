@@ -44,7 +44,7 @@ func warn_gust(area: Rect2, floor_lines: PackedFloat32Array, direction: float, s
 func warn(attack: HazardAttack, seconds: float = 0.65) -> int:
 	# The trajectory cannot be retargeted after this copy is placed on screen.
 	attack = attack.frozen_copy()
-	attack.warning_duration = (1.0 if attack.pattern == HazardAttack.Pattern.FULL_ROW else clampf(seconds, MIN_WARNING, MAX_WARNING)) + warning_bonus
+	attack.warning_duration = (1.0 if attack.minimum_warning() == 1.0 else clampf(seconds, MIN_WARNING, MAX_WARNING)) + warning_bonus
 	attack.warning_elapsed = 0.0
 	attack.warning_confirmed = false
 	attack.warning_id = _next_id
@@ -73,7 +73,12 @@ func _physics_process(delta: float) -> void:
 	for attack: HazardAttack in pending.duplicate():
 		if not pending.has(attack):
 			continue
-		attack.warning_elapsed += delta
+		var warning_delta: float = delta
+		if attack.warning_delay > 0.0:
+			warning_delta = maxf(0.0, delta - attack.warning_delay)
+			attack.warning_delay = maxf(0.0, attack.warning_delay - delta)
+			if warning_delta <= 0.0: continue
+		attack.warning_elapsed += warning_delta
 		if attack.warning_elapsed + 0.000001 >= attack.warning_duration:
 			pending.erase(attack)
 			attack.warning_confirmed = true
@@ -81,6 +86,7 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 static func warning_color(attack: HazardAttack) -> Color:
+	if attack.source >= 2: return Color("54e9dc") if attack.source == 2 else Color("ff9c48")
 	if attack.pattern == HazardAttack.Pattern.FULL_ROW:
 		return STORM_ROW if attack.source == 0 else QUAKE_ROW
 	return STORM_WARNING if attack.source == 0 else QUAKE_WARNING
@@ -89,11 +95,18 @@ static func warning_color(attack: HazardAttack) -> Color:
 func _draw() -> void:
 	_draw_gust()
 	for attack: HazardAttack in pending:
+		if attack.warning_delay > 0.0: continue
 		var progress: float = clampf(attack.warning_elapsed / attack.warning_duration, 0, 1)
 		var pulse: float = 0.65 + 0.35 * sin(progress * 26.0)
 		var color: Color = warning_color(attack)
 		color.a = 0.75 + progress * 0.25
-		if attack.pattern == HazardAttack.Pattern.FULL_ROW:
+		if attack.is_area():
+			for segment: Rect2 in attack.area_segments():
+				draw_rect(segment, Color(color,.10 + progress*.14))
+				draw_rect(segment, color, false, 3.0)
+				_dashes(segment.position, Vector2(segment.end.x, segment.position.y),color)
+				_icon(segment.get_center()+Vector2(0,-32),color,pulse)
+		elif attack.is_wall():
 			var start: Vector2 = Vector2(minf(attack.origin.x, attack.point_at(attack.lifetime).x), attack.floor_y - attack.row_height)
 			var size: Vector2 = Vector2(absf(attack.velocity.x * attack.lifetime), attack.row_height)
 			draw_rect(Rect2(start, size), Color(color, .10 + .10 * progress))
@@ -115,6 +128,10 @@ func _draw() -> void:
 			draw_set_transform(Vector2.ZERO)
 			_icon(Vector2(attack.origin.x, top + 18), color, pulse)
 		else:
+			if attack.pattern == HazardAttack.Pattern.EMBER_DETONATION and attack.lead:
+				draw_circle(attack.origin,20,Color("391810"))
+				draw_arc(attack.origin,29,-PI/2,-PI/2+TAU*maxf(.01,progress),28,color,5.0)
+				draw_circle(attack.origin,9,Color("fff1a2"))
 			if attack.pattern == HazardAttack.Pattern.VORTEX and attack.lead:
 				draw_vortex_eye(self, attack.origin, attack.warning_elapsed * 6.0, 0.35 + progress * 0.55, 0.4 + progress * 0.6)
 			if attack.pattern == HazardAttack.Pattern.SPLINTER:
@@ -128,7 +145,7 @@ func _draw() -> void:
 				previous = next
 			if attack.kind == HazardAttack.Kind.WIND_BLADE:
 				draw_line(attack.origin, attack.point_at(attack.lifetime), Color(color, 0.08), attack.radius * 2, true)
-			if attack.pattern != HazardAttack.Pattern.VORTEX or attack.lead:
+			if (attack.pattern not in [HazardAttack.Pattern.VORTEX,HazardAttack.Pattern.EMBER_DETONATION]) or attack.lead:
 				_icon(attack.origin + Vector2(0, -31), color, pulse)
 
 func _draw_gust() -> void:

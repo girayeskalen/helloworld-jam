@@ -29,6 +29,8 @@ extends Node2D
 @onready var storm: DisasterBoss = $World/Viewport/StormBoss
 @onready var earthquake: DisasterBoss = $World/Viewport/EarthquakeBoss
 @onready var loot: LootSystem = $World/Viewport/LootSystem
+@onready var flood: DisasterBoss = $World/Viewport/FloodBoss
+@onready var fire: DisasterBoss = $World/Viewport/FireBoss
 var sprite_overrides: Dictionary = {}
 var mechanics: SiegeMechanics
 var upgrades: SiegeUpgrades
@@ -51,6 +53,8 @@ func _ready() -> void:
 	_bind_action(&"storm_test", [KEY_1])
 	_bind_action(&"quake_test", [KEY_2])
 	_bind_action(&"chaos_test", [KEY_3])
+	_bind_action(&"flood_test", [KEY_4])
+	_bind_action(&"fire_test", [KEY_5])
 	_bind_action(&"repair", [KEY_E])
 	_bind_action(&"upgrade_test", [KEY_U])
 	player.building = building
@@ -61,7 +65,7 @@ func _ready() -> void:
 	hud.waves = waves
 	hud.loot = loot
 	labels.configure(self)
-	waves.configure(building, player, game_camera, telegraphs, projectiles, storm, earthquake)
+	waves.configure(building, player, game_camera, telegraphs, projectiles, storm, earthquake, flood, fire)
 	loot.configure(building, player, waves)
 	upgrades = SiegeUpgrades.new()
 	upgrades.name = "SiegeUpgrades"
@@ -98,7 +102,7 @@ func _clip_bosses_at_ground() -> void:
 	mask.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	mask.z_index = 5
 	world_viewport.add_child(mask)
-	for boss: DisasterBoss in [storm, earthquake]:
+	for boss: DisasterBoss in [storm, earthquake, flood, fire]:
 		boss.reparent(mask, true)
 		boss.z_index = 0
 
@@ -114,6 +118,7 @@ func _process(_delta: float) -> void:
 	_apply_atmosphere()
 
 func _apply_atmosphere() -> void:
+	weather.inferno = (1.0 if waves.enrage else .25) if fire.visible else 0.0
 	weather.storminess = 1.0 - storm.retreat if storm.visible else 0.0
 	var ambient: Color = night_tint
 	building.set_darkness(ambient.lerp(flash_tint, weather.flash * 0.6))
@@ -171,6 +176,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		waves.start_siege(DisasterWaveManager.Mode.EARTHQUAKE, true)
 	elif waves.debug_enabled and event.is_action_pressed("chaos_test"):
 		waves.start_siege(DisasterWaveManager.Mode.CHAOS, true)
+
+	elif waves.debug_enabled and event.is_action_pressed("flood_test"):
+		waves.start_siege(DisasterWaveManager.Mode.FLOOD, true)
+	elif waves.debug_enabled and event.is_action_pressed("fire_test"):
+		waves.start_siege(DisasterWaveManager.Mode.FIRE, true)
 
 func _on_dash_started() -> void:
 	game_camera.apply_shake(2.0, 0.09)

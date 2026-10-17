@@ -11,6 +11,7 @@ const CORE: Color = Color("ff3a2c")
 var active: bool = false
 var attack: HazardAttack
 var age: float = 0.0
+var dodge_reported: bool = false
 var contacted_player: bool = false
 ## Additive neon halo + motion trail, drawn behind the body. Created once with the pool.
 var glow: Node2D
@@ -29,7 +30,7 @@ func _ready() -> void:
 func glow_color() -> Color:
 	if attack == null:
 		return STORM_GLOW
-	return STORM_GLOW if attack.source == 0 else QUAKE_GLOW
+	return [STORM_GLOW, QUAKE_GLOW, Color("55f2e2"), Color("ff602a")][attack.source]
 
 func activate(specification: HazardAttack) -> bool:
 	if not specification.is_armed():
@@ -37,6 +38,7 @@ func activate(specification: HazardAttack) -> bool:
 	attack = specification
 	age = 0.0
 	contacted_player = false
+	dodge_reported = false
 	global_position = attack.origin
 	rotation = 0.0
 	_trail.clear()
@@ -61,12 +63,17 @@ func advance(delta: float) -> void:
 	glow.queue_redraw()
 
 func crosses_player(player: SiegePlayer, previous_projectile: Vector2) -> bool:
+	if attack.is_area():
+		if attack.kind == HazardAttack.Kind.WHIRLPOOL: return false
+		for area: Rect2 in attack.area_segments():
+			if _crosses_area(player,area): return true
+		return false
 	if contacted_player:
 		return false
 	# Moving projectile versus moving capsule: relative segment to the vertical spine.
 	var start: Vector2 = previous_projectile - player.previous_position
 	var end: Vector2 = global_position - player.global_position
-	if attack.kind == HazardAttack.Kind.ROW_SWEEP:
+	if attack.is_wall():
 		# A tall, narrow wall; a huge circle would incorrectly hit adjacent floors.
 		var bottom: float = attack.floor_y - global_position.y
 		var closest_wall: PackedVector2Array = Geometry2D.get_closest_points_between_segments(start, end, Vector2(0, -36 - bottom), Vector2(0, -12 + attack.row_height - bottom))
@@ -78,6 +85,7 @@ func _draw_glow() -> void:
 	if not active or attack == null:
 		return
 	var color: Color = glow_color()
+	if attack.is_area(): return
 	# Tapered neon motion trail.
 	var previous: Vector2 = Vector2.ZERO
 	for i: int in range(_trail.size()):
@@ -85,7 +93,7 @@ func _draw_glow() -> void:
 		var fade: float = 1.0 - float(i) / float(TRAIL_LENGTH)
 		glow.draw_line(previous, point, Color(color, 0.42 * fade), maxf(3.0, attack.radius * 1.5 * fade), true)
 		previous = point
-	if attack.kind == HazardAttack.Kind.ROW_SWEEP:
+	if attack.is_wall():
 		glow.draw_rect(Rect2(-26, -attack.row_height * 0.5 - 6, 52, attack.row_height + 12), Color(color, 0.22))
 		glow.draw_rect(Rect2(-12, -attack.row_height * 0.5, 24, attack.row_height), Color(color, 0.25))
 		return
@@ -96,6 +104,9 @@ func _draw_glow() -> void:
 
 func _draw() -> void:
 	if not active or attack == null:
+		return
+	if attack.source >= 2:
+		MarathonArt.projectile(self)
 		return
 	if attack.pattern == HazardAttack.Pattern.VORTEX and attack.lead and age < 1.4:
 		# The mini-tornado eye lingers briefly where the ring was born, then dissipates.
@@ -196,3 +207,14 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, core + 2.0, Color(CelArt.INK, 0.8))
 		draw_circle(Vector2.ZERO, core, CORE)
 		draw_circle(Vector2.ZERO, core * 0.45, Color(1.0, 0.85, 0.75))
+
+func _crosses_area(player: SiegePlayer, area: Rect2) -> bool:
+	area = area.grow(12)
+	var foot: Vector2 = player.global_position+Vector2(0,-12)
+	var head: Vector2 = player.global_position+Vector2(0,-36)
+	if area.has_point(foot) or area.has_point(head): return true
+	var previous: Vector2 = player.previous_position+Vector2(0,-12)
+	var corners: Array[Vector2] = [area.position,Vector2(area.end.x,area.position.y),area.end,Vector2(area.position.x,area.end.y)]
+	for edge: int in range(4):
+		if Geometry2D.segment_intersects_segment(previous,foot,corners[edge],corners[(edge+1)%4]) != null: return true
+	return false

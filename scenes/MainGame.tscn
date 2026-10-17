@@ -68,6 +68,18 @@ position = Vector2(2240, 1232)
 script = ExtResource("8_boss")
 kind = 1
 
+[node name="FloodBoss" type="Node2D" parent="World/Viewport"]
+visible = false
+position = Vector2(194, 1232)
+script = ExtResource("8_boss")
+kind = 2
+
+[node name="FireBoss" type="Node2D" parent="World/Viewport"]
+visible = false
+position = Vector2(2240, 1232)
+script = ExtResource("8_boss")
+kind = 3
+
 [node name="LootSystem" type="Node2D" parent="World/Viewport"]
 z_index = 9
 script = ExtResource("15_loot")

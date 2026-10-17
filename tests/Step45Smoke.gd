@@ -40,16 +40,16 @@ func _timing() -> void:
 	_fresh(false)
 	var w: DisasterWaveManager = game.waves
 	_check(game.earthquake.get_parent() is Control and game.earthquake.get_parent().clip_contents and game.earthquake.get_parent().size.y == game.backdrop.ground_y, "Boss entrance/retreat is occluded below the actual ground line")
-	_check(w.siege_duration == 90.0 and w.build_duration == 15.0, "Exact 90s battle / 15s construction defaults")
-	for wave: int in range(3):
+	_check(w.siege_duration == 90.0 and w.build_duration == 7.0, "Exact 90s battle / 7s construction defaults")
+	for wave: int in range(5):
 		w.start_next_wave()
 		_check(w.wave_number == wave+1 and w.mode == wave and w.state == DisasterWaveManager.State.WAVE_INTRO, "Campaign has locked boss order %d and a distinct entry phase" % (wave+1))
-		var boss: DisasterBoss = game.earthquake if wave == 1 else game.storm
+		var boss: DisasterBoss = [game.storm,game.earthquake,game.storm,game.flood,game.fire][wave]
 		var entry_y: float = boss.position.y
-		w.advance_wave(.75)
+		w.advance_wave(.6)
 		_check(boss.position.y != entry_y and w.siege_remaining == 90 and game.projectiles.active_count() == 0, "Entry visibly moves boss without spending fight time or attacking")
-		w.advance_wave(.749)
-		_check(w.state == DisasterWaveManager.State.WAVE_INTRO, "Entry cannot finish before 1.5s")
+		w.advance_wave(.599)
+		_check(w.state == DisasterWaveManager.State.WAVE_INTRO, "Entry cannot finish before 1.2s")
 		w.advance_wave(.001)
 		_check(w.state == DisasterWaveManager.State.SIEGE_PHASE and boss.position.is_equal_approx(boss._home), "Entry lands exactly on authored boss rig position")
 		w.start_siege(DisasterWaveManager.Mode.STORM)
@@ -63,28 +63,28 @@ func _timing() -> void:
 		w.advance_wave(.001)
 		_check(w.state == DisasterWaveManager.State.WAVE_OUTRO and not shot.active and game.mechanics.particles.size() > 0, "90s starts outro and dissolves bullets into visible particles")
 		_check(boss.visible and not game.upgrades.pending and w.phase_label().begins_with("AFET DALGASI PÜSKÜRTÜLDÜ"), "Retreat keeps boss visible, defers cards and shows defeat heading")
-		w.advance_wave(1.25)
-		_check(boss.retreat > 0.4 and (boss.scale.x < .7 if wave != 1 else boss.position.y > boss._home.y), "Retreat narrows/ascends storm or sinks/shakes golem")
-		w.advance_wave(1.249)
-		_check(w.state == DisasterWaveManager.State.WAVE_OUTRO and not game.upgrades.pending, "Outro remains uninterrupted for 2.5s")
+		w.advance_wave(.5)
+		_check(boss.retreat > 0.4 and (boss.scale.x < .7 if wave in [0,2] else boss.position.y > boss._home.y), "Retreat narrows/ascends storm or sinks/shakes golem")
+		w.advance_wave(.499)
+		_check(w.state == DisasterWaveManager.State.WAVE_OUTRO and not game.upgrades.pending, "Outro remains uninterrupted for 1.0s")
 		w.advance_wave(.001)
-		if wave < 2:
+		if wave < 4:
 			_check(game.upgrades.pending and not boss.visible and game.upgrade_overlay.modulate.a == 0, "Cards begin fade-in only after boss exits")
 			game.upgrade_overlay._process(.175)
 			_check(game.upgrade_overlay.modulate.a > 0 and game.upgrade_overlay.modulate.a < 1, "Card opacity fades instead of popping")
 			w.advance_wave(200)
-			_check(w.preparation_remaining == 15, "Selection does not consume the 15-second construction window")
-			game.upgrades.offers.assign([0,1,2])
-			game.upgrades.choose(wave)
-			w.advance_wave(14.999)
-			_check(w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE, "Build window remains usable at 14.999 seconds")
+			_check(w.preparation_remaining == 7, "Selection does not consume the 7-second construction window")
+			game.upgrades.offers.assign([wave,wave+1,wave+2])
+			game.upgrades.choose(0)
+			w.advance_wave(6.999)
+			_check(w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE, "Build window remains usable at 6.999 seconds")
 			w.advance_wave(.001)
-			_check(w.state == DisasterWaveManager.State.WAVE_INTRO and w.mode == wave+1, "Exactly 15 seconds triggers the next boss once")
+			_check(w.state == DisasterWaveManager.State.WAVE_INTRO and w.mode == wave+1, "Exactly 7 seconds triggers the next boss once")
 			# Next loop continues the already-started entry, F is deliberately idempotent.
 		else:
-			_check(w.victory and w.completed_waves == 3 and not game.upgrades.pending, "Third outro ends in victory, no fourth wave or card")
+			_check(w.victory and w.completed_waves == 5 and not game.upgrades.pending, "Fifth outro ends in victory, no sixth wave or card")
 			w.start_next_wave()
-			_check(w.victory and w.wave_number == 3, "Victory cannot loop back to storm")
+			_check(w.victory and w.wave_number == 5, "Victory cannot loop back to storm")
 
 func _pacing() -> void:
 	_fresh()
@@ -131,12 +131,12 @@ func _equipment() -> void:
 	var room: RoomDiorama = loot.current_room()
 	game.upgrades.apply_upgrade(SiegeUpgrades.Kind.DASH_REPAIR)
 	room.apply_damage(55)
-	loot.steel = 1
+	loot.column_kits = 1
 	p.stamina = 40
 	p.previous_position = p.global_position - Vector2(40,0)
 	m._dash_started()
 	m._dash_repair()
-	_check(room.hp == 90 and loot.steel == 0 and p.stamina == 100 and m.dash_repairs == 1, "Dash repair consumes an actual kit, heals 45 and refills stamina")
+	_check(room.hp == 90 and loot.column_kits == 0 and p.stamina == 100 and m.dash_repairs == 1, "Dash repair consumes an actual kit, heals 45 and refills stamina")
 	room.apply_damage(50)
 	m._dash_repair()
 	_check(room.hp == 40 and m.dash_repairs == 1, "One room cannot be repeatedly repaired by the same dash")
@@ -153,7 +153,7 @@ func _equipment() -> void:
 	loot.items[0]["drop"] = 1.0
 	loot.items[0]["position"] = m.drone_position + Vector2(200,0)
 	m._drone(.3,false)
-	_check(loot.cement == 1 and loot.items.is_empty() and not m.beams.is_empty(), "Drone remotely collects a landed item using a visible beam")
+	_check(loot.column_kits == 1 and loot.items.is_empty() and not m.beams.is_empty(), "Drone remotely collects a landed item using a visible beam")
 	_fresh()
 	game.upgrades.apply_upgrade(SiegeUpgrades.Kind.SLAM_SHIELD)
 	var upper: HazardProjectile = _shot(Vector2(600,game.building.floor_y(1)-40),Vector2.ZERO,1)
@@ -174,7 +174,7 @@ func _equipment() -> void:
 	for i: int in range(3):
 		var shot: HazardProjectile = _shot(center,Vector2.RIGHT*400,0)
 		_check(m.intercept(shot,center-Vector2(100,0)) and not shot.active, "Shutter turbine intercepts a swept boss projectile %d" % i)
-	_check(p.stamina == 68 and loot.cement == 1 and m.fragment_count == 0, "Three interceptions yield 18 energy and one construction supply")
+	_check(p.stamina == 68 and loot.column_kits == 1 and m.fragment_count == 0, "Three interceptions yield 18 energy and one construction supply")
 	_fresh()
 	game.upgrades.apply_upgrade(SiegeUpgrades.Kind.GRAPPLE_DASH)
 	await _frames(3)
@@ -196,11 +196,11 @@ func _equipment() -> void:
 	p.current_floor = 1
 	p.global_position = game.building.rooms[5].global_position + Vector2(200,200)
 	for index: int in [1,4,5,6,9,10]: game.building.rooms[index].apply_damage(60)
-	loot.cement = 1
+	loot.column_kits = 1
 	loot.repair_current_room()
 	var linked: bool = true
 	for index: int in [1,4,6,9]: linked = linked and game.building.rooms[index].hp == 62.5 and game.building.rooms[index].chain_support
-	_check(linked and game.building.rooms[10].hp == 40 and loot.cement == 0, "E chains 22.5 HP and half support to four orthogonal neighbors only")
+	_check(linked and game.building.rooms[10].hp == 40 and loot.column_kits == 0, "E chains 22.5 HP and half support to four orthogonal neighbors only")
 	_check(is_equal_approx(game.building.rooms[1].apply_damage(20),14.5) and not game.building.rooms[1].has_reinforcement(RoomDiorama.Reinforcement.ANCHOR), "Half support mitigates 27.5% without granting free full anchors")
 	_fresh()
 	game.upgrades.apply_upgrade(SiegeUpgrades.Kind.ADRENALINE_REFLEX)
@@ -246,7 +246,7 @@ func _equipment() -> void:
 	m._magnet(.1)
 	_check(Vector2(loot.items[0]["position"]).distance_to(p.global_position) < old.distance_to(p.global_position), "Magnet visibly moves landed loot toward the player")
 	m._magnet(.5)
-	_check(loot.items.is_empty() and loot.cement == 1 and p.speed_boost == 2 and p.repair_shield == 2, "Magnetic pickup grants actual inventory, two-second speed and shield")
+	_check(loot.items.is_empty() and loot.column_kits == 1 and p.speed_boost == 2 and p.repair_shield == 2, "Magnetic pickup grants actual inventory, two-second speed and shield")
 	_check(not p.take_damage(10) and p._run_velocity(1,1) > p.run_speed, "Pickup shield and speed affect actual damage and movement")
 	await _frames(121)
 	_check(p.speed_boost == 0 and p.repair_shield == 0 and p.take_damage(1), "Pickup speed and shield really expire after two seconds")

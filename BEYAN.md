@@ -98,3 +98,46 @@ Kart adları, C40 etiketi ve oranları kullanıcı tasarımıdır; bu görevde g
 OpenAI Codex, kullanıcının ekli tasarımıyla 90 sn savaş / 15 sn inşaat, kilitli üç boss sırası, 1,5 sn giriş / 2,5 sn çıkış / kart fade-in, ortak üç odalık hasar sınırı, 10 sn onarım payı, görsel salınım/çatlak/toz ve dokuz yeni aktif kartı uyguladı. Eski pasif kart havuzu kaldırıldı. `SiegeMechanics.gd` dron/kule/türbin/iz/şok/ışın çizimlerini ve etkileri içerir; mevcut Claude oda çizimleri, gece atmosferi ve 2x W fizik yayı temel alınarak korundu. Boss rigine çıkış ayrışması eklendi. Yeni ses, harici görsel, font, paket veya servis kullanılmadı; görseller GDScript ile prosedüreldir. Kart isimleri/fantastik etkiler gerçek afet davranışı veya mühendislik uygulaması tavsiyesi değildir.
 
 Testler yeni faz ve mekaniklere uyarlandı; `Step45Smoke.gd` eklendi. Gerçek test sonuçları ve native görsel kayıtların yeri `STATUS.md` içindedir. Commit/push veya dağıtım yapılmadı.
+
+## 17 Ekim 2026 — Beş dalgalı boss maratonu
+
+Araç: **OpenAI Codex (GPT-6 tabanlı kodlama ajanı)**. Kesin model alt sürümü bu oturumda ayrıca doğrulanmadı. Kullanıcının ekli devir/tasarım metni ve `3c6ae04` Godot sürümü temel alındı. Eski `main` çalışma ağacındaki kullanıcı değişikliklerine dokunulmadan `feat/disaster-siege-step1` ayrı worktree'de açıldı.
+
+| Kategori | Durum | Kapsam |
+| --- | --- | --- |
+| Görsel | Kullanıldı | Çok parçalı üç başlı su hidrası, dört alev kollu kor titanı, su/ateş mermileri, zemin alanları, giriş/çıkış/cephe/çatı hareketi, kızıl duman, uyarılar ve beş dalga HUD'u için AI destekli prosedürel GDScript çizimi: `scripts/bosses/MarathonArt.gd`, `DisasterBoss.gd`, `NightWeather.gd`, `RoomDiorama.gd`, combat ve UI dosyaları. Görsel üretim servisi veya harici bitmap kullanılmadı. |
+| Ses | Kullanılmadı | Yeni ses kodu/kayıt/müzik eklenmedi; giriş/çıkış anlatımı görseldir. |
+| Kod | Kullanıldı | `MarathonPatterns.gd`; beş dalga/7 sn ara/1,2 sn giriş/1 sn çıkış; dondurulmuş sekmeli yollar, kalıcı tehlike alanı ve ısı/çekim/yavaşlatma; iki direnç kartı, kısayollar, yeni `MarathonSmoke.gd` ve mevcut test güncellemeleri. |
+| Metin | Kullanıldı | Kart/uyarı/zafer metinleri, README/AGENTS/STATUS ve bu kayıt. |
+| Diğer | Kullanıldı | Test tasarımı, Godot 4.3 Linux doğrulaması, native renderer ekran görüntülerinin incelenmesi ve düzeltmeler. |
+
+**Hazır kaynak:** Görsel Kullanılmadı; Ses Kullanılmadı; Kod Kullanıldı (mevcut Godot motoru/API'leri); Metin Kullanılmadı (bu görevde yeni üçüncü taraf içerik alınmadı); Diğer Kullanıldı (mevcut Godot varsayılan fontu ve test motoru). Godot **4.3.stable.official.77dcf97d8**, [resmî Godot builds 4.3 sürümünden](https://github.com/godotengine/godot-builds/releases/tag/4.3-stable) yalnız `/tmp/siege-tools` içine alındı; motor MIT ve beraberindeki üçüncü taraf bildirimlerine tabidir. Motor/ZIP/font veya ekran görüntüleri oyun asseti olarak repoya eklenmedi. Yeni bağımlılık/eklenti/asset paketi yoktur.
+
+Su/ateş düşmanları, hasar yüzdeleri, sprinkler/drenaj etkileri, kat geçişi ve takla kurgusal oyun mekaniğidir; gerçek afet veya yapı güvenliği talimatı değildir. Bu görevde yeni afet davranışı kaynağı araştırılmadı; oranlar kullanıcı tasarımındaki oyun etkileridir. Test sonuçları STATUS'ta gerçek kapsamıyla kaydedilir. Commit, push, main birleştirmesi veya bağımsız export yapılmadı.
+
+## 17 Ekim 2026 — Adım 4.8 / karakter, dört boss, ekipman ve farkındalık kartları
+
+Araç: **OpenAI Codex (GPT-6 tabanlı kodlama ajanı)**. Kullanıcının ayrıntılı tasarımı ve önceki Godot kodu üzerinden çalışıldı; kesin model alt etiketi ayrıca doğrulanmadı.
+
+| AI kategorisi | Durum | Çıktı / etkilenen dosyalar |
+| --- | --- | --- |
+| Görsel | Kullanıldı | Kurtarma uzmanı, çanta/ceket eklemleri; dört bossun üç tonlu yüzey/doku/elektrik/fay/köpük/magma detayları; dört ekipman simgesi, karbon sargı ve otomatik güvenlik kurulumu; kart/HUD yerleşimi. `CharacterArt.gd`, `EquipmentArt.gd`, `Player.gd`, `DisasterBoss.gd`, `MarathonArt.gd`, `RoomDiorama.gd`, loot/UI/telegraph çizimleri. Yeni bitmap veya görsel üretim servisi yok. |
+| Ses | Kullanılmadı | Ses, müzik veya ses üretim kodu eklenmedi. |
+| Kod | Kullanıldı | Dört loot, yerel güvenli alan kesimi, kaynak bazlı koruma, beş hazırlık ve üç yeni aksiyon kartı, mevcut drone revizyonu, 1+2 seçim kuralı, tek seferlik dalga ödülleri, reset ve testler. `LootSystem`, `SiegeUpgrades`, `SiegeMechanics`, building/combat/UI ve `tests/Step48Smoke.gd`; eski regresyonlar yeni ekipmana uyarlandı. |
+| Metin | Kullanıldı | Kart etki/farkındalık notları, ekipman etiketleri, HUD ve README/AGENTS/STATUS/SOURCES/BEYAN kayıtları. Notlar resmî kaynaklarla dar kapsamda karşılaştırıldı; kaynak ve erişim sınırlamaları SOURCES'ta. |
+| Diğer | Kullanıldı | Test tasarımı, 200 kart seçimi, Godot 4.3 Linux motor kontrolleri, native 1920×1080 karelerinin incelenmesi ve ekran kenarı düzeltmeleri. |
+
+| Hazır kaynak kategorisi | Durum | Sağlayıcı / kullanım / lisans |
+| --- | --- | --- |
+| Görsel | Kullanılmadı | Harici resim/sprite/doku/asset paketi yok; kaynaklardan görsel alınmadı. |
+| Ses | Kullanılmadı | Hazır ses/müzik yok. |
+| Kod | Kullanıldı | Mevcut Godot motoru/API'leri; Godot Engine ve katkıcıları, [Godot 4.3](https://github.com/godotengine/godot-builds/releases/tag/4.3-stable), MIT ve motorun üçüncü taraf bildirimleri. Yeni bağımlılık/eklenti yok. |
+| Metin | Kullanıldı | AFAD, USGS, İMO/İPKB ve Godot dokümantasyonundaki olguların kısa özgün özetleri; bağlantı ve kullanım yerleri SOURCES'ta. Kurumsal metinlerin açık yeniden kullanım lisansı doğrulanmadı; ham belgeler veya uzun alıntılar dağıtılmadı. |
+| Diğer | Kullanıldı | Mevcut Godot varsayılan fontu ve test motoru; font/motor dosyaları repoya eklenmedi, mevcut üçüncü taraf bildirimleri korundu. |
+
+“Yaşam üçgeni standardı” ve yapı güçlendirmesine kesin sonuç atfeden kullanıcı metinleri güvenlik önerisi olarak aynen kullanılmadı; sabitleme/Çök-Kapan-Tutun ve uzman incelemesi ayrımı korundu. Hasar yüzdeleri, anlık onarım ve tek odada su/alev temizleyen hibrit güvenlik kiti kurgusal oyun etkileridir. Doğrulamanın gerçek sonucu STATUS'tadır; insan zorluk/eğlence testi ve bağımsız export bu adımda yapılmadı. Commit/push/main birleştirmesi yapılmadı.
+
+
+## 17 Ekim 2026 — Git teslimi ve Claude devir belgesi
+
+Kullanıcının açık commit/push ve Claude ile devam isteği üzerine OpenAI Codex, `CLAUDE_DEVIR.md` belgesini hazırladı; README/STATUS bağlantılarını ve proje açıklamasındaki kart sayısını güncelledi. AI metin/kod desteği kullanıldı; yeni görsel, ses, font veya oyun bağımlılığı eklenmedi. Git teslim aracı olarak GitHub CLI v2.102.0 kullanıldı (GitHub ve katkıcıları, MIT); resmî yayın arşivi SHA256 kontrolünden geçti. Araç kullanıcı dizininde, lisans bildirimi yanında tutulur; binary/kimlik bilgileri repoya eklenmedi. Hazır kaynak kod/diğer kategorilerine bu geliştirme aracı da dahildir. Bu kayıt önceki geliştirme aşamalarındaki “commit/push yapılmadı” notlarından sonraki teslim talebidir; eski kayıtlar tarihsel olarak korunur. Oyun kodu bu devir görevi sırasında değiştirilmedi. Testlerin geliştirmede alınan sonuçları ile devirde yapılan kontroller belgede ayrılır.

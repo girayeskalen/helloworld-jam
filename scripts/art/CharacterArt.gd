@@ -1,75 +1,100 @@
 class_name CharacterArt
 extends RefCounted
-## Feet are at the origin. Facing/roll/lean/squash transforms never touch the hitbox.
-## pose keys (all optional): scale: Vector2, lean: float, air: float (0..1),
-## cape: Vector2 (trailing tip offset in world space), clock: float.
+## The rig paints equipment around the existing feet pivot; hitbox/movement are untouched.
+const NAVY: Color = Color("293c4b")
+const SHADOW: Color = Color("16222e")
+const EDGE: Color = Color("607984")
+const ORANGE: Color = Color("ecaa42")
+const REFLECT: Color = Color("ffe6a0")
 
-static func draw_avatar(canvas: CanvasItem, feet: Vector2, phase: float, facing: float, roll: float, tint: Color = Color.WHITE, pose: Dictionary = {}) -> void:
-	var stretch: Vector2 = pose.get("scale", Vector2.ONE)
-	var lean: float = pose.get("lean", 0.0)
-	var air: float = pose.get("air", 0.0)
-	var clock: float = pose.get("clock", 0.0)
-	var cape: Vector2 = pose.get("cape", Vector2(-8, 14))
-	var sway: float = sin(phase)
-	var knee: float = cos(phase)
-	# Squash/stretch pivots on the feet so landing compresses into the floor.
-	var center: Vector2 = feet + Vector2(0, -34.0 * stretch.y).rotated(lean)
-	canvas.draw_set_transform(center, roll * TAU * facing + lean, Vector2(facing * stretch.x, stretch.y))
-	if tint.a < 0.99:
-		# A readable cel silhouette, not a glowing rectangle.
-		CelArt.ellipse(canvas, Vector2(0, -18), Vector2(22, 21), tint, 0)
-		CelArt.poly(canvas, PackedVector2Array([Vector2(-15, 3), Vector2(14, 3), Vector2(15, 22), Vector2(7, 33), Vector2(-13, 33)]), tint, 0)
-		canvas.draw_set_transform(Vector2.ZERO)
+static func draw_avatar(c: CanvasItem, feet: Vector2, phase: float, facing: float, roll: float, tint: Color = Color.WHITE, pose: Dictionary = {}) -> void:
+	var stretch: Vector2 = pose.get("scale",Vector2.ONE)
+	var lean: float = pose.get("lean",0.0)
+	var air: float = pose.get("air",0.0)
+	var clock: float = pose.get("clock",0.0)
+	var gear: Vector2 = pose.get("gear",Vector2.ZERO)
+	var stride: float = sin(phase)*(1.0-air)
+	var center: Vector2 = feet+Vector2(0,-34*stretch.y).rotated(lean)
+	c.draw_set_transform(center,roll*TAU*facing+lean,Vector2(facing*stretch.x,stretch.y))
+	if tint.a < .99:
+		CelArt.poly(c,PackedVector2Array([Vector2(-24,-25),Vector2(-16,-48),Vector2(18,-47),Vector2(25,-25),Vector2(14,-6),Vector2(17,24),Vector2(4,34),Vector2(-16,31),Vector2(-29,11)]),tint,0)
+		c.draw_set_transform(Vector2.ZERO)
 		return
-	# Cape trails behind (local -x is always "behind" after the facing flip).
-	var tip: Vector2 = Vector2(cape.x * facing, cape.y) + Vector2(-6, 0)
-	var flutter: float = sin(clock * 17.0 + phase) * 3.0
-	CelArt.poly(canvas, PackedVector2Array([Vector2(-12, -2), Vector2(2, -1), Vector2(-4 + tip.x * 0.5, 18 + tip.y * 0.6 + flutter), Vector2(-14 + tip.x, 20 + tip.y + flutter), Vector2(-16 + tip.x * 0.6, 10 + tip.y * 0.4)]), Color("6b2622"))
-	CelArt.line(canvas, Vector2(-10, 2), Vector2(-12 + tip.x * 0.8, 18 + tip.y * 0.8 + flutter), Color("8f3a30"), 2)
-	# Legs: stride on the ground, tucked knees in the air.
-	var tuck: float = air * 12.0
-	_leg(canvas, Vector2(-8, 19), Vector2(-8 - sway * 10 * (1.0 - air) + air * 4.0, 32 - absf(sway) * 3 - tuck), Color("33434a"))
-	_leg(canvas, Vector2(7, 19), Vector2(9 + sway * 11 * (1.0 - air) + air * 8.0, 32 - absf(knee) * 2 - tuck * 1.2), Color("4a5d60"))
-	var arm_lift: float = air * 20.0
-	CelArt.line(canvas, Vector2(-12, 2), Vector2(-19 + sway * 6, 18 - arm_lift), CelArt.INK, 10)
-	CelArt.line(canvas, Vector2(-12, 2), Vector2(-19 + sway * 6, 18 - arm_lift), Color("5d7470"), 5)
-	# Backpack is visible behind the shoulder.
-	CelArt.box(canvas, Rect2(-21, -1, 12, 22), Color("4d5c41"), Vector2(3, -2))
-	CelArt.poly(canvas, PackedVector2Array([Vector2(-13, -1), Vector2(11, -1), Vector2(16, 19), Vector2(-13, 20)]), Color("c4823c"))
-	CelArt.poly(canvas, PackedVector2Array([Vector2(4, 0), Vector2(11, -1), Vector2(16, 19), Vector2(5, 20)]), Color("8f5c31"), 0)
-	CelArt.line(canvas, Vector2(-5, 0), Vector2(-5, 19), Color("d6d2b8"), 4)
-	CelArt.line(canvas, Vector2(9, 0), Vector2(9, 18), Color("d6d2b8"), 3)
-	CelArt.rect(canvas, Rect2(-11, 17, 25, 6), Color("27383c"))
-	CelArt.bolt(canvas, Vector2(2, 20), Color("e8c781"))
-	var hand: Vector2 = Vector2(19 - sway * 7, 17 - arm_lift * 1.2)
-	CelArt.line(canvas, Vector2(12, 2), hand, CelArt.INK, 10)
-	CelArt.line(canvas, Vector2(12, 2), hand, Color("8a9a88"), 5)
-	CelArt.ellipse(canvas, hand + Vector2(0, 1), Vector2(5, 5), Color("c49270"))
-	# Large chibi head, shaded cheek and individual hair locks.
-	CelArt.ellipse(canvas, Vector2(1, -17), Vector2(21, 21), Color("d2a27a"))
-	CelArt.poly(canvas, PackedVector2Array([Vector2(14, -29), Vector2(21, -22), Vector2(18, -6), Vector2(7, 2), Vector2(8, -7)]), Color("a77756"), 0)
-	CelArt.ellipse(canvas, Vector2(-19, -16), Vector2(5, 7), Color("bd8a66"))
-	CelArt.poly(canvas, PackedVector2Array([Vector2(-18, -20), Vector2(-22, -28), Vector2(-13, -37), Vector2(5, -39), Vector2(20, -30), Vector2(15, -22), Vector2(8, -27), Vector2(1, -23), Vector2(-7, -28), Vector2(-12, -16)]), Color("2f2a25"))
-	# Chin strap flutters with speed and time.
-	var strap: float = sin(clock * 21.0 + phase * 0.5) * 3.0
-	CelArt.line(canvas, Vector2(-18, -28), Vector2(-24 - absf(sway) * 4.0, -8 + strap), Color("3a2f26"), 2.5)
-	# Rescue helmet with lip, front plate and the lamp that casts the beam.
-	CelArt.poly(canvas, PackedVector2Array([Vector2(-22, -30), Vector2(-17, -43), Vector2(-7, -48), Vector2(11, -46), Vector2(21, -38), Vector2(23, -29)]), Color("e0a940"))
-	CelArt.poly(canvas, PackedVector2Array([Vector2(8, -46), Vector2(21, -38), Vector2(23, -29), Vector2(9, -30)]), Color("a06f32"), 0)
-	CelArt.rect(canvas, Rect2(-25, -31, 51, 7), Color("eabb62"))
-	CelArt.rect(canvas, Rect2(-6, -42, 13, 11), Color("d8d2b0"), 1.5)
-	CelArt.line(canvas, Vector2(-3, -36), Vector2(4, -36), Color("8a2a22"), 2)
-	CelArt.line(canvas, Vector2(0, -39), Vector2(0, -33), Color("8a2a22"), 2)
-	CelArt.rect(canvas, Rect2(17, -42, 8, 8), Color("2a2f30"), 1.5)
-	CelArt.rect(canvas, Rect2(19, -40, 5, 4), Color("fff1c4"), 0)
-	CelArt.rect(canvas, Rect2(3, -19, 4, 6), CelArt.INK, 0)
-	CelArt.rect(canvas, Rect2(14, -18, 3, 5), CelArt.INK, 0)
-	CelArt.line(canvas, Vector2(10, -12), Vector2(14, -11), Color("8d5743"), 2)
-	CelArt.line(canvas, Vector2(5, -5), Vector2(12, -4), Color("5f4237"), 2)
-	canvas.draw_set_transform(Vector2.ZERO)
+	# Weighted coat tails tuck into the roll; there is no floating superhero cape.
+	var hem: float = gear.x*facing+sin(phase*2)*1.8
+	CelArt.poly(c,PackedVector2Array([Vector2(-13,10),Vector2(8,11),Vector2(14+hem*.3,27-air*5),Vector2(-3,25),Vector2(-20+hem,23)]),SHADOW,2.5)
+	CelArt.line(c,Vector2(-17+hem,22),Vector2(-6,24),ORANGE,2)
+	_leg(c,Vector2(-7,18),Vector2(-9-stride*9,33-absf(stride)*4-air*13),SHADOW,air)
+	_limb(c,Vector2(-10,-1),Vector2(-17+stride*7,8-air*12),Vector2(-18+stride*9,17-air*19),SHADOW)
+	# Rescue backpack: padded back, compression straps, buckles, bottle and medical pouch.
+	c.draw_set_transform(center+Vector2(gear.x*facing,gear.y),roll*TAU*facing+lean,Vector2(facing*stretch.x,stretch.y))
+	CelArt.box(c,Rect2(-28,-5,17,29),Color("354b49"),Vector2(4,-3))
+	CelArt.poly(c,PackedVector2Array([Vector2(-28,-3),Vector2(-23,-7),Vector2(-13,-6),Vector2(-11,2),Vector2(-24,3)]),Color("668075"),2)
+	CelArt.rect(c,Rect2(-28,7,14,13),Color("45645d"),2)
+	for y: float in [4.0,19.0]: CelArt.line(c,Vector2(-29,y),Vector2(-12,y),Color("172c30"),3)
+	CelArt.rect(c,Rect2(-25,8,9,10),Color("e2e7d7"),1)
+	CelArt.rect(c,Rect2(-22,9,3,8),Color("3f9d71"),0)
+	CelArt.rect(c,Rect2(-24,12,7,3),Color("3f9d71"),0)
+	CelArt.box(c,Rect2(-34,3,7,19),Color("88acb7"),Vector2(2,-2))
+	CelArt.rect(c,Rect2(-33,-1,5,5),Color("354b57"),1.5)
+	CelArt.line(c,Vector2(-33,8),Vector2(-29,8),Color("d5e3d6"),2)
+	c.draw_set_transform(center,roll*TAU*facing+lean,Vector2(facing*stretch.x,stretch.y))
+	# Three-tone jacket with segmented reflective harness; pockets stay readable at 2x.
+	CelArt.poly(c,PackedVector2Array([Vector2(-13,-5),Vector2(9,-6),Vector2(15,1),Vector2(16,21),Vector2(-14,22),Vector2(-17,6)]),NAVY,3)
+	CelArt.poly(c,PackedVector2Array([Vector2(6,-4),Vector2(15,1),Vector2(16,21),Vector2(5,19)]),SHADOW,0)
+	CelArt.line(c,Vector2(-12,-2),Vector2(-12,16),EDGE,2)
+	CelArt.line(c,Vector2(0,-3),Vector2(1,18),Color("a1b6b5"),1.5)
+	for x: float in [-8.0,8.0]:
+		CelArt.line(c,Vector2(x,-4),Vector2(x,14),ORANGE,5)
+		CelArt.line(c,Vector2(x,-1),Vector2(x,10),REFLECT,2)
+	CelArt.rect(c,Rect2(-13,12,27,5),ORANGE,1)
+	CelArt.line(c,Vector2(-12,13),Vector2(13,13),REFLECT,1.5)
+	CelArt.rect(c,Rect2(-5,0,8,6),Color("6b8f97"),1)
+	# Utility belt, pouch, carabiner and a small rescue tool.
+	CelArt.rect(c,Rect2(-16,19,33,5),Color("222b31"),2)
+	CelArt.rect(c,Rect2(-2,19,7,6),Color("bfc8b9"),1)
+	CelArt.box(c,Rect2(-14,21,8,9),Color("77664e"),Vector2(2,-2))
+	CelArt.ellipse(c,Vector2(12,26),Vector2(4,5),Color("b4c2bf"),1.5)
+	CelArt.line(c,Vector2(15,18),Vector2(20,27),Color("b7c8c8"),3)
+	_leg(c,Vector2(7,20),Vector2(9+stride*10,33-absf(cos(phase))*2-air*16),NAVY,air)
+	_limb(c,Vector2(12,-1),Vector2(17-stride*6,9-air*11),Vector2(20-stride*8,17-air*22),NAVY)
+	# Face profile, ear and chin strap; protected eyes sit behind smoked goggles.
+	CelArt.ellipse(c,Vector2(1,-21),Vector2(17,18),Color("c59973"),2.5)
+	CelArt.poly(c,PackedVector2Array([Vector2(10,-34),Vector2(18,-25),Vector2(19,-15),Vector2(11,-4),Vector2(4,-5),Vector2(9,-15)]),Color("95694f"),0)
+	CelArt.ellipse(c,Vector2(-16,-19),Vector2(4,6),Color("aa7c5c"),1.5)
+	CelArt.poly(c,PackedVector2Array([Vector2(-17,-27),Vector2(-15,-38),Vector2(7,-39),Vector2(19,-30),Vector2(15,-23),Vector2(-10,-22)]),Color("302c2a"),2)
+	CelArt.line(c,Vector2(-16,-25),Vector2(-10,-5),Color("28333a"),3)
+	CelArt.line(c,Vector2(-10,-5),Vector2(9,-5),Color("28333a"),2)
+	CelArt.line(c,Vector2(8,-10),Vector2(14,-9),Color("6c4a3d"),2)
+	# Helmet shell, recesses, silver tape, visor frame and head lamp.
+	CelArt.poly(c,PackedVector2Array([Vector2(-21,-31),Vector2(-18,-43),Vector2(-8,-49),Vector2(10,-48),Vector2(21,-39),Vector2(23,-30)]),ORANGE,3)
+	CelArt.poly(c,PackedVector2Array([Vector2(8,-47),Vector2(20,-39),Vector2(23,-30),Vector2(10,-31)]),Color("9b6a30"),0)
+	CelArt.line(c,Vector2(-14,-43),Vector2(5,-45),REFLECT,3)
+	for x: float in [-8.0,-1.0,6.0]: CelArt.line(c,Vector2(x,-40),Vector2(x+1,-35),Color("7c6137"),2)
+	CelArt.rect(c,Rect2(-24,-32,48,6),Color("edc46a"),2)
+	CelArt.rect(c,Rect2(-9,-26,29,13),Color("132931"),2.5)
+	CelArt.rect(c,Rect2(-6,-24,22,7),Color("6b9da8"),0)
+	CelArt.line(c,Vector2(-5,-23),Vector2(2,-20),Color("c3e3de"),2)
+	CelArt.line(c,Vector2(6,-25),Vector2(6,-15),Color("344d58"),2)
+	CelArt.box(c,Rect2(15,-43,10,9),Color("34424a"),Vector2(2,-1))
+	CelArt.rect(c,Rect2(18,-41,6,5),Color("fff4c8"),0)
+	c.draw_set_transform(Vector2.ZERO)
 
-static func _leg(canvas: CanvasItem, hip: Vector2, foot: Vector2, color: Color) -> void:
-	CelArt.line(canvas, hip, foot, CelArt.INK, 11)
-	CelArt.line(canvas, hip, foot, color, 6)
-	CelArt.poly(canvas, PackedVector2Array([foot + Vector2(-5, -3), foot + Vector2(5, -3), foot + Vector2(9, 2), foot + Vector2(9, 5), foot + Vector2(-5, 5)]), Color("262c29"))
-	CelArt.line(canvas, foot + Vector2(-3, 4), foot + Vector2(7, 4), Color("8b8d78"), 2)
+static func _limb(c: CanvasItem, shoulder: Vector2, elbow: Vector2, hand: Vector2, tone: Color) -> void:
+	CelArt.line(c,shoulder,elbow,CelArt.INK,10)
+	CelArt.line(c,elbow,hand,CelArt.INK,9)
+	CelArt.line(c,shoulder,elbow,tone,6)
+	CelArt.line(c,elbow,hand,tone.lightened(.13),5)
+	CelArt.line(c,elbow-Vector2(2,1),elbow+Vector2(3,2),ORANGE,3)
+	CelArt.ellipse(c,hand,Vector2(5,5),Color("25353c"),2)
+	CelArt.line(c,hand+Vector2(-2,-2),hand+Vector2(2,-2),Color("6d7b7a"),2)
+
+static func _leg(c: CanvasItem, hip: Vector2, foot: Vector2, tone: Color, air: float) -> void:
+	var knee: Vector2 = hip.lerp(foot,.5)+Vector2(3+air*4,-air*3)
+	CelArt.line(c,hip,knee,CelArt.INK,11)
+	CelArt.line(c,knee,foot,CelArt.INK,10)
+	CelArt.line(c,hip,knee,tone,7)
+	CelArt.line(c,knee,foot,tone.lightened(.08),6)
+	CelArt.rect(c,Rect2(knee-Vector2(4,3),Vector2(8,6)),Color("57656a"),1.5)
+	CelArt.poly(c,PackedVector2Array([foot+Vector2(-5,-5),foot+Vector2(4,-5),foot+Vector2(9,-1),foot+Vector2(10,3),foot+Vector2(-6,3)]),Color("202c31"),2.5)
+	CelArt.line(c,foot+Vector2(-4,2),foot+Vector2(8,2),Color("b2a886"),2)

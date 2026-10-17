@@ -37,13 +37,13 @@ func _fresh() -> void:
 func _loot_rules() -> void:
 	_fresh()
 	var loot: LootSystem = game.loot
-	_check(LootSystem.Kind.size() == 5 and loot.max_active == 3, "Five construction/medical types and cap of three")
+	_check(LootSystem.Kind.size() == 4 and loot.max_active == 3, "Four readable equipment types and cap of three")
 	loot.advance(30)
 	_check(loot.items.is_empty(), "No unsolicited loot during initial preparation")
 	game.waves.start_next_wave()
 	game.waves.advance_wave(1.5)
 	game.waves.building.pacing_enabled = false
-	loot.spawn(LootSystem.Kind.CEMENT_MORTAR, 8)
+	loot.spawn(LootSystem.Kind.COLUMN_KIT, 8)
 	loot.advance(LootSystem.DROP_TIME)
 	_check(loot.items.size() == 1 and is_zero_approx(loot.items[0]["ground_age"]), "Lifetime begins on landing, not at the ceiling")
 	loot.advance(3.999)
@@ -51,14 +51,14 @@ func _loot_rules() -> void:
 	loot.advance(.001)
 	_check(loot.items.is_empty() and loot.expired_count == 1, "Loot expires exactly at grounded age 4.0 seconds")
 	_check(loot.messages.back()["text"] == "MALZEME ENKAZDA KAYBOLDU", "Expiration uses the requested feedback text")
-	loot.spawn(LootSystem.Kind.STEEL_CROSSBRACE, 8)
+	loot.spawn(LootSystem.Kind.COLUMN_KIT, 8)
 	var item: Dictionary = loot.items.back()
 	item["drop"] = 1.0
 	item["ground_age"] = 3.999
 	game.player.current_floor = 2
 	game.player.global_position = Vector2(item["position"]) + Vector2(0,26)
 	loot.advance(.001)
-	_check(loot.steel == 0 and loot.items.is_empty(), "Deadline wins over a same-tick pickup")
+	_check(loot.column_kits == 0 and loot.items.is_empty(), "Deadline wins over a same-tick pickup")
 	loot.spawn(0,9)
 	loot.advance(.45)
 	game.waves.finish_wave()
@@ -75,13 +75,13 @@ func _loot_rules() -> void:
 	game.waves.start_next_wave()
 	game.waves.advance_wave(1.5)
 	game.waves.building.pacing_enabled = false
-	for kind: int in range(5):
+	for kind: int in range(4):
 		loot.spawn(kind, 8)
 		loot.collect(0)
-	_check(loot.cement == 1 and loot.steel == 1 and loot.anchors == 1 and loot.shutters == 1, "Four kit types remain distinct inventory resources")
+	_check(loot.column_kits == 1 and loot.column_kits == 1 and loot.barricade_kits == 1 and game.building.rooms[8].auto_protection, "Two stocked kits plus immediate medical and room safety equipment")
 	game.player.health = 40
 	game.player.stamina = 1
-	loot.spawn(LootSystem.Kind.EMERGENCY_MEDKIT, 8)
+	loot.spawn(LootSystem.Kind.EMERGENCY_BAG, 8)
 	loot.collect(0)
 	_check(game.player.health == 65 and game.player.stamina == 100, "Medical kit gives exactly +25 HP and full stamina")
 	for room: RoomDiorama in game.building.rooms:
@@ -93,10 +93,10 @@ func _loot_rules() -> void:
 func _construction() -> void:
 	var loot: LootSystem = game.loot
 	var room: RoomDiorama = loot.current_room()
-	loot.cement = 2
-	loot.steel = 2
-	loot.shutters = 1
-	loot.anchors = 1
+	loot.column_kits = 2
+	loot.column_kits = 2
+	loot.barricade_kits = 1
+	loot.barricade_kits = 1
 	game.waves.start_next_wave()
 	game.waves.advance_wave(1.5)
 	game.waves.building.pacing_enabled = false
@@ -104,17 +104,16 @@ func _construction() -> void:
 	room.apply_damage(40)
 	_check(loot.repair_alert(room) and loot.can_offer_repair(), "DAMAGED status enables the visible warning and E together")
 	loot.repair_current_room()
-	_check(room.hp == 100 and not room.fortified and loot.cement == 1, "Combat cement repairs without granting free fortification")
+	_check(room.hp == 100 and room.has_reinforcement(RoomDiorama.Reinforcement.STEEL) and loot.column_kits == 1, "Combat column kit repairs and installs structural support")
 	game.waves.finish_wave()
 	game.waves.advance_wave(2.5)
 	game.upgrades.offers.assign([0, 1, 2])
 	_check(loot.repair_current_room() == LootSystem.RepairResult.NOT_NEEDED, "Modal blocks construction input")
 	game.upgrades.choose(0)
-	for tier: int in range(1,4):
-		_check(loot.repair_current_room() == LootSystem.RepairResult.REINFORCED and room.reinforcement_level == tier, "E installs one distinct construction component: tier %d" % tier)
-	_check(loot.steel == 1 and loot.shutters == 0 and loot.anchors == 0 and loot.cement == 1, "One steel, one shutter and one anchor consumed; cement kept")
-	_check(loot.repair_current_room() == LootSystem.RepairResult.NO_MATERIAL and loot.steel == 1 and room.reinforcement_level == 3, "No duplicate component purchases or fourth tier")
-	_check(is_equal_approx(room.apply_damage(20), 9), "Fortified room takes exactly 45% incoming damage")
+	_check(loot.repair_current_room() == LootSystem.RepairResult.REINFORCED and room.reinforcement_level == 3, "One barricade kit installs both shutter and anchors alongside column support")
+	_check(loot.column_kits == 1 and loot.barricade_kits == 0, "Construction consumes one combined barricade kit")
+	_check(loot.repair_current_room() == LootSystem.RepairResult.NO_MATERIAL and loot.column_kits == 1 and room.reinforcement_level == 3, "Duplicate equipment cannot be purchased")
+	_check(is_equal_approx(room.apply_damage(20), 10), "Structural kit halves earthquake damage")
 	room.repair(100)
 	var bolted: bool = true
 	for prop: BuildingProp in room.props():
@@ -143,8 +142,8 @@ func _upgrades() -> void:
 	var b: ApartmentBuilding = game.building
 	var p: SiegePlayer = game.player
 	var loot: LootSystem = game.loot
-	_check(SiegeUpgrades.CATALOG.size() == 9, "Nine upgrade definitions, each with a distinct mechanical effect")
-	for id: int in range(9):
+	_check(SiegeUpgrades.CATALOG.size() == 19, "Nineteen upgrade definitions, each with a distinct mechanical effect")
+	for id: int in range(19):
 		_fresh()
 		_check(up.apply_upgrade(id) and not up.apply_upgrade(id), "Upgrade %d applies once per run, no stacking duplicates" % id)
 	_fresh()
@@ -157,7 +156,7 @@ func _campaign() -> void:
 	w.start_next_wave()
 	w.advance_wave(1.5)
 	w.building.pacing_enabled = false
-	game.loot.cement = 2
+	game.loot.column_kits = 2
 	game.building.rooms[0].apply_damage(20)
 	w.finish_wave()
 	w.advance_wave(2.5)
@@ -167,13 +166,13 @@ func _campaign() -> void:
 	w.advance_wave(90)
 	await _tap(KEY_D)
 	await _tap(KEY_F)
-	_check(w.preparation_remaining == 15 and up.pending and game.player.global_position == saved_position, "Card choice freezes timer and movement; F cannot bypass selection")
+	_check(w.preparation_remaining == 7 and up.pending and game.player.global_position == saved_position, "Card choice freezes timer and movement; F cannot bypass selection")
 	var chosen: int = up.offers[0]
 	await _tap(KEY_1)
 	_check(up.has_upgrade(chosen) and not up.pending and w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE and w.wave_number == 1, "Key 1 chooses a card without launching the storm debug shortcut")
-	_check(game.loot.cement == 2 and game.building.rooms[0].hp >= 80, "Resources and room damage carry across the wave boundary")
-	w.advance_wave(14.9)
-	_check(w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE, "Construction remains available for the full 15 seconds")
+	_check(game.loot.column_kits == 2 and game.building.rooms[0].hp >= 80, "Resources and room damage carry across the wave boundary")
+	w.advance_wave(6.9)
+	_check(w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE, "Construction remains available for the full 7 seconds")
 	w.advance_wave(.11)
 	w.advance_wave(1.5)
 	w.building.pacing_enabled = false
@@ -199,7 +198,7 @@ func _campaign() -> void:
 	_check(up.has_upgrade(second) and not up.pending, "Mouse click selects the second card through real Control hit testing")
 	await _tap(KEY_F)
 	w.advance_wave(1.5)
-	_check(w.mode == DisasterWaveManager.Mode.CHAOS and w.wave_number == 3 and game.storm.visible and game.earthquake.visible, "F starts the final simultaneous two-boss siege")
+	_check(w.mode == DisasterWaveManager.Mode.CHAOS and w.wave_number == 3 and game.storm.visible and game.earthquake.visible, "F starts the third simultaneous two-boss siege")
 	w.chaos_burst()
 	var sources: Dictionary = {}
 	var target_floors: Dictionary = {}
@@ -209,12 +208,20 @@ func _campaign() -> void:
 	_check(sources.size() == 2 and target_floors.size() >= 2 and game.storm.is_charging() and game.earthquake.is_charging(), "Finale synchronizes both animated bosses with complementary floor targets")
 	w.finish_wave()
 	w.advance_wave(2.5)
-	_check(w.victory and w.completed_waves == 3 and w.state == DisasterWaveManager.State.VICTORY and not up.pending, "Third wave ends in victory, without a third upgrade or a fourth wave")
+	_check(not w.victory and up.pending and w.completed_waves == 3, "Third wave continues into flood preparation")
+	for next_wave: int in [3,4]:
+		up.choose(0)
+		w.start_next_wave()
+		w.advance_wave(DisasterWaveManager.INTRO_DURATION)
+		_check(w.mode == next_wave and w.wave_number == next_wave+1, "Campaign continues through flood then fire")
+		w.finish_wave()
+		w.advance_wave(DisasterWaveManager.OUTRO_DURATION)
+	_check(w.victory and w.completed_waves == 5 and w.state == DisasterWaveManager.State.VICTORY and not up.pending, "Fifth wave ends in victory, without another card or sixth wave")
 	_check(game.projectiles.active_count() == 0 and game.telegraphs.pending.is_empty() and not game.storm.visible and not game.earthquake.visible, "Victory clears active attacks and bosses")
 	w.advance_wave(999)
 	await _tap(KEY_F)
 	await _tap(KEY_E)
-	_check(w.victory and w.wave_number == 3 and game.player.controls_locked, "Victory is terminal until explicit reset or debug shortcut")
+	_check(w.victory and w.wave_number == 5 and game.player.controls_locked, "Victory is terminal until explicit reset or debug shortcut")
 	await _tap(KEY_R)
 	_check(w.wave_number == 0 and not w.victory and up.selected.is_empty() and game.loot.materials() == 0, "R restores a fresh campaign after victory")
 	await _tap(KEY_F9)
@@ -235,7 +242,7 @@ func _campaign() -> void:
 	w.advance_wave(2.5)
 	_check(w.failed and not w.victory, "A collapsed building cannot win on the same tick as the final deadline")
 	_fresh()
-	w.start_siege(DisasterWaveManager.Mode.CHAOS, true)
+	w.start_siege(DisasterWaveManager.Mode.FIRE, true)
 	w.advance_wave(1.5)
 	game.player.health = 0
 	w.finish_wave()
@@ -272,10 +279,10 @@ func _capture(directory: String) -> void:
 	b.room_at(2,0).repair(0,true)
 	b.room_at(2,2).reinforce(RoomDiorama.Reinforcement.STEEL)
 	b.room_at(2,2).reinforce(RoomDiorama.Reinforcement.SHUTTER)
-	game.loot.cement = 3
-	game.loot.steel = 1
-	game.loot.shutters = 1
-	game.loot.anchors = 1
+	game.loot.column_kits = 3
+	game.loot.column_kits = 1
+	game.loot.barricade_kits = 1
+	game.loot.barricade_kits = 1
 	await _save(directory,"05-construction-tiers.png")
 	game.waves.start_siege(DisasterWaveManager.Mode.CHAOS, true)
 	game.waves.advance_wave(1.5)
@@ -289,11 +296,16 @@ func _capture(directory: String) -> void:
 	await _save(directory,"06-finale-repair-loot.png")
 	game.loot.clear_drops()
 	game.loot.spawn(3,9)
-	game.loot.spawn(4,10)
+	game.loot.spawn(2,10)
 	game.loot.advance(.6)
 	await _save(directory,"07-shutter-medkit.png")
 	game.waves.finish_wave()
 	game.waves.advance_wave(2.5)
+	game.upgrades.choose(0)
+	game.waves.start_siege(DisasterWaveManager.Mode.FIRE,true)
+	game.waves.advance_wave(DisasterWaveManager.INTRO_DURATION)
+	game.waves.finish_wave()
+	game.waves.advance_wave(DisasterWaveManager.OUTRO_DURATION)
 	await _save(directory,"08-victory.png")
 	_fresh()
 	game.upgrades.apply_upgrade(SiegeUpgrades.Kind.AUTO_DRONE)

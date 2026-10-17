@@ -3,13 +3,20 @@ extends Node2D
 ## Multi-segment procedural bosses. The rig functions return every segment transform
 ## (also used by tests); _draw only paints what the rig computed.
 
-enum Kind { STORM, EARTHQUAKE }
+enum Kind { STORM, EARTHQUAKE, FLOOD, FIRE }
 const SLAM_TIME: float = 0.4
 const STORM_RINGS: int = 12
 
 @export var kind: Kind = Kind.STORM
 @export var boss_sprite: Texture2D
 @export var custom_sprite: Texture2D
+var enraged: bool = false
+var _combat_motion: bool = false
+var _target: Vector2
+var _target_scale: float = 1.0
+var _exit_origin: Vector2
+var _exit_scale: Vector2 = Vector2.ONE
+var _relocate: float = 0.0
 var retreat: float = 0.0
 var _home: Vector2
 var pattern_label: String = ""
@@ -36,9 +43,15 @@ const ELECTRIC: Color = Color("8fd8ff")
 
 func _ready() -> void:
 	_home = position
+	_target = _home
 	_rng.seed = 4401 + kind * 17
 
 func plan_pattern(waves: DisasterWaveManager, index: int, floor_index: int) -> void:
+	reposition(waves, index, floor_index)
+	if kind >= Kind.FLOOD:
+		pattern_label = MarathonPatterns.fire(waves,index,floor_index) if kind == Kind.FIRE else MarathonPatterns.flood(waves,index,floor_index)
+		cue_attack((1.0 if index % 6 in [3,4] else .75) + waves.telegraphs.warning_bonus)
+		return
 	var floors: int = waves.building.floor_count
 	if kind == Kind.STORM:
 		# Bullet-hell cycle: every beat is telegraphed; one corridor beat forces a floor change.
@@ -80,6 +93,14 @@ func plan_pattern(waves: DisasterWaveManager, index: int, floor_index: int) -> v
 
 func set_active(value: bool) -> void:
 	visible = value
+	z_as_relative = true
+	z_index = 0
+	_combat_motion = false
+	_target = _home
+	_target_scale = 1.0
+	_relocate = 0.0
+	enraged = false
+	rotation = 0.0
 	position = _home
 	scale = Vector2.ONE
 	modulate = Color.WHITE
@@ -92,15 +113,50 @@ func set_active(value: bool) -> void:
 ## Wave manager owns transition time: the full combat clock starts after entry.
 func transition_pose(progress: float, exiting: bool) -> void:
 	var t: float = smoothstep(0.0, 1.0, clampf(progress, 0.0, 1.0))
+	_combat_motion = not exiting and progress >= 1.0
+	if exiting and progress == 0.0:
+		_exit_origin = position
+		_exit_scale = scale
 	_arrival = 1.0
 	retreat = t if exiting else 0.0
 	var displaced: float = t if exiting else 1.0 - t
-	position = _home + Vector2(0, (-850.0 if kind == Kind.STORM else 650.0) * displaced)
-	scale = Vector2(1.0 - displaced * 0.85, 1.0 + displaced * 0.18) if kind == Kind.STORM else Vector2.ONE
-	modulate.a = 1.0 - smoothstep(0.65, 1.0, displaced)
-	if exiting and kind == Kind.EARTHQUAKE:
-		position.x += sin(progress * 95.0) * 12.0 * (1.0 - t)
+	var origin: Vector2 = _exit_origin if exiting else _home
+	var extent: float = -850.0 if kind == Kind.STORM else 650.0
+	position = origin + Vector2(0, extent * displaced)
+	rotation = sin(displaced * TAU) * .24 * displaced if kind == Kind.STORM else 0.0
+	var shape: Vector2 = Vector2.ONE
+	if kind == Kind.STORM: shape = Vector2(1.0-displaced*.85, 1.0+displaced*.18)
+	if kind == Kind.FLOOD: shape = Vector2(1.0+displaced*.5, 1.0-displaced*.8)
+	if kind == Kind.FIRE: shape = Vector2(1.0-displaced*.8, 1.0+displaced*.7)
+	scale = shape * (_exit_scale if exiting else Vector2.ONE)
+	modulate = Color.WHITE
+	modulate.a = 1.0 - smoothstep(0.65,1.0,displaced)
+	if kind == Kind.EARTHQUAKE:
+		position.x += sin(progress*95.0)*12.0*displaced
 	queue_redraw()
+
+## Target pose belongs only to boss art. Warning paths are already independent data.
+func reposition(waves: DisasterWaveManager, serial: int, floor_index: int) -> void:
+	var b: ApartmentBuilding = waves.building
+	if kind <= Kind.EARTHQUAKE:
+		_target = _home + Vector2((35.0 if kind == Kind.STORM else -25.0) * (1 if serial%2 == 0 else -1), -minf(170.0 if kind == Kind.STORM else 85.0, floor_index*65.0))
+		return
+	z_as_relative = true
+	z_index = 0
+	var side: int = serial % 2
+	_target = Vector2(194.0 if side == 0 else 2240.0, clampf(b.floor_y(floor_index)+190,1000,1232))
+	_target_scale = 1.0
+	if kind == Kind.FIRE and serial % 3 == 2:
+		_target = Vector2(b.center_x(),b.global_position.y+340)
+		# The full titan looms behind the roof; the apartment occludes its lower body.
+		z_as_relative = false
+		z_index = -1
+	if kind == Kind.FLOOD:
+		_relocate = .5
+	else:
+		_relocate = .32
+	if waves.upgrades != null and waves.upgrades.game.mechanics != null:
+		waves.upgrades.game.mechanics.burst(global_position+Vector2(0,-260),Color("66f1df") if kind == Kind.FLOOD else LAVA_HOT,24)
 
 ## Wind-up lasts exactly as long as the attack's warning.
 func cue_attack(seconds: float) -> void:
@@ -136,7 +192,23 @@ func advance(delta: float) -> void:
 	_arrival = minf(1.0, _arrival + delta * 3.0)
 	_charge_left = maxf(0.0, _charge_left - delta)
 	_slam_left = maxf(0.0, _slam_left - delta)
+	if _combat_motion:
+		var lunge: float = sin(maxf(0.0,slam_progress())*PI)*30.0
+		var direction: float = 1.0 if position.x < 1230 else -1.0
+		if _relocate > 0.0:
+			_relocate = maxf(0.0,_relocate-delta)
+			modulate.a = .25+absf(sin(_relocate*PI*4))*.75
+			position = position.move_toward(_target,delta*8500.0)
+		else:
+			modulate = Color.WHITE
+			position = position.lerp(_target+Vector2(direction*lunge,sin(_clock*1.7)*9),1.0-exp(-delta*6))
+		scale = scale.lerp(Vector2.ONE*_target_scale,1.0-exp(-delta*15))
 	_update_particles(delta)
+	if kind == Kind.FIRE:
+		_smoke_clock -= delta
+		if _smoke_clock <= 0.0:
+			_smoke_clock = .06
+			_particles.append({"p":Vector2(_rng.randf_range(-90,90),-490),"v":Vector2(_rng.randf_range(-40,40),-130),"life":1.0,"max":1.0,"r":7.0,"grow":13.0,"color":Color(.2,.12,.1,.5),"line":false})
 	if kind == Kind.EARTHQUAKE:
 		var rig: Dictionary = golem_rig()
 		_smoke_clock -= delta
@@ -168,6 +240,9 @@ func _impact_effects() -> void:
 			for i: int in range(5):
 				_particles.append({"p": target, "v": Vector2(_rng.randf_range(-260, 120), _rng.randf_range(-360, -160)),
 					"life": 0.7, "max": 0.7, "r": 5.0, "grow": 0.0, "color": BASALT_LIGHT, "line": false})
+	elif kind >= Kind.FLOOD:
+		for i: int in range(24):
+			_particles.append({"p":Vector2(0,-300),"v":Vector2.from_angle(i*TAU/24)*300,"life":.55,"max":.55,"r":5.0,"grow":0.0,"color":Color("83fff0") if kind == Kind.FLOOD else LAVA_HOT,"line":false})
 	else:
 		# Roaring burst: wind streaks shoot toward the building.
 		var rig: Dictionary = storm_rig()
@@ -219,6 +294,9 @@ func golem_rig() -> Dictionary:
 	hand_r += Vector2(100, 60) * retreat
 	var arm_l: Array[Vector2] = _ik(shoulder_l, hand_l, 140.0, 135.0, -1.0)
 	var arm_r: Array[Vector2] = _ik(shoulder_r, hand_r, 140.0, 135.0, 1.0)
+	# Intermediate wind-up can flare farther than either endpoint. Keep the outer
+	# elbow folded inside the facade framing without changing hand targets/timing.
+	arm_r[0].x = minf(arm_r[0].x,160.0)
 	var rocks: Array[Vector3] = []
 	var burst: float = roar
 	for i: int in range(6):
@@ -278,6 +356,7 @@ func storm_rig() -> Dictionary:
 ## Local bounding box of the current pose (both bosses), for framing checks.
 func pose_bounds() -> Rect2:
 	var box: Rect2 = Rect2(Vector2(-60, -40), Vector2(120, 70))
+	if kind >= Kind.FLOOD: return Rect2(-180,-580,360,610)
 	if kind == Kind.EARTHQUAKE:
 		# Margins match the painted extents: torso polygon, pauldrons, limb half-widths, fists.
 		var rig: Dictionary = golem_rig()
@@ -289,7 +368,7 @@ func pose_bounds() -> Rect2:
 		for key: String in ["elbow_l", "elbow_r"]:
 			box = box.expand(Vector2(rig[key]) + Vector2(-36, -36)).expand(Vector2(rig[key]) + Vector2(36, 36))
 		for key: String in ["fist_l", "fist_r"]:
-			box = box.expand(Vector2(rig[key]) + Vector2(-48, -48)).expand(Vector2(rig[key]) + Vector2(48, 48))
+			box = box.expand(Vector2(rig[key]) + Vector2(-72, -72)).expand(Vector2(rig[key]) + Vector2(72, 72))
 		box = box.expand(Vector2(rig["head"]) + Vector2(-80, -100)).expand(Vector2(rig["head"]) + Vector2(80, 110))
 		for rock: Vector3 in rig["rocks"]:
 			box = box.expand(Vector2(rock.x - 28, rock.y - 28)).expand(Vector2(rock.x + 28, rock.y + 28))
@@ -297,7 +376,7 @@ func pose_bounds() -> Rect2:
 		for ring: Dictionary in storm_rig()["rings"]:
 			var c: Vector2 = ring["center"]
 			var w: float = ring["width"]
-			box = box.expand(c + Vector2(-w - 12, -60)).expand(c + Vector2(w + 12, 30))
+			box = box.expand(c + Vector2(-w - 22, -60)).expand(c + Vector2(w + 22, 30))
 	box.position.y += (1.0 - _arrival) * 80.0
 	return box
 
@@ -311,6 +390,10 @@ func _draw() -> void:
 	var texture: Texture2D = boss_sprite if boss_sprite != null else custom_sprite
 	if texture != null:
 		_draw_sprite(texture, root)
+	elif kind == Kind.FLOOD:
+		MarathonArt.hydra(self,hydra_rig(),root)
+	elif kind == Kind.FIRE:
+		MarathonArt.titan(self,titan_rig(),root)
 	elif kind == Kind.STORM:
 		_draw_storm(storm_rig(), root)
 	else:
@@ -377,7 +460,23 @@ func _draw_golem(rig: Dictionary, root: Vector2) -> void:
 	draw_polyline(seam, Color(LAVA, 0.25 * glow), 14.0, true)
 	draw_polyline(seam, INK, 7.0, true)
 	draw_polyline(seam, LAVA.lerp(LAVA_HOT, clampf(glow - 0.5, 0.0, 1.0)), 3.0, true)
+	# Fault branches follow the breathing torso, rather than hovering over the rig.
+	for side: float in [-1.0,1.0]:
+		var fault: PackedVector2Array = PackedVector2Array([Vector2(-22,-48),Vector2(side*43,-55),Vector2(side*60,-32),Vector2(side*79,-41)])
+		draw_polyline(fault,INK,7,true)
+		draw_polyline(fault,LAVA_HOT,2.5,true)
+		for i: int in range(7):
+			var p: Vector2 = Vector2(side*(31+i%3*18),-72+i*22)
+			draw_line(p,p+Vector2(8,-3),BASALT_DARK,3)
 	draw_set_transform(root)
+	# Dry gravel cascades down from both shoulders, with a faint dust tail.
+	for side: float in [-1.0,1.0]:
+		var shoulder: Vector2 = rig["shoulder_l"] if side > 0 else rig["shoulder_r"]
+		for i: int in range(9):
+			var fall: float = fposmod(_clock*58+i*19,145)
+			var p: Vector2 = shoulder+Vector2(side*(19+i%3*5),fall)
+			draw_rect(Rect2(p,Vector2(3+i%2,4)),Color(BASALT_LIGHT,1-fall/160))
+			if i%3 == 0: draw_circle(p+Vector2(0,-8),5,Color(BASALT_LIGHT,.12))
 	var flash: bool = plant > 0.95 and slam_progress() < 0.3
 	_arm(Vector2(rig["shoulder_r"]), Vector2(rig["elbow_r"]), Vector2(rig["fist_r"]), -1.0, flash, root)
 	_arm(Vector2(rig["shoulder_l"]), Vector2(rig["elbow_l"]), Vector2(rig["fist_l"]), 1.0, flash, root)
@@ -427,6 +526,12 @@ func _arm(shoulder: Vector2, elbow: Vector2, fist: Vector2, side: float, flash: 
 	_rock(shoulder + Vector2(side * -6, -6), Vector2(50, 42), PLATE)
 	draw_set_transform(root + fist, (fist - elbow).angle() - PI * 0.5)
 	_rock(Vector2.ZERO, Vector2(44, 46), Color("fff0d0") if flash else BASALT_LIGHT)
+	# Bent construction steel embedded in each knuckle.
+	for i: int in range(3):
+		var p: Vector2 = Vector2(-25+i*23,-32)
+		CelArt.line(self,p,p+Vector2(-5,-27-i%2*8),INK,8)
+		CelArt.line(self,p,p+Vector2(-5,-27-i%2*8),Color("89948d"),4)
+		for notch: int in range(3): draw_line(p+Vector2(-5,-7-notch*7),p+Vector2(1,-9-notch*7),Color("414e4b"),2)
 	CelArt.line(self, Vector2(-24, 10), Vector2(22, 6), INK, 3)
 	CelArt.line(self, Vector2(-20, 24), Vector2(20, 20), INK, 3)
 	draw_polyline(PackedVector2Array([Vector2(-10, -30), Vector2(-4, -6), Vector2(-12, 14)]), Color(LAVA, 0.8), 3.0, true)
@@ -458,10 +563,27 @@ func _draw_storm(rig: Dictionary, root: Vector2) -> void:
 		CelArt.poly(self, PackedVector2Array([Vector2(c.x - width, y - 19), Vector2(c.x - width * 0.72, y - 40), Vector2(c.x + width * 0.63, y - 44), Vector2(c.x + width, y - 20), Vector2(c.x + width * 0.89, y + 10), Vector2(c.x - width * 0.5, y + 25)]), color)
 		CelArt.ellipse(self, Vector2(c.x, y - 22), Vector2(width * 0.92, 17), color.lightened(0.14))
 		CelArt.line(self, Vector2(c.x - width * 0.7, y + 2), Vector2(c.x + width * 0.66, y - 5), Color("6f8995"), 3)
+		# Rounded shadow lobes, bright edges and hooked blades break the flat rings.
+		for cloud: int in range(4):
+			var cx: float = c.x+width*(-.6+cloud*.39)
+			CelArt.ellipse(self,Vector2(cx,y-24-cloud%2*7),Vector2(width*.29,14+cloud%2*6),color.darkened(.23),1.5)
+			draw_line(Vector2(cx-width*.14,y-35),Vector2(cx+width*.11,y-38),Color("748e9c"),2)
+		for side: float in [-1.0,1.0]:
+			CelArt.poly(self,PackedVector2Array([Vector2(c.x+side*width*.7,y-10),Vector2(c.x+side*(width+17),y-25),Vector2(c.x+side*(width-5),y+2)]),Color("809eaa"),1.5)
 		var ribbon: float = sin(_clock * (6.0 + wind * 10.0) + i) * width * 0.7
 		CelArt.line(self, Vector2(c.x + ribbon - 13, y - 24), Vector2(c.x + ribbon + 15, y - 27), Color("9fb4bd"), 3)
 		if wind > 0.05:
 			draw_arc(Vector2(c.x, y - 22), width * 0.92, PI, TAU, 16, Color(ELECTRIC, 0.55 * wind), 2.0, true)
+	# Electric eye of the cyclone stays visible even between attack cues.
+	for i: int in range(3):
+		draw_circle(face+Vector2(0,-38),33-i*9,Color(ELECTRIC,.10+i*.12))
+	draw_arc(face+Vector2(0,-38),24,_clock*2,_clock*2+PI*1.65,20,ELECTRIC,3)
+	CelArt.ellipse(self,face+Vector2(0,-38),Vector2(8,13),Color("dbf8ff"),1.5)
+	for side: float in [-1.0,1.0]:
+		var vein: PackedVector2Array = PackedVector2Array([face+Vector2(0,-38),face+Vector2(side*24,-72),face+Vector2(side*13,-93),face+Vector2(side*58,-124),face+Vector2(side*47,-151)])
+		draw_polyline(vein,Color(ELECTRIC,.20),8,true)
+		draw_polyline(vein,Color("b4e9ff"),2,true)
+		draw_line(vein[2],vein[2]+Vector2(side*31,4),ELECTRIC,2)
 	# Face rides ring 7 of the spine; the mouth tears open on the burst.
 	var brow_drop: float = wind * 6.0
 	for side: float in [-1.0, 1.0]:
@@ -481,7 +603,11 @@ func _draw_storm(rig: Dictionary, root: Vector2) -> void:
 		var x: float = c.x + cos(angle) * (float(rings[ring_index]["width"]) + 12.0)
 		var leaf: Color = Color("7d6d48") if i % 2 == 0 else Color("566b5e")
 		draw_set_transform(root + Vector2(x, c.y + sin(angle) * 15.0), angle)
-		CelArt.poly(self, PackedVector2Array([Vector2(-8, 0), Vector2(0, -5), Vector2(10, 1), Vector2(1, 5)]), leaf, 2)
+		if i%3 == 0:
+			CelArt.box(self,Rect2(-10,-6,20,12),Color("95654f"),Vector2(3,-3))
+			draw_line(Vector2(-5,-5),Vector2(-5,5),Color("c29370"),2)
+		else:
+			CelArt.poly(self, PackedVector2Array([Vector2(-8, 0), Vector2(0, -5), Vector2(10, 1), Vector2(1, 5)]), leaf, 2)
 	draw_set_transform(root)
 	for bolt: PackedVector2Array in rig["arcs"]:
 		draw_polyline(bolt, Color(0.35, 0.65, 1.0, 0.35 * wind), 10.0, true)
@@ -490,3 +616,22 @@ func _draw_storm(rig: Dictionary, root: Vector2) -> void:
 func _rock(center: Vector2, size: Vector2, color: Color) -> void:
 	CelArt.poly(self, PackedVector2Array([center + Vector2(-size.x, -size.y * 0.6), center + Vector2(-size.x * 0.5, -size.y), center + Vector2(size.x * 0.65, -size.y * 0.9), center + Vector2(size.x, -size.y * 0.1), center + Vector2(size.x * 0.73, size.y * 0.85), center + Vector2(-size.x * 0.65, size.y)]), color)
 	CelArt.poly(self, PackedVector2Array([center + Vector2(-size.x, -size.y * 0.6), center + Vector2(-size.x * 0.5, -size.y), center + Vector2(size.x * 0.65, -size.y * 0.9), center + Vector2(size.x * 0.3, -size.y * 0.35)]), color.lightened(0.18), 1.5)
+
+	CelArt.poly(self,PackedVector2Array([center+Vector2(size.x*.65,-size.y*.9),center+Vector2(size.x,-size.y*.1),center+Vector2(size.x*.73,size.y*.85),center+Vector2(size.x*.22,size.y*.31)]),color.darkened(.3),1.5)
+	for i: int in range(4):
+		var p: Vector2 = center+Vector2((-0.5+i*.26)*size.x,sin(i*2.3+center.y)*size.y*.44)
+		draw_rect(Rect2(p,Vector2(3+i%2,2)),color.darkened(.18) if i%2 == 0 else color.lightened(.14))
+
+## Independent heads/arms remain observable for animation and framing regression tests.
+func hydra_rig() -> Dictionary:
+	var heads: Array[Vector2] = []
+	for i: int in range(3):
+		heads.append(Vector2((i-1)*94+sin(_clock*2+i)*22,-350-i%2*140+sin(_clock*2.6+i)*18)*(1.0-retreat*.45))
+	return {"heads":heads,"time":_clock,"charge":charge_progress(),"retreat":retreat,"strike":maxf(0.0,slam_progress())}
+
+func titan_rig() -> Dictionary:
+	var arms: Array[Vector2] = []
+	for i: int in range(4):
+		var side: float = -1.0 if i%2 == 0 else 1.0
+		arms.append(Vector2(side*(120+sin(_clock*2+i)*25),-250-(i/2)*140+sin(_clock*3+i)*22))
+	return {"arms":arms,"time":_clock,"charge":charge_progress(),"retreat":retreat,"enrage":enraged,"strike":maxf(0.0,slam_progress()),"helix":pattern_label.begins_with("ÇİFT SARMAL")}

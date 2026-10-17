@@ -38,6 +38,7 @@ signal state_changed(room: RoomDiorama, state: int)
 var damage_limiter: Callable
 ## Chain support is half of a full retrofit (27.5% mitigation), never a free anchor kit.
 var chain_support: bool = false
+var heat: float = 0.0
 var hp: float = MAX_HP
 var max_hp: float = MAX_HP
 enum Reinforcement { STEEL, SHUTTER, ANCHOR }
@@ -45,7 +46,10 @@ var reinforcements: Array[int] = []
 var reinforcement_level: int:
 	get: return reinforcements.size()
 var utilities_isolated: bool = false
-## Each installed retrofit reduces incoming room damage by 55% until collapse.
+var auto_protection: bool = false
+var shutter_block: float = .5
+var flood_barrier_bonus: float = 0.0
+## Support is typed: steel/FRP halves structural hits; shutters halve facade shots.
 var fortified: bool = false
 var _state: int = RoomState.INTACT
 ## Whole-building collapse: heavy dust curtains in every room.
@@ -84,11 +88,16 @@ func state() -> int:
 func is_collapsed() -> bool:
 	return hp <= 0.0
 
-## Fortified rooms take 45% damage. Returns the HP actually removed.
-func apply_damage(amount: float) -> float:
+func damage_factor(source: int) -> float:
+	if source == 1 and has_reinforcement(Reinforcement.STEEL): return .5
+	if source in [0,2,3] and has_reinforcement(Reinforcement.SHUTTER): return 1.0-shutter_block-(flood_barrier_bonus if source in [0,2] else 0.0)
+	return .725 if chain_support else 1.0
+
+## Mitigation precedes the existing shared pacing gate; collapsed rooms stay lost.
+func apply_damage(amount: float, source: int = 1) -> float:
 	if amount <= 0.0 or hp <= 0.0:
 		return 0.0
-	var taken: float = minf(amount * (0.45 if fortified else (0.725 if chain_support else 1.0)), hp)
+	var taken: float = minf(amount * damage_factor(source), hp)
 	if damage_limiter.is_valid(): taken = float(damage_limiter.call(taken))
 	hp -= taken
 	if hp < 0.0001:
@@ -122,6 +131,11 @@ func has_reinforcement(component: int) -> bool:
 	return reinforcements.has(component)
 
 func restore() -> void:
+	auto_protection = false
+	utilities_isolated = false
+	shutter_block = .5
+	flood_barrier_bonus = 0.0
+	heat = 0.0
 	chain_support = false
 	hp = max_hp
 	fortified = false
@@ -170,7 +184,10 @@ func _apply_state_to_props() -> void:
 			prop.condition = prop.authored_condition
 
 func _process(delta: float) -> void:
-	if _state >= RoomState.DAMAGED or shaking:
+	if heat > 0.0:
+		heat = maxf(0.0, heat - delta * 4.0)
+		_fx.queue_redraw()
+	if _state >= RoomState.DAMAGED or shaking or auto_protection:
 		_fx_clock += delta
 		_fx.queue_redraw()
 
@@ -455,6 +472,10 @@ func _crack(start: Vector2, rng: RandomNumberGenerator, steps: int) -> void:
 
 ## Animated layer above furniture, light cones and pillars.
 func _draw_fx() -> void:
+	if auto_protection and not is_collapsed():
+		EquipmentArt.draw_safety_installation(_fx,room_size,_fx_clock)
+	if heat > 0.0:
+		_fx.draw_rect(Rect2(24, 20, room_size.x-48, room_size.y-40), Color(1.0,.15,.02,heat*.0015))
 	if chain_support and not fortified:
 		for x: float in [16.0, room_size.x - 16.0]:
 			_fx.draw_line(Vector2(x, 55), Vector2(x, room_size.y - 35), Color("4c969c"), 9.0)
@@ -486,6 +507,7 @@ func _draw_fx() -> void:
 func _draw_braces() -> void:
 	var bottom: float = room_size.y - 22.0
 	if has_reinforcement(Reinforcement.STEEL):
+		EquipmentArt.draw_carbon_wrap(_fx,room_size)
 		for side: int in range(2):
 			var x: float = 6.0 if side == 0 else room_size.x - 74.0
 			CelArt.box(_fx, Rect2(x, 8, 68, bottom - 8), Color("324957"), Vector2(5, -4))

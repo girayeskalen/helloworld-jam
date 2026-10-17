@@ -159,7 +159,7 @@ func _room_state_checks(b: ApartmentBuilding, w: DisasterWaveManager) -> void:
 		if prop.kind != BuildingProp.Kind.LAMP:
 			bolted = bolted and prop.condition == BuildingProp.Condition.REINFORCED and prop.rotation == 0.0
 	_check(lobby.state() == RoomDiorama.RoomState.FORTIFIED and bolted, "Fortified: furniture L-bracketed upright (state FORTIFIED)")
-	_check(is_equal_approx(lobby.apply_damage(20.0), 9.0) and is_equal_approx(lobby.hp, 91.0), "Fortified rooms take 45% damage (55% reduction)")
+	_check(is_equal_approx(lobby.apply_damage(20.0), 10.0) and is_equal_approx(lobby.hp, 90.0), "Column support halves quake damage")
 	var master: RoomDiorama = b.room_at(2, 0)
 	master.repair(0.0, true)
 	_check(_prop_in(master, BuildingProp.Kind.WINDOW).condition == BuildingProp.Condition.REINFORCED, "Fortified window gets shutters and sandbags")
@@ -201,7 +201,7 @@ func _attack_damage_checks(p: SiegePlayer, b: ApartmentBuilding, w: DisasterWave
 	var fortified_before: float = target.hp
 	w.plan_attack(brick, .6)
 	await _frames(int((0.6 + brick.lifetime) * 60.0) + 4)
-	_check(is_equal_approx(fortified_before - target.hp, DisasterWaveManager.room_damage(brick) * 0.45), "The same brick does 45% damage to a fortified room")
+	_check(is_equal_approx(fortified_before - target.hp, DisasterWaveManager.room_damage(brick) * 0.5), "The same brick does 50% damage to a fortified room")
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
 	w.advance_wave(DisasterWaveManager.INTRO_DURATION)
 	w.building.pacing_enabled = false
@@ -238,17 +238,17 @@ func _collapse_checks(p: SiegePlayer, b: ApartmentBuilding, w: DisasterWaveManag
 	_check(w.failed and w.fail_reason == DisasterWaveManager.FailReason.BUILDING and b.collapsed_building, "A 4th collapsed room brings the whole building down")
 	_check(w.phase_label() == "BİNA ÇÖKTÜ! ODALARI ZAMANINDA ONARAMADIN", "Failure message: BİNA ÇÖKTÜ! ODALARI ZAMANINDA ONARAMADIN")
 	_check(game.telegraphs.pending.is_empty() and game.projectiles.active_count() == 0 and game.game_camera.shake_strength() > 10.0, "Collapse clears the hazards and shakes the screen")
-	loot.cement = 1
+	loot.column_kits = 1
 	b.room_at(0, 1).hp = 50.0
 	b.room_at(0, 1)._refresh_state()
-	_check(not loot.can_offer_repair() and loot.repair_current_room() == LootSystem.RepairResult.NOT_NEEDED and loot.cement == 1, "No repairs once the building has fallen")
+	_check(not loot.can_offer_repair() and loot.repair_current_room() == LootSystem.RepairResult.NOT_NEEDED and loot.column_kits == 1, "No repairs once the building has fallen")
 	for i: int in range(120):
 		b.lighting.advance(1.0 / 60.0)
 	var lit: int = 0
 	for light: Dictionary in b.lighting.lights:
 		lit += 1 if float(light["level"]) > 0.0 else 0
 	_check(lit == 0, "After the collapse every light goes dark")
-	loot.cement = 3
+	loot.column_kits = 3
 	_key(KEY_R, true)
 	await _frames(2)
 	_key(KEY_R, false)
@@ -307,7 +307,7 @@ func _loot_spawn_checks(p: SiegePlayer, b: ApartmentBuilding, loot: LootSystem) 
 	_check(not repeat, "Each drop lands in a different room than the previous one")
 	_check(not bad_room, "Drops avoid the player's room and collapsed rooms")
 	_check(rooms_seen.size() >= 10, "Drops spread across the building (%d rooms)" % rooms_seen.size())
-	_check(kinds.size() == 5, "All five equipment kinds drop")
+	_check(kinds.size() == 4, "All four equipment kinds drop")
 	_check(not bad_spot, "Drops rest on the floor inside the room interior")
 	loot.reset()
 	for i: int in range(60 * 40):
@@ -318,7 +318,7 @@ func _loot_spawn_checks(p: SiegePlayer, b: ApartmentBuilding, loot: LootSystem) 
 	_check(loot.items.size() == 3 and not loot.spawn(0, 10), "Hard cap: a fourth drop is refused")
 	b.rooms[5].restore()
 	loot.reset()
-	loot.spawn(LootSystem.Kind.CEMENT_MORTAR, 7)
+	loot.spawn(LootSystem.Kind.COLUMN_KIT, 7)
 	b.rooms[7].apply_damage(500.0)
 	loot.advance(1.0 / 60.0)
 	_check(loot.items.is_empty(), "A drop is lost under the rubble when its room collapses")
@@ -334,30 +334,30 @@ func _pickup_checks(p: SiegePlayer, b: ApartmentBuilding, loot: LootSystem) -> v
 	p.reset_player()
 	await _frames(3)
 	var here: int = loot.player_room_index()
-	loot.spawn(LootSystem.Kind.CEMENT_MORTAR, here)
+	loot.spawn(LootSystem.Kind.COLUMN_KIT, here)
 	var spot: Vector2 = loot.items[0]["position"]
 	loot.items[0]["position"] = Vector2(p.global_position.x + 120.0, spot.y)
 	loot.advance(0.1)
 	p.global_position.x = loot.items[0]["position"].x
 	loot.advance(0.0)
-	_check(loot.items.size() == 1 and loot.cement == 0, "A drop still falling from the ceiling cannot be grabbed")
+	_check(loot.items.size() == 1 and loot.column_kits == 0, "A drop still falling from the ceiling cannot be grabbed")
 	loot.advance(0.5)
-	_check(loot.items.is_empty() and loot.cement == 1, "Walking over a landed drop collects it")
+	_check(loot.items.is_empty() and loot.column_kits == 1, "Walking over a landed drop collects it")
 	_check(not loot.messages.is_empty() and String(loot.messages[loot.messages.size() - 1]["text"]).begins_with("+1"), "Pickup floats '+1 ...' feedback")
 	p.health = 50.0
 	p.stamina = 10.0
-	loot.spawn(LootSystem.Kind.EMERGENCY_MEDKIT, here)
+	loot.spawn(LootSystem.Kind.EMERGENCY_BAG, here)
 	loot.items[0]["position"] = Vector2(p.global_position.x, loot.items[0]["position"].y)
 	loot.advance(0.5)
 	_check(is_equal_approx(p.health, 50.0 + loot.medkit_heal) and p.stamina == 100.0, "Medkit: +%d HP (2 health units) and a full dash meter" % int(loot.medkit_heal))
-	loot.spawn(LootSystem.Kind.STORM_SHUTTER, 6)
+	loot.spawn(LootSystem.Kind.BARRICADE_KIT, 6)
 	loot.items[0]["position"] = Vector2(p.global_position.x, b.floor_y(1) - 26.0)
 	loot.advance(0.5)
 	# (The loot clock kept running, so a regular timed drop may also be waiting elsewhere.)
 	var upstairs: int = 0
 	for item: Dictionary in loot.items:
-		upstairs += 1 if int(item["kind"]) == LootSystem.Kind.STORM_SHUTTER and int(item["room"]) == 6 else 0
-	_check(upstairs == 1 and loot.shutters == 0, "Drops on another floor are not collected through the ceiling")
+		upstairs += 1 if int(item["kind"]) == LootSystem.Kind.BARRICADE_KIT and int(item["room"]) == 6 else 0
+	_check(upstairs == 1 and loot.barricade_kits == 0, "Drops on another floor are not collected through the ceiling")
 	loot.reset()
 	p.reset_player()
 
@@ -370,41 +370,44 @@ func _repair_checks(p: SiegePlayer, b: ApartmentBuilding, w: DisasterWaveManager
 	await _frames(3)
 	var room: RoomDiorama = loot.current_room()
 	_check(room == b.room_at(0, 1), "Current room resolves from floor and column")
-	loot.cement = 2
-	loot.shutters = 1
+	loot.column_kits = 2
+	loot.barricade_kits = 1
 	await _tap(KEY_E)
-	_check(room.hp == 100 and not room.fortified and loot.cement == 2 and loot.messages.is_empty(), "Healthy siege room: E is silent, spends nothing and never fortifies")
+	_check(room.hp == 100 and not room.fortified and loot.column_kits == 2 and loot.messages.is_empty(), "Healthy siege room: E is silent, spends nothing and never fortifies")
 	room.apply_damage(60.0)
 	var integrity_before: float = b.integrity
-	loot.cement = 0
+	loot.column_kits = 0
 	_check(loot.repair_alert(room) and not loot.can_offer_repair(), "Damaged room keeps its visible warning even without cement")
 	await _tap(KEY_E)
-	_check(room.hp == 40 and loot.messages.back()["text"] == "ÇİMENTO YOK · MALZEME TOPLA", "Repair without cement explains the missing resource")
-	loot.cement = 1
+	_check(room.hp == 40 and loot.barricade_kits == 0 and room.reinforcement_level == 2, "Barrier kit anchors and barricades an alerted room without healing it")
+	await _tap(KEY_E)
+	_check(loot.messages.back()["text"] == "ONARIM KİTİ YOK · KOLON KİTİ TOPLA", "Repair explains the missing column kit")
+	loot.column_kits = 1
 	_check(loot.can_offer_repair(), "Damaged room plus cement enables repair")
 	await _rendered()
 	_check(game.labels.repair_markers == 1, "Damaged room has exactly one ONAR marker")
 	await _tap(KEY_E)
 	await _frames(1)
-	_check(room.hp == 85 and not room.fortified and loot.cement == 0 and loot.shutters == 1, "Siege repair: +45 HP, consumes cement only, no armor")
+	_check(room.hp == 85 and room.reinforcement_level == 3 and loot.column_kits == 0 and loot.barricade_kits == 0, "Siege column kit: +45 HP and structural support; barrier remains installed")
 	_check(is_equal_approx(b.integrity, integrity_before + 45.0 / 16.0), "Room repair increases building integrity")
 	await _rendered()
 	_check(not loot.repair_alert(room) and game.labels.repair_markers == 0, "Repair eligibility and visible warning disappear together")
-	loot.cement = 1
+	loot.column_kits = 1
 	var message_count: int = loot.messages.size()
-	_check(loot.repair_current_room() == LootSystem.RepairResult.NOT_NEEDED and loot.cement == 1 and loot.messages.size() == message_count, "INTACT 85 HP room cannot be repaired again during siege")
+	_check(loot.repair_current_room() == LootSystem.RepairResult.NOT_NEEDED and loot.column_kits == 1 and loot.messages.size() == message_count, "INTACT 85 HP room cannot be repaired again during siege")
 	room.apply_damage(500)
-	_check(loot.repair_current_room() == LootSystem.RepairResult.NOT_NEEDED and loot.cement == 1, "Collapsed siege room is not a repair target")
+	_check(loot.repair_current_room() == LootSystem.RepairResult.NOT_NEEDED and loot.column_kits == 1, "Collapsed siege room is not a repair target")
 	var critical: RoomDiorama = b.room_at(2,2)
 	critical.apply_damage(80)
 	await _rendered()
 	_check(game.labels.repair_markers == 1, "Critical rooms show the same actionable marker")
 	w.finish_wave()
 	w.advance_wave(DisasterWaveManager.OUTRO_DURATION)
+	game.upgrades.offers.assign([0,1,2])
 	game.upgrades.choose(0)
 	p.global_position.x = b.room_at(0,2).global_position.x + 200
 	await _frames(2)
-	_check(loot.can_build() and loot.repair_current_room() == LootSystem.RepairResult.REINFORCED and b.room_at(0,2).reinforcement_level == 1, "Build phase permits reinforcing a healthy room with the shutter kit")
+	_check(loot.can_build() and loot.repair_current_room() == LootSystem.RepairResult.REINFORCED and b.room_at(0,2).reinforcement_level == 1, "Build phase permits reinforcing a healthy room with the column kit")
 	w.reset_cycle()
 	p.reset_player()
 
@@ -432,11 +435,11 @@ func _capture(directory: String) -> void:
 	b.room_at(1, 0).repair(0.0, true)
 	b.room_at(1, 3).apply_damage(70.0)
 	b.room_at(0, 1).apply_damage(40.0)
-	loot.spawn(LootSystem.Kind.CEMENT_MORTAR, 2)
-	loot.spawn(LootSystem.Kind.STORM_SHUTTER, 6)
-	loot.spawn(LootSystem.Kind.EMERGENCY_MEDKIT, 13)
-	loot.cement = 2
-	loot.shutters = 1
+	loot.spawn(LootSystem.Kind.COLUMN_KIT, 2)
+	loot.spawn(LootSystem.Kind.BARRICADE_KIT, 6)
+	loot.spawn(LootSystem.Kind.EMERGENCY_BAG, 13)
+	loot.column_kits = 2
+	loot.barricade_kits = 1
 	for i: int in range(40):
 		loot.advance(1.0 / 60.0)
 		await _frames(1)

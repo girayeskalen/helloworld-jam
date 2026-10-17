@@ -150,8 +150,8 @@ func impending_hit() -> bool:
 	for shot: HazardProjectile in game.projectiles.entries:
 		if not shot.active or shot.contacted_player: continue
 		var attack: HazardAttack = shot.attack
-		if attack.floor_index != game.player.current_floor: continue
-		if attack.kind == HazardAttack.Kind.ROW_SWEEP:
+		if attack.floor_index != game.player.current_floor and not attack.cross_floor: continue
+		if attack.is_wall():
 			var distance: float = absf(shot.global_position.x - head.x) - attack.radius - 12
 			if distance > 0 and distance <= absf(attack.velocity.x) * 0.15 and (head.x - shot.global_position.x) * attack.velocity.x > 0: return true
 			continue
@@ -212,7 +212,7 @@ func _drone(delta: float, battle: bool) -> void:
 	if _beam_clock <= 0.0:
 		for i: int in range(game.loot.items.size()-1,-1,-1):
 			var item: Dictionary = game.loot.items[i]
-			if float(item["drop"]) >= 1.0 and drone_position.distance_to(item["position"]) < 430.0:
+			if float(item["drop"]) >= 1.0 and drone_position.distance_to(item["position"]) < maxf(430.0,game.loot.pickup_radius*2.5):
 				beam(drone_position, item["position"], CYAN)
 				game.loot.collect(i)
 				_beam_clock = 0.25
@@ -234,10 +234,11 @@ func _collected(_kind: int) -> void:
 		game.player.repair_shield = maxf(2.0, game.player.repair_shield)
 
 func projectile_speed(shot: HazardProjectile) -> float:
+	if shot.attack.is_area(): return 1.0
 	for trail: Dictionary in trails:
 		if Geometry2D.get_closest_point_to_segment(shot.global_position, trail["a"], trail["b"]).distance_to(shot.global_position) < 65.0:
-			return 0.4
-	return 1.0
+			return 0.4 * (.88 if has_card(SiegeUpgrades.Kind.EARLY_WARNING) else 1.0)
+	return .88 if has_card(SiegeUpgrades.Kind.EARLY_WARNING) else 1.0
 
 func intercept(shot: HazardProjectile, previous: Vector2) -> bool:
 	if not has_card(SiegeUpgrades.Kind.DEFLECTOR): return false
@@ -253,7 +254,7 @@ func intercept(shot: HazardProjectile, previous: Vector2) -> bool:
 			deflections += 1
 			if fragment_count >= 3:
 				fragment_count -= 3
-				game.loot.grant(LootSystem.Kind.CEMENT_MORTAR)
+				game.loot.grant(LootSystem.Kind.COLUMN_KIT)
 				game.loot._message(center, "3 PARÇA → +1 ÇİMENTO", CYAN)
 			return true
 	return false
@@ -287,6 +288,10 @@ func retreat_dust(delta: float) -> void:
 			particles.append({"p": game.earthquake._home + Vector2(-150+i*90,-15), "v": Vector2(-55+i*35,-65), "life": 1.1, "color": Color("817e76"), "size": 18.0+i*3.0, "dust": true})
 	if game.storm.visible:
 		burst(game.storm.global_position + Vector2(cos(_clock*11)*90,-350), Color("8eafc1"), 5)
+	for boss: DisasterBoss in [game.flood,game.fire]:
+		if not boss.visible: continue
+		var color: Color = Color("72e9d7") if boss.kind == DisasterBoss.Kind.FLOOD else Color("ff8b43")
+		burst(boss.global_position + Vector2(sin(_clock*13)*110,-150),color,10)
 
 func burst(point: Vector2, color: Color, count: int) -> void:
 	for i: int in range(count):

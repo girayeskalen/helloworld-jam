@@ -41,6 +41,8 @@ var building: ApartmentBuilding
 var health: float = 100.0
 var controls_locked: bool = false
 var grapple_enabled: bool = false
+var hazard_drag: float = 0.0
+var hazard_pull: float = 0.0
 var speed_boost: float = 0.0
 var _ghost_phasing: bool = false
 var repair_shield: float = 0.0
@@ -67,6 +69,8 @@ var visual_scale: Vector2 = Vector2.ONE
 var lean: float = 0.0
 ## 0 grounded .. 1 fully airborne pose (tucked legs, raised arms).
 var air_pose: float = 0.0
+var gear_offset: Vector2 = Vector2.ZERO
+var _gear_velocity: Vector2 = Vector2.ZERO
 var _cape: Vector2 = Vector2(-8, 14)
 var _clock: float = 0.0
 var _was_on_floor: bool = true
@@ -228,13 +232,16 @@ func _physics_process(delta: float) -> void:
 
 ## Snappy run: near-instant acceleration and a dedicated turn-around rate.
 func _run_velocity(direction: float, delta: float) -> float:
-	var target: float = direction * run_speed * (1.3 if speed_boost > 0.0 else 1.0) + wind_velocity
+	var target: float = direction * run_speed * (1.3 if speed_boost > 0.0 else 1.0) * (1.0 - hazard_drag) + wind_velocity + hazard_pull
 	var rate: float = acceleration if direction != 0.0 else braking
 	if direction != 0.0 and absf(velocity.x) > 20.0 and signf(direction) != signf(velocity.x):
 		rate = turn_acceleration
 	return move_toward(velocity.x, target, rate * delta)
 
 func _update_pose(delta: float) -> void:
+	var desired: Vector2 = Vector2(clampf(-velocity.x*.007,-4,4),clampf(-velocity.y*.004,-3,4))
+	_gear_velocity += ((desired-gear_offset)*140-_gear_velocity*18)*delta
+	gear_offset += _gear_velocity*delta
 	visual_scale = visual_scale.lerp(Vector2.ONE, 1.0 - exp(-13.0 * delta))
 	var grounded: bool = is_on_floor() and not is_shifting
 	var target_lean: float = 0.0
@@ -421,6 +428,8 @@ func apply_wind(strength: float, duration: float) -> void:
 	_wind_left = maxf(_wind_left, duration)
 
 func clear_wind() -> void:
+	hazard_drag = 0.0
+	hazard_pull = 0.0
 	_wind_target = 0.0
 	_wind_left = 0.0
 	wind_velocity = 0.0
@@ -486,6 +495,8 @@ func reset_player() -> void:
 	clear_wind()
 	collision_mask = 1
 	velocity = Vector2.ZERO
+	gear_offset = Vector2.ZERO
+	_gear_velocity = Vector2.ZERO
 	visual_scale = Vector2.ONE
 	lean = 0.0
 	air_pose = 0.0
@@ -549,7 +560,7 @@ func _update_effects(delta: float) -> void:
 			_dust.remove_at(i)
 
 func _pose() -> Dictionary:
-	return {"scale": visual_scale, "lean": lean, "air": air_pose, "cape": _cape, "clock": _clock}
+	return {"scale": visual_scale, "lean": lean, "air": air_pose, "cape": _cape, "clock": _clock, "gear": gear_offset}
 
 func _draw() -> void:
 	if repair_shield > 0.0:

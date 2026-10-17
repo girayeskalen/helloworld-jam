@@ -70,3 +70,27 @@ Kart adları, C40 etiketi ve oranları kullanıcı tasarımıdır; bu görevde g
 OpenAI Codex, kullanıcının ekli tasarımıyla 90 sn savaş / 15 sn inşaat, kilitli üç boss sırası, 1,5 sn giriş / 2,5 sn çıkış / kart fade-in, ortak üç odalık hasar sınırı, 10 sn onarım payı, görsel salınım/çatlak/toz ve dokuz yeni aktif kartı uyguladı. Eski pasif kart havuzu kaldırıldı. `SiegeMechanics.gd` dron/kule/türbin/iz/şok/ışın çizimlerini ve etkileri içerir; mevcut Claude oda çizimleri, gece atmosferi ve 2x W fizik yayı temel alınarak korundu. Boss rigine çıkış ayrışması eklendi. Yeni ses, harici görsel, font, paket veya servis kullanılmadı; görseller GDScript ile prosedüreldir. Kart isimleri/fantastik etkiler gerçek afet davranışı veya mühendislik uygulaması tavsiyesi değildir.
 
 Testler yeni faz ve mekaniklere uyarlandı; `Step45Smoke.gd` eklendi. Gerçek test sonuçları ve native görsel kayıtların yeri `STATUS.md` içindedir. Commit/push veya dağıtım yapılmadı.
+
+## 17 Ekim 2026 — Adım 4.8 farkındalık metinleri ve teknik başvurular
+
+Kart notları aşağıdaki resmî/meslek kuruluşu içeriklerinden kısa Türkçe özetlerdir; başlıklar ve fantastik etkiler kullanıcı tasarımı/AI destekli oyun yazımıdır. Web arama sonuçlarındaki kurum içerikleri kontrol edildi; bazı AFAD sayfalarının tam sayfa isteği 500, USGS tam sayfa isteği zaman aşımı verdi. Tam metin/PDF bütünlüğü doğrulanmış gibi raporlanmaz; doğrulanabilen kısa kapsam esas alındı.
+
+| Kaynak / sağlayıcı | Oyunda kullanım |
+| --- | --- |
+| [AFAD Şırnak — Afet Çantanı Hazırla](https://sirnak.afad.gov.tr/afet-cantani-hazirla-ki-canin-sag-olsun) | 72 saatlik çantada su, dayanıklı gıda, ilk yardım, fener, pil ve düdük; çanta kartı, medikal loot ve erişilebilir çanta notu |
+| [AFAD Bursa — Afete Hazır Aile](https://bursa.afad.gov.tr/afete-hazir-aile) | Ağır eşyaların sabitlenmesi, çıkışların açık tutulması, kesicilerin önceden tanınması; sabitleme, halat, gaz, sprinkler, türbin notları |
+| [AFAD Muğla — Şiddetli Yağış ve Sel](https://mugla.afad.gov.tr/siddetli-yagis-sel) | Yüksek güvenli yere çıkma, sel suyuna yürüyerek/araçla girmeme, uyarıları izleme; taşkın/drenaj kartları |
+| [USGS — Triangle of Life](https://www.usgs.gov/faqs/what-triangle-life-and-it-legitimate) | “Yaşam üçgeni standardı” önerisi yerine Çök-Kapan-Tutun; eşya sabitleme bu davranışla aynı teknik olarak sunulmaz |
+| [AFAD İstanbul — Güçlendirme](https://istanbul.afad.gov.tr/kurumlar/istanbul.afad/9562/files/GUCLENDIRME.pdf) ve [İMO — Güçlendirme İzni Genelgesi (2020)](https://www.imo.org.tr/TR%2C59074/cevre-sehircilik-bakanligi-tarafindan-24092020-tarihinde-guclendirme-izni-genelgesi-yayinlandi.html) | FRP/kolon/epoksi kartında uzman incelemesi ve proje gereği; güncel mevzuat ya da kendin yap güçlendirme tarifi verilmez |
+| [AFAD İstanbul — Hafif Arama ve Kurtarma Eğitmen Eğitimi](https://istanbul.afad.gov.tr/kurumlar/istanbul.afad/PDF-Dosyalar/Ek_2_Hafif_Arama_ve_Kurtarma_Egitmen_Egitimi_02082022.pdf) | Bot/eldiven gibi koruyucu ekipmanın hatırlatılması |
+| [AFAD — KBRN 2024 Kongre Kitabı](https://cbrn2024.afad.gov.tr/upload/Node/36846/files/Kongre_Kitabi_Congress_Book.pdf) | Drone/robotların tehlikeyi uzaktan tespitte kullanılması; drone kartında dar kapsamlı bir not |
+| [İPKB — Afet ve Engelli Bireyler Rehberi](https://www.ipkb.gov.tr/wp-content/uploads/2023/03/AFET-ENGELLI-BIREYLER-REHBER.pdf) | Otomatik gaz kesme ve önceden hazırlık bağlamı; oyun vanasına gerçek dünyada yangını kesin önleme gücü atfedilmez |
+| [Godot — Viewport](https://docs.godotengine.org/en/stable/classes/class_viewport.html) | `get_final_transform` ve `push_input(event,false)` ile küçük pencerede gerçek ölçek dönüşümü üzerinden fare test girdisi |
+
+Notların etkilendiği ana dosya `scripts/combat/SiegeUpgrades.gd`; loot kısa etiketleri `scripts/loot/LootSystem.gd`, ayrım/açıklamalar README ve bu dosyadadır. Kaynak sayfalarından resim, font, PDF veya ham belge repoya alınmadı. Bilgi özetlerinin yeniden kullanım lisansı açıkça doğrulanmadı; birebir metin kopyalanmadı. Kaynak göstermek kullanım izni yerine geçmez. Oyun yüzdeleri, anlık onarım, kalkan, robot ve süreler kurgu olarak açıkça ayrılır.
+
+
+## 17 Ekim 2026 — Git teslimi aracı
+
+- [GitHub CLI v2.102.0](https://github.com/cli/cli/releases/tag/v2.102.0), GitHub ve katkıcıları; [MIT lisansı](https://github.com/cli/cli/blob/v2.102.0/LICENSE). Resmî yayın SHA256 listesiyle doğrulandı. Push/oturum açma geliştirme aracı; oyun bağımlılığı veya dağıtılan oyun asseti değildir.
+- [GitHub CLI tarayıcı girişi](https://cli.github.com/manual/gh_auth_login) ve [GitHub noreply commit adresi](https://docs.github.com/en/account-and-profile/reference/email-addresses-reference): yetkili hesabın giriş ve repo kimliği kurulumu. Token veya şifre repo/belgelere alınmadı.

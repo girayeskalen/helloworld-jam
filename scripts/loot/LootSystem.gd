@@ -7,10 +7,10 @@ signal collected(kind: int)
 signal repaired(room: RoomDiorama)
 signal manual_action(room: RoomDiorama)
 
-enum Kind { CEMENT_MORTAR, STEEL_CROSSBRACE, L_ANCHOR_BOLT, STORM_SHUTTER, EMERGENCY_MEDKIT }
+enum Kind { COLUMN_KIT, BARRICADE_KIT, EMERGENCY_BAG, SAFETY_KIT }
 enum RepairResult { REPAIRED, NO_MATERIAL, NOT_NEEDED, COLLAPSED, REINFORCED }
-## Amber mortar, blue steel, turquoise anchor, yellow shutter, green medical bag.
-const AURA: Array[Color] = [Color("ffb52e"), Color("4fc3ff"), Color("42e1d0"), Color("ffe064"), Color("2fe08a")]
+## Four equipment silhouettes: column, anchoring/barrier, emergency bag, safety system.
+const AURA: Array[Color] = [Color("ffbd54"), Color("59bbff"), Color("4ce99a"), Color("ff6745")]
 const DROP_TIME: float = 0.45
 
 @export var spawn_interval: Vector2 = Vector2(5.5, 6.5)
@@ -18,7 +18,7 @@ const DROP_TIME: float = 0.45
 @export var repair_amount: float = 45.0
 ## One medical bag restores 25 health and the entire dash meter.
 @export var medkit_heal: float = 25.0
-@export var kind_weights: Array[float] = [0.36, 0.18, 0.18, 0.18, 0.10]
+@export var kind_weights: Array[float] = [0.44, 0.27, 0.17, 0.12]
 @export var loot_lifetime: float = 4.0
 @export var pickup_radius: float = 36.0
 var repair_shield_duration: float = 0.0
@@ -29,10 +29,9 @@ var player: SiegePlayer
 var waves: DisasterWaveManager
 ## {kind, room, floor, position (world, resting), drop 0..1, age, ground_age}
 var items: Array[Dictionary] = []
-var cement: int = 0
-var steel: int = 0
-var anchors: int = 0
-var shutters: int = 0
+var column_kits: int = 0
+var barricade_kits: int = 0
+var safety_installs: int = 0
 var expired_count: int = 0
 ## Floating feedback drawn crisply by WorldLabels: {position, text, color, life}.
 var messages: Array[Dictionary] = []
@@ -65,10 +64,9 @@ func configure(home: ApartmentBuilding, actor: SiegePlayer, wave_manager: Disast
 func reset() -> void:
 	items.clear()
 	messages.clear()
-	cement = 0
-	steel = 0
-	anchors = 0
-	shutters = 0
+	column_kits = 0
+	barricade_kits = 0
+	safety_installs = 0
 	expired_count = 0
 	spawn_count = 0
 	last_room = -1
@@ -78,7 +76,7 @@ func reset() -> void:
 	queue_redraw()
 
 func materials() -> int:
-	return cement + steel + anchors + shutters
+	return column_kits + barricade_kits
 
 func _physics_process(delta: float) -> void:
 	advance(delta)
@@ -121,23 +119,17 @@ func clear_drops() -> void:
 	_glow.queue_redraw()
 
 func count_kind(kind: int) -> int:
-	match kind:
-		Kind.CEMENT_MORTAR: return cement
-		Kind.STEEL_CROSSBRACE: return steel
-		Kind.L_ANCHOR_BOLT: return anchors
-		Kind.STORM_SHUTTER: return shutters
+	if kind == Kind.COLUMN_KIT: return column_kits
+	if kind == Kind.BARRICADE_KIT: return barricade_kits
 	return 0
 
 func grant(kind: int, amount: int = 1) -> void:
-	match kind:
-		Kind.CEMENT_MORTAR: cement += amount
-		Kind.STEEL_CROSSBRACE: steel += amount
-		Kind.L_ANCHOR_BOLT: anchors += amount
-		Kind.STORM_SHUTTER: shutters += amount
+	if kind == Kind.COLUMN_KIT: column_kits = maxi(0,column_kits+amount)
+	if kind == Kind.BARRICADE_KIT: barricade_kits = maxi(0,barricade_kits+amount)
 
 ## Drops one item; kind/room may be forced (tests, scripted drops). Returns false when full.
 func spawn(kind: int = -1, room_index: int = -1) -> bool:
-	if items.size() >= max_active:
+	if items.size() >= max_active or kind >= Kind.size():
 		return false
 	if room_index < 0:
 		room_index = _pick_room()
@@ -176,11 +168,11 @@ func _pick_room() -> int:
 
 func _pick_kind() -> int:
 	# A long run cannot depend on an unlucky string of non-repair kits.
-	if cement == 0 and building.repair_count() > 0 and spawn_count % 2 == 0:
-		return Kind.CEMENT_MORTAR
+	if column_kits == 0 and building.repair_count() > 0 and spawn_count % 2 == 0:
+		return Kind.COLUMN_KIT
 	var weights: Array[float] = kind_weights.duplicate()
 	if player != null and player.health < player.max_health * 0.5:
-		weights[Kind.EMERGENCY_MEDKIT] *= 2.0
+		weights[Kind.EMERGENCY_BAG] *= 2.0
 	var total: float = 0.0
 	for weight: float in weights:
 		total += weight
@@ -189,7 +181,7 @@ func _pick_kind() -> int:
 		roll -= weights[kind]
 		if roll <= 0.0:
 			return kind
-	return Kind.CEMENT_MORTAR
+	return Kind.COLUMN_KIT
 
 func player_room_index() -> int:
 	if player == null or building == null:
@@ -205,35 +197,36 @@ func repair_alert(room: RoomDiorama) -> bool:
 	return room != null and room.needs_repair() and waves != null and waves.state == DisasterWaveManager.State.SIEGE_PHASE and not waves.failed and not waves.victory and not waves.upgrade_pending
 
 func can_offer_repair() -> bool:
-	return repair_alert(current_room()) and cement > 0
+	return repair_alert(current_room()) and column_kits > 0
 
 func can_build() -> bool:
 	return waves != null and waves.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE and not waves.upgrade_pending and not waves.failed and not waves.victory
 
-## Each distinct kit adds one tier. Cement remains a repair resource, never a free armor kit.
+## One column kit installs steel/FRP; one barricade kit installs shutter + anchors.
 func next_component(room: RoomDiorama) -> int:
-	for pair: Array in [[Kind.STEEL_CROSSBRACE, RoomDiorama.Reinforcement.STEEL], [Kind.STORM_SHUTTER, RoomDiorama.Reinforcement.SHUTTER], [Kind.L_ANCHOR_BOLT, RoomDiorama.Reinforcement.ANCHOR]]:
-		if count_kind(pair[0]) > 0 and not room.has_reinforcement(pair[1]):
-			return pair[0]
+	if column_kits > 0 and not room.has_reinforcement(RoomDiorama.Reinforcement.STEEL): return Kind.COLUMN_KIT
+	if barricade_kits > 0 and (not room.has_reinforcement(RoomDiorama.Reinforcement.ANCHOR) or not room.has_reinforcement(RoomDiorama.Reinforcement.SHUTTER)): return Kind.BARRICADE_KIT
 	return -1
 
 func interaction_hint() -> String:
 	var room: RoomDiorama = current_room()
-	if room == null or room.is_collapsed():
-		return ""
+	if room == null or room.is_collapsed(): return ""
 	if repair_alert(room):
-		return "[E] ONAR · +%d HP · 1 ÇİMENTO" % int(repair_amount) if cement > 0 else "ONARIM İÇİN ÇİMENTO TOPLA"
+		if column_kits > 0: return "[E] ONAR +%d HP / KOLON DESTEĞİ · 1 ONARIM KİTİ" % int(repair_amount)
+		if barricade_kits > 0 and next_component(room) == Kind.BARRICADE_KIT: return "[E] SABİTLE / BARİKAT KUR · ONARIM İÇİN KOLON KİTİ BUL"
+		return "ONARIM KİTİ BUL · KOLON / ODA HP"
 	if can_build():
-		if room.hp < room.max_hp and cement > 0:
-			return "[E] ONAR · +%d HP · 1 ÇİMENTO" % int(repair_amount)
+		if room.hp < room.max_hp and column_kits > 0: return "[E] ONAR +%d HP / KOLON DESTEĞİ" % int(repair_amount)
 		var kind: int = next_component(room)
-		if kind >= 0:
-			return "[E] %s · KADEME %d → %d" % [short_name(kind), room.reinforcement_level, room.reinforcement_level + 1]
-		return "KADEME %d/3 · %s" % [room.reinforcement_level, "TAM ZIRHLI SIĞINAK" if room.reinforcement_level == 3 else "ÇELİK / KEPENK / SABİTLEME KİTİ GEREK"]
+		if kind >= 0: return "[E] " + short_name(kind) + " KUR · " + purpose(kind)
+		return "ODA DESTEĞİ %d/3 · ONARIM / SABİTLEME KİTİ TOPLA" % room.reinforcement_level
 	return ""
 
 static func short_name(kind: int) -> String:
-	return ["ÇİMENTO", "X-KİRİŞ", "SABİTLEME", "KEPENK", "İLK YARDIM"][kind]
+	return ["ONARIM KİTİ", "SABİTLEME KİTİ", "AFET ÇANTASI", "GÜVENLİK KİTİ"][kind]
+
+static func purpose(kind: int) -> String:
+	return ["KOLON + ODA HP", "EŞYA + CAM / SU", "+25 CAN + ENERJİ", "ALEV / SU TEMİZLE"][kind]
 
 func _check_pickups() -> void:
 	if player == null or player.health <= 0.0 or player.is_shifting:
@@ -250,49 +243,68 @@ func collect(index: int) -> void:
 	var item: Dictionary = items[index]
 	items.remove_at(index)
 	var kind: int = item["kind"]
-	var text: String = ""
-	if kind == Kind.EMERGENCY_MEDKIT:
-		player.health = minf(player.max_health, player.health + medkit_heal)
-		player.stamina = 100.0
-		text = "İLK YARDIM · +25 CAN · ENERJİ DOLU"
-	else:
-		grant(kind)
-		text = "+1 " + short_name(kind)
-	_message(Vector2(item["position"]) + Vector2(-80, -50), text, AURA[kind])
+	var text: String
+	match kind:
+		Kind.COLUMN_KIT:
+			grant(kind)
+			text = "+1 KOLON KİTİ (Bina Onarımı & Deprem Direnci)"
+		Kind.BARRICADE_KIT:
+			grant(kind)
+			text = "+1 SABİTLEME KİTİ (Eşya Sabitler & Cam/Su Koruması)"
+		Kind.EMERGENCY_BAG:
+			player.health = minf(player.max_health,player.health+medkit_heal)
+			player.stamina = 100.0
+			text = "+25 CAN (Su • Kuru Gıda • Sargı Bezi • Düdük)"
+		_:
+			# Deploy where this kit was picked up, even if drone/magnet collected remotely.
+			activate_safety(building.rooms[int(item["room"])])
+			text = "+1 GÜVENLİK KİTİ (Gaz Keser & Alev Söndürür)"
+	_message(Vector2(item["position"])+Vector2(-80,-50),text,AURA[kind])
 	collected.emit(kind)
 
-## Combat only patches a visibly damaged room. Safe construction consumes a distinct kit.
+func activate_safety(room: RoomDiorama) -> void:
+	if room == null or room.is_collapsed(): return
+	if not room.auto_protection: safety_installs += 1
+	room.utilities_isolated = true
+	room.auto_protection = true
+	room.heat = 0.0
+	room._refresh_state(true)
+	if waves != null:
+		waves.protect_room(room)
+	_message(room.global_position+Vector2(30,95),"OTOMATİK KORUMA · GAZ / ALEV / SU",AURA[Kind.SAFETY_KIT])
+
+func _install(room: RoomDiorama, kind: int) -> void:
+	if kind == Kind.COLUMN_KIT:
+		room.reinforce(RoomDiorama.Reinforcement.STEEL)
+	else:
+		room.reinforce(RoomDiorama.Reinforcement.ANCHOR)
+		room.reinforce(RoomDiorama.Reinforcement.SHUTTER)
+
+## Siege E still requires a visible repair alert. Safety deploys on collection.
 func repair_current_room() -> RepairResult:
 	var room: RoomDiorama = current_room()
-	if room == null or waves == null or waves.failed or waves.victory or waves.upgrade_pending:
-		return RepairResult.NOT_NEEDED
-	if not can_build() and not repair_alert(room):
-		# In particular: intact siege rooms are completely silent and consume nothing.
-		return RepairResult.NOT_NEEDED
-	var anchor: Vector2 = player.global_position + Vector2(-120, -130)
-	if room.is_collapsed():
-		return RepairResult.COLLAPSED
-	if room.hp < room.max_hp and cement > 0:
-		cement -= 1
+	if room == null or waves == null or waves.failed or waves.victory or waves.upgrade_pending: return RepairResult.NOT_NEEDED
+	if not can_build() and not repair_alert(room): return RepairResult.NOT_NEEDED
+	if room.is_collapsed(): return RepairResult.COLLAPSED
+	var anchor: Vector2 = player.global_position+Vector2(-120,-130)
+	if room.hp < room.max_hp and column_kits > 0:
+		column_kits -= 1
 		room.repair(repair_amount)
-		player.repair_shield = maxf(player.repair_shield, repair_shield_duration)
-		_message(anchor, "ODA ONARILDI · +%d HP" % int(repair_amount), AURA[0])
+		_install(room,Kind.COLUMN_KIT)
+		player.repair_shield = maxf(player.repair_shield,repair_shield_duration)
+		_message(anchor,"ONARIM +%d HP · KOLON / FRP AKTİF" % int(repair_amount),AURA[0])
 		manual_action.emit(room)
 		repaired.emit(room)
 		return RepairResult.REPAIRED
-	if can_build():
-		var kind: int = next_component(room)
-		if kind >= 0:
-			var component: int = RoomDiorama.Reinforcement.STEEL
-			if kind == Kind.STORM_SHUTTER: component = RoomDiorama.Reinforcement.SHUTTER
-			elif kind == Kind.L_ANCHOR_BOLT: component = RoomDiorama.Reinforcement.ANCHOR
-			if room.reinforce(component):
-				grant(kind, -1)
-				_message(anchor, "KADEME %d/3 · %s KURULDU" % [room.reinforcement_level, short_name(kind)], AURA[kind])
-				manual_action.emit(room)
-				repaired.emit(room)
-				return RepairResult.REINFORCED
-	_message(anchor, "ÇİMENTO YOK · MALZEME TOPLA" if not can_build() else "UYGUN KİT YOK · BAŞKA ODAYI DENE", Color("ffb52e"))
+	var kind: int = next_component(room)
+	if kind >= 0 and (can_build() or kind == Kind.BARRICADE_KIT):
+		_install(room,kind)
+		grant(kind,-1)
+		_message(anchor,short_name(kind)+" KURULDU · "+purpose(kind),AURA[kind])
+		manual_action.emit(room)
+		repaired.emit(room)
+		return RepairResult.REINFORCED
+	_message(anchor,"ONARIM KİTİ YOK · KOLON KİTİ TOPLA",AURA[0])
 	return RepairResult.NO_MATERIAL
 
 func _message(world: Vector2, text: String, color: Color) -> void:
@@ -319,35 +331,8 @@ func _draw() -> void:
 		var remaining: float = clampf(1.0 - float(item["ground_age"]) / loot_lifetime, 0.0, 1.0)
 		draw_arc(p, 25.0, -PI / 2, -PI / 2 + TAU * remaining, 32, Color(aura, 0.9 * pulse), 4.0)
 		draw_arc(p, 25.0, 0, TAU, 20, CelArt.INK, 1.5)
-		match kind:
-			Kind.CEMENT_MORTAR:
-				CelArt.poly(self, PackedVector2Array([p + Vector2(-15, -12), p + Vector2(12, -14), p + Vector2(16, 12), p + Vector2(-16, 13)]), Color("b8a786"))
-				draw_line(p + Vector2(-12, -4), p + Vector2(12, -6), Color("8f8264"), 2.0)
-				CelArt.poly(self, PackedVector2Array([p + Vector2(4, 2), p + Vector2(22, -6), p + Vector2(20, 4)]), Color("aeb8bd"), 1.6)
-				CelArt.line(self, p + Vector2(4, 2), p + Vector2(-2, 10), Color("8a5a36"), 3.5)
-			Kind.STEEL_CROSSBRACE:
-				for pair: Array in [[Vector2(-14,-14), Vector2(14,14)], [Vector2(14,-14), Vector2(-14,14)]]:
-					CelArt.line(self, pair[0], pair[1], aura, 7.0)
-				for corner: Vector2 in [Vector2(-14,-14),Vector2(14,-14),Vector2(-14,14),Vector2(14,14)]:
-					CelArt.bolt(self, corner, Color("d7e1e7"))
-			Kind.L_ANCHOR_BOLT:
-				var bracket: PackedVector2Array = PackedVector2Array([Vector2(-12,-14),Vector2(-12,12),Vector2(15,12)])
-				draw_polyline(bracket, CelArt.INK, 12.0)
-				draw_polyline(bracket, aura, 7.0)
-				CelArt.bolt(self, Vector2(-12,-8), Color.WHITE)
-				CelArt.bolt(self, Vector2(9,12), Color.WHITE)
-			Kind.STORM_SHUTTER:
-				CelArt.rect(self, Rect2(p + Vector2(-15, -15), Vector2(26, 26)), Color("6f7c84"), 2.0)
-				for i: int in range(4):
-					draw_line(p + Vector2(-13, -10 + i * 6), p + Vector2(9, -10 + i * 6), Color("3b454b"), 2.0)
-				var bracket: PackedVector2Array = PackedVector2Array([p + Vector2(6, -2), p + Vector2(6, 14), p + Vector2(20, 14)])
-				draw_polyline(bracket, CelArt.INK, 7.0)
-				draw_polyline(bracket, aura, 3.5)
-			Kind.EMERGENCY_MEDKIT:
-				CelArt.rect(self, Rect2(p + Vector2(-16, -11), Vector2(32, 24)), Color("e8ece6"), 2.0)
-				draw_rect(Rect2(p + Vector2(-8, -16), Vector2(16, 6)), CelArt.INK, false, 2.5)
-				draw_rect(Rect2(p + Vector2(-3, -8), Vector2(6, 18)), Color("23b866"))
-				draw_rect(Rect2(p + Vector2(-9, -2), Vector2(18, 6)), Color("23b866"))
+		EquipmentArt.draw_kit(self,kind,_clock)
+
 	draw_set_transform(Vector2.ZERO)
 
 ## Additive light beam, floor ring and halo behind each drop.
@@ -376,9 +361,9 @@ func item_visible(item: Dictionary) -> bool:
 	return remaining > 1.5 or int(float(item["ground_age"]) * 12.0) % 2 == 0
 
 func consume_construction() -> bool:
-	for kind: int in [Kind.CEMENT_MORTAR, Kind.STEEL_CROSSBRACE, Kind.L_ANCHOR_BOLT, Kind.STORM_SHUTTER]:
+	for kind: int in [Kind.COLUMN_KIT,Kind.BARRICADE_KIT]:
 		if count_kind(kind) > 0:
-			grant(kind, -1)
+			grant(kind,-1)
 			return true
 	return false
 
@@ -389,5 +374,5 @@ func reflex_drop() -> void:
 		for i: int in range(1, items.size()):
 			if float(items[i]["age"]) > float(items[oldest]["age"]): oldest = i
 		items.remove_at(oldest)
-	if spawn(Kind.CEMENT_MORTAR, player_room_index()):
+	if spawn(Kind.COLUMN_KIT, player_room_index()):
 		items[-1]["position"] = Vector2(clampf(player.global_position.x + 65.0, building.interior_left(), building.interior_right()), building.floor_y(player.current_floor) - 26)

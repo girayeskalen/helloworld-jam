@@ -1,6 +1,8 @@
 class_name ProjectilePool
 extends Node2D
 
+signal zone_tick(attack: HazardAttack, delta: float)
+
 signal dodged(world_position: Vector2)
 signal structure_hit(amount: float, world_position: Vector2)
 signal projectile_impacted(attack: HazardAttack, world_position: Vector2)
@@ -46,24 +48,41 @@ func active_count() -> int:
 	return count
 
 func clear() -> void:
+	if player != null:
+		player.hazard_drag = 0.0
+		player.hazard_pull = 0.0
 	for projectile: HazardProjectile in entries:
 		projectile.deactivate()
 
 func _physics_process(delta: float) -> void:
 	if player == null:
 		return
+	player.hazard_drag = 0.0
+	player.hazard_pull = 0.0
 	for projectile: HazardProjectile in entries:
 		if not projectile.active:
 			continue
 		var previous: Vector2 = projectile.global_position
 		projectile.advance(delta * (mechanics.projectile_speed(projectile) if mechanics != null else 1.0))
-		if mechanics != null and mechanics.intercept(projectile, previous): continue
+		if projectile.attack.is_area():
+			zone_tick.emit(projectile.attack, delta)
+			if not projectile.active: continue
+			if projectile.attack.contains_area_point(player.global_position + Vector2(0,-12)):
+				if projectile.attack.kind == HazardAttack.Kind.FLOOD_ZONE: player.hazard_drag = maxf(player.hazard_drag, projectile.attack.effect_strength)
+				if projectile.attack.kind == HazardAttack.Kind.WHIRLPOOL:
+					player.hazard_pull += signf(projectile.attack.area.get_center().x - player.global_position.x) * projectile.attack.effect_strength
+		elif mechanics != null and mechanics.intercept(projectile, previous): continue
 		if projectile.crosses_player(player, previous):
 			projectile.contacted_player = true
 			if player.is_dashing or player.dashing_this_tick:
-				dodged.emit(player.global_position)
+				if not projectile.dodge_reported: dodged.emit(player.global_position)
+				projectile.dodge_reported = true
 			else:
-				player.take_damage(projectile.attack.damage)
+				var factor: float = 1.0
+				if mechanics != null:
+					var room: RoomDiorama = mechanics.game.building.room_at_point(player.current_floor,player.global_position.x)
+					if projectile.attack.source in [0,2,3] and room.has_reinforcement(RoomDiorama.Reinforcement.SHUTTER): factor = room.damage_factor(projectile.attack.source)
+				player.take_damage(projectile.attack.damage*factor)
 			# A death callback may have cleared the complete pool synchronously.
 			if not projectile.active:
 				continue

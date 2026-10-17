@@ -3,10 +3,13 @@ extends RefCounted
 ## One frozen trajectory shared by its warning and its pooled projectile.
 
 enum Kind { GLASS, POT, CHAIR, WIND_BLADE, BRICK, CONCRETE, CHANDELIER, SHOCKWAVE, BOOK,
-	WIND_ORB, SHARD, ROW_SWEEP, WARDROBE, KNIFE, PLATE, SAW, TOOL, TOY, DEBRIS }
-enum Motion { LINEAR, ARC, WAVE, BOUNCE, SPIRAL }
+	WIND_ORB, SHARD, ROW_SWEEP, WARDROBE, KNIFE, PLATE, SAW, TOOL, TOY, DEBRIS,
+	FLOOD_ZONE, TIDAL_WALL, WATER_BLADE, HYDRO_ORB, WATER_SHARD, HARPOON,
+	FLOATING_DEBRIS, WHIRLPOOL, METEOR, FIRE_ZONE, FIREBALL, FIRE_DART, FIRE_BEAM, LOW_FLAME }
+enum Motion { LINEAR, ARC, WAVE, BOUNCE, SPIRAL, REFLECT, HELIX }
 enum Pattern { FAN, FURNITURE, GROUND_WAVE, CLUSTER, FULL_ROW, ROOM_OBJECT, SPLINTER,
-	VORTEX, CROSSFIRE, CORRIDOR_WAVE }
+	VORTEX, CROSSFIRE, CORRIDOR_WAVE, RISING_FLOOD, BILATERAL_TIDE, HYDRO_BOUNCE,
+	WHIRLPOOL_PULL, DEBRIS_CROSS, METEOR_SHOWER, NAPALM, DOUBLE_HELIX, EMBER_DETONATION, BACKDRAFT }
 
 var kind: Kind = Kind.GLASS
 var motion: Motion = Motion.LINEAR
@@ -39,17 +42,74 @@ var warning_id: int = 0
 var warning_duration: float = 0.65
 var warning_elapsed: float = 0.0
 var warning_confirmed: bool = false
+## Area/path data is frozen with the trajectory; effects never retarget after warning.
+var area: Rect2 = Rect2()
+var safe_areas: Array[Rect2] = []
+var warning_delay: float = 0.0
+var path_times: PackedFloat32Array = PackedFloat32Array()
+var path_points: PackedVector2Array = PackedVector2Array()
+var cross_floor: bool = false
+var leaves_fire: bool = false
+var effect_strength: float = 0.0
+
+func is_area() -> bool:
+	return kind in [Kind.FLOOD_ZONE, Kind.FIRE_ZONE, Kind.WHIRLPOOL]
+
+func is_wall() -> bool:
+	return kind in [Kind.ROW_SWEEP, Kind.TIDAL_WALL, Kind.FIRE_BEAM]
+
+func minimum_warning() -> float:
+	return 1.0 if pattern in [Pattern.FULL_ROW, Pattern.EMBER_DETONATION] or is_wall() or kind == Kind.FLOOD_ZONE else 0.55
+
+## Three real boundary reflections, followed by a short readable final travel.
+## Storing the piecewise path makes warning, collision and split point identical.
+func reflect_in(bounds: Rect2, bounces: int = 3) -> void:
+	motion = Motion.REFLECT
+	path_times = PackedFloat32Array([0.0])
+	path_points = PackedVector2Array([origin])
+	var p: Vector2 = origin
+	var v: Vector2 = velocity
+	var elapsed: float = 0.0
+	for i: int in range(bounces):
+		var tx: float = ((bounds.end.x if v.x > 0 else bounds.position.x) - p.x) / v.x if absf(v.x) > 0.001 else INF
+		var ty: float = ((bounds.end.y if v.y > 0 else bounds.position.y) - p.y) / v.y if absf(v.y) > 0.001 else INF
+		var step: float = maxf(0.001, minf(tx, ty))
+		p += v * step
+		elapsed += step
+		path_times.append(elapsed)
+		path_points.append(p)
+		if tx <= ty + 0.00001: v.x = -v.x
+		if ty <= tx + 0.00001: v.y = -v.y
+	# Split before a possible fourth collision.
+	var tx: float = ((bounds.end.x if v.x > 0 else bounds.position.x) - p.x) / v.x if absf(v.x) > 0.001 else INF
+	var ty: float = ((bounds.end.y if v.y > 0 else bounds.position.y) - p.y) / v.y if absf(v.y) > 0.001 else INF
+	var tail: float = minf(0.12, minf(tx, ty) * 0.5)
+	lifetime = elapsed + maxf(0.001, tail)
+	path_times.append(lifetime)
+	path_points.append(p + v * maxf(0.001, tail))
 
 func frozen_copy() -> HazardAttack:
 	var copy: HazardAttack = HazardAttack.new()
 	for field: String in ["kind", "motion", "origin", "velocity", "gravity", "amplitude", "frequency", "lifetime", "radius", "damage", "structure_damage", "floor_index", "floor_y", "source", "starts_slam", "pattern", "splits", "row_height", "room_source", "spiral_angle", "spiral_spin", "spiral_speed", "spiral_start", "lead"]:
 		copy.set(field, get(field))
+	copy.safe_areas.assign(safe_areas)
 	copy.bounce_decay = bounce_decay
+	for field: String in ["area", "warning_delay", "leaves_fire", "effect_strength", "cross_floor"]:
+		copy.set(field, get(field))
+	copy.path_times = path_times.duplicate()
+	copy.path_points = path_points.duplicate()
 	return copy
 
 func point_at(seconds: float) -> Vector2:
 	var point: Vector2 = origin + velocity * seconds
-	if motion == Motion.ARC:
+	if motion == Motion.REFLECT and path_times.size() > 1:
+		for i: int in range(1, path_times.size()):
+			if seconds <= path_times[i]:
+				return path_points[i - 1].lerp(path_points[i], clampf((seconds - path_times[i - 1]) / (path_times[i] - path_times[i - 1]), 0.0, 1.0))
+		return path_points[-1]
+	elif motion == Motion.HELIX:
+		point.y += (sin(seconds * frequency + spiral_angle) - sin(spiral_angle)) * amplitude
+	elif motion == Motion.ARC:
 		point.y += 0.5 * gravity * seconds * seconds
 	elif motion == Motion.WAVE:
 		point.y += sin(seconds * frequency) * amplitude
@@ -69,5 +129,26 @@ func is_vertical_warning() -> bool:
 	return kind in [Kind.BRICK, Kind.CONCRETE, Kind.CHANDELIER, Kind.WARDROBE]
 
 func is_armed() -> bool:
-	var required: float = 1.0 if pattern == Pattern.FULL_ROW else 0.55
+	var required: float = minimum_warning()
 	return warning_confirmed and warning_id > 0 and warning_duration >= required and warning_elapsed + .000001 >= warning_duration
+
+## Equipment cuts holes out of a floor hazard without retargeting its frozen path.
+func area_segments() -> Array[Rect2]:
+	var pieces: Array[Rect2] = [area]
+	for safe: Rect2 in safe_areas:
+		var next: Array[Rect2] = []
+		for piece: Rect2 in pieces:
+			if not piece.intersects(safe):
+				next.append(piece)
+				continue
+			if piece.position.x < safe.position.x:
+				next.append(Rect2(piece.position,Vector2(safe.position.x-piece.position.x,piece.size.y)))
+			if piece.end.x > safe.end.x:
+				next.append(Rect2(Vector2(safe.end.x,piece.position.y),Vector2(piece.end.x-safe.end.x,piece.size.y)))
+		pieces = next
+	return pieces
+
+func contains_area_point(point: Vector2) -> bool:
+	for piece: Rect2 in area_segments():
+		if piece.has_point(point): return true
+	return false

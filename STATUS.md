@@ -1,18 +1,82 @@
 # AFET KUŞATMASI — proje durumu
 
-17 Ekim 2026 · Adım 4.5 / aktif kartlar ve 90/15 sn kampanya · Godot / GDScript
+## Git teslimi ve Claude devri — 17 Ekim 2026
 
-Kullanıcı yeni proje istedi. ARTÇI web kaynakları kaldırıldı; Git geçmişi korundu. İş dalı `feat/disaster-siege-step1`; Adım 4.5 sonu bu dala commit edilip GitHub'a pushlandı (`main` değişmedi).
+Kullanıcı bu sürüm için commit/push ve Claude'a devir istedi. Beş dalgalı maraton ve Adım4.8 aynı teslim commitinde `feat/disaster-siege-step1` dalında yer alır. Devir belgesi [CLAUDE_DEVIR.md](CLAUDE_DEVIR.md); güncel commit `git log -1 --oneline`, uzak eşitliği `git rev-parse HEAD` / `git rev-parse origin/feat/disaster-siege-step1` ile kontrol edilir. Eski `main` çalışma ağacı ve kullanıcı değişiklikleri korunur; main birleştirmesi yapılmaz. Görsel/test kanıtları Git dışında kalır, yeniden üretme komutları devir notundadır.
+
+Bu devirde oyun kodu değişmedi; proje açıklamasındaki kart sayısı19 olarak düzeltildi. Geliştirmede alınan aşağıdaki test sonuçları korundu; devir için belge/bağlantı kontrolleri, `git diff --check` ve Godot4.3 import/parse hatasız geçti. 11 paketin tamamı bu belge görevinde yeniden çalıştırılmadı. Teslim commitinin arşivinden oluşturulan temiz klasörde, önceki `.godot` önbelleği olmadan import ve Step48Smoke **68/68** yeniden geçti. GitHub tarayıcı girişi kullanıcı tarafından tamamlandı; yazma yetkisi doğrulandı ve Git kimliği/credential helper yalnız bu repo için eşlendi.
+
+## Adım 4.8 — karakter, dört boss ve farkındalık/aksiyon revizyonu (17 Ekim 2026)
+
+Bu bölüm güncel uygulamadır; aşağıdaki maraton/4.5/önceki sürüm kayıtları kendi tarihlerindeki davranışı anlatır.
+
+| İş | Sonuç |
+| --- | --- |
+| Kurtarma uzmanı | Üç tonlu lacivert mont, reflektör, gözlüklü baret/fener, ilk yardım işaretli çanta/matara, alet kemeri, eldiven/bot. Sönümlü çanta ve mont etekleri koşu/hava/taklaya bağlı; ayak pivotu ve temel hareket/hitbox korundu. |
+| Dört boss | Bulut katmanı/elektrik gözü/çatallı damar/kiremit; bazaltın üç yüzeyi/fay dalları/rebar/çakıl/çene; lacivert hidra/turkuaz akıntı/beyaz köpük tacı/varil; kömür zırh/magma çekirdeği/alev örtüsü/boynuz/sarmal kor. Golem ara hazırlık dirseği ve sel görsel dayanağı ekran içine alındı; saldırı yolları değişmedi. |
+| Dört ekipman | Kolon: E +45 ve STEEL/FRP, deprem/yapısal oda hasarı yarı. Birleşik sabitleme/barikat: ANCHOR+SHUTTER, fırtına/sel/yangın oyuncu/oda mermi hasarı yarı. Çanta: +25 can/tam enerji. Güvenlik: loot'un ilk odasında anlık, kalıcı yerel zemin alevi/su/ısı/utility koruması; komşuları etkilemez. |
+| Kart dengesi | 19 kart: eski11 korunup drone yenilendi, 5 hazırlık +3 aksiyon eklendi. Solda kesin bir hazırlık, diğer iki yuvada farklı alınmamış aksiyonlar. Her kart etki + kısa kaynaklı not içerir. Normal kampanya4 seçim yapar; 5 hazırlık kartı tükenmez. |
+| Gerçek etkiler | Çanta maxcan+30/tamcan/dalga+15; dört oda anchor/eşya−%40; maxodaHP+30/hasar+35/deprem-yapısal−%35; utility/zemin alevi−%45; su yavaşlatması0/panjur storm-flood50→70; drone7sn/erişim×2,5; bot koşu+%18/cooldown−%30/dash0,35; E85/kalkan2,5; radar uyarı+0,25/mermi saat×0,88/dalga+iki kit. Kaynak korumaları çarpılır, aynı kart tekrarlanmaz, R temizler. |
+| Korunan akış | Beş dalga / 90 sn savaş / dört7sn inşaat /1,2sn giriş/1sn çıkış; ilk hazırlık8sn;16 oda/karanlık atmosfer/2xW fiziği/128 havuz/ortak3 oda hasar sınırı ve10sn onarım payı. Standart loot4sn (drone7; eski mıknatıs8, birlikte8); kuşatmada E hâlâ yalnız görünür hasar uyarısında. |
+| HUD ve notlar | ONARIM/SABİTLEME KİTİ + kısa işlev, anlık çanta ve korunan oda sayısı. Uzun boss başlıkları kenarda tutulur; hızlı toplama/kurulum mesajları ekran metin sınırlarıyla ayrılır. AFAD/USGS ve meslek kuruluşu başvuruları SOURCES'ta; yapı güvenliği garantisi/yaşam üçgeni standardı öğretisi yok. |
+
+### Doğrulama
+
+- **Godot 4.3.stable.official.77dcf97d8 / Linux**, Compatibility/OpenGL, Mesa Intel UHD Graphics (CML GT2). Godot import/parse ve ana sahne çalışma kontrolü; yeni bağımlılık, bitmap, font veya ses eklenmedi.
+- **11 headless paket: 884/884, sıfır hata.** Step1 129; Step2 53; Step25 145; Step3 44; Step27 61; Step3Loot76; Campaign70; Step45 119; Marathon108; Step48 68; Step2Soak11. Regresyon kapsamı silinmedi; değişen dört ekipman davranışına uyarlandı.
+- **Native Step48: 101/101, sıfır hata.** 200 seçim/50 koşuda1+2 kuralı; gerçek hasar yüzdeleri, iframe/onarım/ödül,4/7sn sınırı, mevcut8sn mıknatıs uyumu, tek odalık alan kesimi/derin kopya, bütün modifier reseti ve sürekli hazırlık pozunda boss çerçevesi. 19 kartın bütün metinleri yedi ekran düzeninde sığıyor; hızlı kurulum mesajları çakışmıyor. Klavye ve gerçek pencere ölçek dönüşümünden geçen sentetik mouse hit-testing geçti.
+- **22 PNG'nin tamamı 1920×1080:** dört boss×bekleme/hazırlık=8, dört karakter pozu=4, loot/HUD=2, yedi kart grubu=7, ölçekli pencere düzeni=1. Native render viewport'u1920×1080 sabittir; pencere yöneticisinin950×1033 yaptığı küçük pencerede de mouse dönüşümü doğrulandı (tasarım görüntüsü1920×1080). Karakter yakın planlarında yalnız test kamerası büyütülür. Kareler görsel olarak incelendi.
+- Tam kampanya **29.821 adım**: **27.000 savaş adımı=450sn**, dört inşaat toplam**1.680 adım=28sn**. **3.552 uyarılı mermi,33/33 tür,tepe71/128,0 taşma**. Kazanılan loot ile50 onarım/55 toplama; en fazla3 onarım uyarısı; final bina**%75,8,0 yıkık oda**. Test karakterinin canı yükseltilmiştir; insan başarı oranı değildir.
+- Kanıtlar: [captures/step48](captures/step48/README.md) (Git dışında), test logları aynı dizinin `logs/` altı ve `/tmp/siege48-final-*.log`; özgün görüntüler `/tmp/siege48-captures/`, native log `/tmp/siege48-native.log`. `git diff --check` ve değişen belgelerin yerel bağlantı kontrolleri geçti.
+- Çalışma yolu `/home/asd/Desktop/helloworld/helloworld-jam-godot`, dal `feat/disaster-siege-step1`. Önceki yerel maraton değişiklikleri korundu; asıl `helloworld-jam/main` çalışma ağacına dokunulmadı. Geliştirme sırasında commit/push yapılmamıştı; sonraki kullanıcı isteğiyle Git teslimi ve Claude devri yukarıda kaydedildi.
+
+### Kalan sınırlar
+
+- İnsanla oynayarak zorluk/eğlence ve kart/loot dengesi ölçülmedi. Otomatik sürücü envanter toplar/onarır; insan refleksini temsil etmez.
+- Yeni ses, bağımsız export/dağıtım ve farklı donanım/4.7.2 doğrulaması bu adımda yapılmadı. Tam belge erişimi kısıtlı kaynakların kontrol kapsamı SOURCES'ta açıklandı.
+
+
+17 Ekim 2026 · Beş dalgalı boss maratonu / 90–7 sn · Godot / GDScript
+
+Aktif oyun Godot AFET KUŞATMASI'dır. İş dalı `feat/disaster-siege-step1`; temel sürüm `3c6ae04`. Bu paragraf maraton geliştirmesinin commit öncesi kaydıdır; güncel Git teslimi ve Adım4.8 kaydı yukarıdadır. Eski web sürümünün `main` çalışma ağacı ve yerel değişiklikleri korundu.
+
+## Güncel sürüm — Beş dalgalı boss maratonu / 17 Ekim 2026
+
+| İş | Durum / sonuç |
+| --- | --- |
+| Kampanya | Tamamlandı. Fırtına → Deprem → Çifte Felaket → Abisal Taşkın Hidrası → Piroklastik Kor Titanı. Her savaş 90 sn; 1,2 sn giriş / 1,0 sn çıkış savaş süresinden ayrıdır. İlk dört dalgadan sonra kart ve tam 7 sn hazırlık; F erken bitirir. Beşinci dalga sonunda yeni zafer ekranı, altıncı dalga yok. |
+| Boss hareketi / sunumu | Tamamlandı. Eski çok parçalı rigler korunarak kat hedefi, hamle ve geri çekilme eklendi. Hidra iki cephede kabarır; titan iki cephe ve çatı arkasında yer değiştirir. Çatı pozunda tam boy modelin alt kısmını bina örter. Su/köpük, toz, kor, alev sütunu ve parçalanan çıkışlar prosedüreldir. |
+| Sel | Tamamlandı. Beş saldırı döngüsü: 3,5 sn taşkın, çift cephe gelgit/bıçak, üç sınır sekmesi + altı ayrı uyarılı parça, gerçek yatay çekim + zıpkın, sinüs yolunda varil/kütük/kablo. Aralık 1,8 sn; oyun içi zemin yavaşlatması %35. |
+| Yangın | Tamamlandı. Altı saldırı: katları kesen çatı/çapraz meteor ve kıvılcım, 3 sn kalıcı napalm, çift sarmal, beş adet 8 yönlü kor çekirdeği (tam 1 sn halka), çekimden sonra kat alev duvarı + alçak dalgalar, çift cephe ateş hücumu. Oda ısısı/HP hasarı gerçek modele bağlı. Aralık 1,6 sn; son 10 sn %25 hız artışı (1,28 sn), kızıl duman ve beyaz/kırmızı kor. |
+| Kartlar / girişler | Tamamlandı. Dokuz aktif kart korunup sprinkler ve drenaj eklendi (11 kart). Hasarı %40 azaltırlar; sprinkler alev süresini 3 → 1,8 sn, drenaj yavaşlatmayı %35 → %21 yapar. F9 açıkken 1–5 boss; U kart, F başlat, R temiz sıfırlama. Modalda 1/2/3 yalnız kart seçer. |
+| Korunan kurallar | 16 odalı gece/pixel-art, 2x W fizik yayı, 4 sn standart loot, yalnız ONAR uyarılı odada E, ortak üç hasarlı oda sınırı ve 10 sn onarım payı korundu. Yeni alanlar/ikincil saldırılar uyarıdan geçer; 128 mermilik havuz büyümez. |
+| Belgeler | README, AGENTS ve BEYAN güncellendi. Yeni görsel/ses/font/eklenti/oyun motoru bağımlılığı yok; yeni ses eklenmedi. |
+
+### Bu oturumun doğrulaması
+
+- Motor **Godot 4.3.stable.official.77dcf97d8 / Linux**, Compatibility/OpenGL, **Mesa Intel UHD Graphics (CML GT2)**. Resmî motor test için `/tmp/siege-tools/` içine indirildi. Bu bilgisayarda 4.7.2 doğrulaması yapılmadı; aşağıdaki tarihli eski 4.7.2 kayıtları önceki bilgisayarın sonuçlarıdır.
+- Headless paketler: Step1 **129**, Step2 **53**, Step25 **145**, Step3 **44**, Step27 **61**, Step3Loot **75**, Campaign **64**, Step45 **119**, Marathon **108**. Step2Soak **11**. Toplam **809/809 kontrol, sıfır hata**; on paketin tamamı geçti.
+- Native `MarathonSmoke`: **149/149 kontrol, sıfır hata**. 38 adet **1920×1080** ve bir ölçeklenmiş pencere karesi kaydedilip incelendi; kartların klavye/fare seçimi, metin yerleşimi, tüm boss giriş/çıkışları, yeni paternlerin uyarı/aktif halleri, cinnet ve zafer.
+- Tam kampanya: **29.821 fizik adımı**, **27.000 savaş adımı = 450 sn**, **1.680 inşaat adımı = 28 sn**, 360 giriş / 300 çıkış adımı. **3.565 uyarılı mermi, 33/33 tür, tepe 71/128 aktif, 0 taşma**; en fazla 3 onarım uyarısı. Sadece gerçek düşen malzemelerle 44 manuel onarım / 52 toplama; final bina **%73,7**, **0 yıkık oda**. Kartlar ve hasar dalgalar arasında sıfırlanmadı. Test oyuncusunun canı yükseltilmiştir.
+- Son Godot import/parse ve ana sahnenin otomatik hazırlık/giriş/ilk savaş başlangıcı (900 adım) hatasız; `git diff --check` ve değişen belgelerin yerel bağlantıları geçti.
+- Yeni sınır testleri: derin kopyalanmış sekme köşeleri; üç sürekli yansıma / altı parça; 3,5 sn taşkın, zıplayarak zemin alanından kurtulma ve tekrar isabet bağışıklığı; girdap çekimi; napalm odasında gerçek ısı/hasar; iki kartın oyuncu/oda ve süre/yavaşlatma etkileri; beş kor çekirdeğinin 0,999/1,000 sn sınırı ve 40 gerçek mermi; 1,9 sn termal çekim/alev sırası; çatı meteorlarının dört katı kesmesi; dört bossun Y hareketi, iki cephe/çatı konumu; son 10 sn cinnet ve terminal zafer temizliği.
+- Görseller `/tmp/siege-marathon-captures/`, test logları `/tmp/siege-final-*.log`, native log `/tmp/siege-native-marathon.log`. Bunlar yerel doğrulama kanıtı; repo asseti değildir. İlk pencere kaydı masaüstü döşeme yöneticisinin boyutlandırması nedeniyle hedef boyutta değildi; 1920×1080 kayıtlar exclusive fullscreen ile yeniden alındı. Ölçekli gerçek pencere bu masaüstünde **950×534** oldu ve fareyle kart seçimi çalıştı.
+- Çalışma klasörü `/home/asd/Desktop/helloworld/helloworld-jam-godot`; `project.godot` buradan açılır. Asıl `/home/asd/Desktop/helloworld/helloworld-jam` klasöründe `main` ve kullanıcının görev dışı yerel değişiklikleri duruyor. Commit/push/main birleştirmesi yapılmadı.
+
+### Kalan işler / sınırlar
+
+- İnsanla oynanış, özellikle iki son bossun algılanan zorluğu ve 4 sn loot rotası için playtest gerekli. Otomasyonun yüksek canlı karakteri malzeme toplar/onarım yapar; insan kazanma oranı veya adillik kanıtı değildir.
+- Ses, bağımsız export/teslim paketi ve farklı donanım performans ölçümü bu görevde eklenmedi/yapılmadı. Kaynak proje çalıştırması ve oyun testleri export doğrulaması değildir.
 
 ## Devralma notu (ikinci bilgisayar / ikinci Codex hesabı)
 
 1. `git fetch origin` → `git switch feat/disaster-siege-step1` (ilk sefer: `git switch -c feat/disaster-siege-step1 --track origin/feat/disaster-siege-step1`).
 2. Godot **4.3 veya üstü** (standart, .NET değil) ile `project.godot` dosyasını aç; ilk açılışta içe aktarma birkaç saniye sürer. `.godot/` önbelleği repoda yoktur, her bilgisayar kendi üretir.
 3. Yeni işe başlamadan **AGENTS.md**, bu dosya ve README'yi okut; Codex'e "AGENTS.md kurallarına uy" de.
-4. Değişiklikten sonra README'deki test komutlarını çalıştır (9 paket). Farklı Godot sürümüne geçildiyse önce `--headless --path . --editor --quit`.
+4. Değişiklikten sonra README'deki test komutlarını çalıştır (11 paket). Farklı Godot sürümüne geçildiyse önce `--headless --path . --editor --quit`.
 5. Aynı anda iki bilgisayarda aynı dosyayı düzenlemeyin; bitince commit edip aynı dala pushlayın, diğer taraf `git pull` yapsın. `main`'e birleştirme ayrı ve bilinçli bir adımdır; force push kullanmayın.
 
-## Güncel sürüm — Adım 4.5 / 17 Ekim 2026
+## Önceki sürüm — Adım 4.5 / 17 Ekim 2026
 
 - **Akış:** 8 sn ilk hazırlık; üç kez 1,5 sn giriş → **90 sn savaş** → 2,5 sn çıkış. Boss sırası **Fırtına → Deprem → Çifte Felaket**. İlk iki çıkışın ardından kart seçimi ve **15 sn inşaat**; final çıkışından sonra zafer. Kartlar 0,35 sn fade-in ile açılır. Seçim sırasında süre durur; F hazırlığı erken bitirebilir. Normal 1/2/3 ve U dalgayı tekrar başlatmaz; boss/kart testleri **F9** ile açılır.
 - **Bina:** Tüm saldırı, slam ve aşınma hasarı ortak sınırdan geçer; aynı anda en fazla **3 gerçek hasarlı/kritik oda**. Yeni uyarıya **10 sn ek hasar koruması**; sonra en fazla 1,3 HP/sn hasar bütçesi. Fırtınada pasif aşınma da uyarı üretir. Bina çizimleri hafif salınır, dış cepheden parçalar/toz çıkar ve kılcal çatlaklar birikir; fizik zemini sabittir. Ulaşım hesabı loot oda seçimini süzer; çimento yokken/onarım varken her ikinci düşüş çimento olur.
@@ -225,7 +289,7 @@ Numara kullanıcının etiketidir; içerik Adım 3'teki 4×4 yapının üzerine 
 - Odalar ve mobilyalar dioramadır; sabitlenmemiş eşyalar odaya özgü tehlikeler saçar, oda hasarı görsel durumlar ve eğik eşyalarla gösterilir; rijit cisimli mobilya/kolon fiziği yoktur, yıkık oda yürünebilir kalır.
 - Oyuncu silahı, puanlama ve eğitim kararı döngüsü henüz yok. Oda hasarı dalgalar arasında birikir; yıkık oda R'ye kadar onarılamaz. R ve 1/2/3 test başlangıcı binayı yeniler (R malzemeyi ve loot'u da sıfırlar).
 - 2x W üst kat yayı fiziktir (yalnız üst döşeme istisnası, duvarlar çarpışır); S ile alt kat 0,11 sn'lik kontrollü fazlamadır (X iç duvarlarla sınırlanır). Yükselişte ve S fazında takla başlatılamaz; oyuncu bu sırada hasar alabilir.
-- Loot denge değerleri (3,5–4,0 sn, 5 drop, +45 HP, %45/30/25 tür ağırlığı) otomatik testle seçildi; insanla oynanarak ayarlanmadı.
+- Güncel loot: standart4sn, max3, +45 kolon onarımı; tür ağırlıkları44/27/17/12. Değerler insanla oynanarak ayarlanmadı.
 - Dünya 960×540 çizilip büyütülür. 1920×1080'de pikseller tam 2×2'dir; varsayılan 1280×720 pencerede oran 1,33 olduğundan pikseller eşit boyutta görünmez. Gerekirse `MainGame.pixel_scale = 1` ile tam çözünürlüğe dönülür.
 - Harici görsel, müzik veya font dosyası kullanılmıyor; prosedürel çizim AI yardımıyla yazıldı.
 - F5 çalıştırması bağımsız EXE/web export doğrulaması değildir.

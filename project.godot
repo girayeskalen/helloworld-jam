@@ -1,33 +1,39 @@
-; AFET KUSATMASI - Godot 4.3+ / GDScript / Compatibility.
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
 config_version=5
 
 [application]
+
 config/name="AFET KUŞATMASI — Disaster Siege"
+config/description="Beş afet bossu maratonu: Fırtına, Deprem, Çifte Kuşatma, Sel Hidrası ve Kor Titanı. 16 oda, karanlık pixel-art, 90/7 sn kampanya, 19 kart ve aktif onarım."
 run/main_scene="res://scenes/MainGame.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
-config/description="Karanlık afet gecesi: 4x4 = 16 oda, pixel-art render, dinamik lamba/baret ışığı, çok parçalı bosslar, akıcı kat geçişi, oda hasarı/çöküş, loot ve E onarımı — Adım 3-B."
 
 [display]
+
 window/size/viewport_width=1920
 window/size/viewport_height=1080
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
 window/size/min_width=960
 window/size/min_height=540
 
-[rendering]
-renderer/rendering_method="gl_compatibility"
-renderer/rendering_method.mobile="gl_compatibility"
-textures/default_filters/use_nearest_mipmap_filter=false
-textures/canvas_textures/default_texture_filter=0
-environment/defaults/default_clear_color=Color(0.043, 0.055, 0.078, 1)
-
-[physics]
-common/physics_ticks_per_second=60
-
 [layer_names]
+
 2d_physics/layer_1="Building"
 2d_physics/layer_2="Player"
 2d_physics/layer_3="FutureHazards"
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.043, 0.055, 0.078, 1)

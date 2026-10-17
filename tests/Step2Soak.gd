@@ -23,13 +23,13 @@ func _run() -> void:
 	var repairs: int = 0
 	var supplies_collected: int = 0
 	var phase_ticks: Dictionary = {}
-	while not _game.waves.victory and not _game.waves.failed and ticks < 21000:
+	while not _game.waves.victory and not _game.waves.failed and ticks < 32000:
 		var phase: int = _game.waves.state
 		phase_ticks[phase] = int(phase_ticks.get(phase,0)) + 1
 		max_alerts = maxi(max_alerts,_game.building.repair_count())
 		if _game.upgrades.pending:
-			_game.upgrades.offers.assign([SiegeUpgrades.Kind.AUTO_DRONE, SiegeUpgrades.Kind.ROOF_TURRET, SiegeUpgrades.Kind.CHAIN_REPAIR])
-			_game.upgrades.choose(0 if _game.upgrades.selected.is_empty() else 1)
+			_game.upgrades.offers.assign([_game.waves.completed_waves-1,9,10])
+			_game.upgrades.choose(0)
 		# Integration driver, not a human playability claim: collect actual drops
 		# and walk the repair API using only earned cement. HP enlarged to isolate
 		# scheduling/structure from the separate player collision tests.
@@ -37,7 +37,7 @@ func _run() -> void:
 			if float(_game.loot.items[i]["drop"]) >= 1.0 and float(_game.loot.items[i]["ground_age"]) > 1.0:
 				_game.loot.collect(i)
 				supplies_collected += 1
-		if ticks % 300 == 0 and _game.loot.cement > 0 and phase == DisasterWaveManager.State.SIEGE_PHASE:
+		if ticks % 300 == 0 and _game.loot.column_kits > 0 and phase == DisasterWaveManager.State.SIEGE_PHASE:
 			var target: RoomDiorama = null
 			for room: RoomDiorama in _game.building.rooms:
 				if room.needs_repair() and (target == null or room.hp < target.hp): target = room
@@ -48,11 +48,11 @@ func _run() -> void:
 		await physics_frame
 		ticks += 1
 	_report_rooms("after full campaign")
-	_check(_modes == [0,1,2], "Normal campaign runs exactly storm, quake, double boss; no repeats")
-	_check(_game.waves.completed_waves == 3 and _game.waves.victory and not _game.waves.failed, "All three full 90-second battles complete with earned-resource repairs")
+	_check(_modes == [0,1,2,3,4], "Normal campaign runs exactly storm, quake, double boss, flood, fire; no repeats")
+	_check(_game.waves.completed_waves == 5 and _game.waves.victory and not _game.waves.failed, "All five full 90-second battles complete with earned-resource repairs")
 	_check(max_alerts <= 3, "Real attack scheduling never exceeds three simultaneous repair alerts")
-	_check(abs(int(phase_ticks.get(DisasterWaveManager.State.SIEGE_PHASE,0))-16200) <= 3, "Three battles contain exactly 270 seconds of simulated fight time")
-	_check(abs(int(phase_ticks.get(DisasterWaveManager.State.BUILD_PREPARATION_PHASE,0))-1800) <= 3, "Two full construction windows contain 30 seconds total")
+	_check(abs(int(phase_ticks.get(DisasterWaveManager.State.SIEGE_PHASE,0))-27000) <= 3, "Five battles contain exactly 450 seconds of simulated fight time")
+	_check(abs(int(phase_ticks.get(DisasterWaveManager.State.BUILD_PREPARATION_PHASE,0))-1680) <= 3, "Four full construction windows contain 28 seconds total")
 	_check(_game.building.integrity < 100 and _game.building.integrity > 0 and repairs > 0, "Visible wear is managed with real collected supplies")
 	print("SOAK_DRIVER ticks=%d repairs=%d collected=%d max_alerts=%d phases=%s" % [ticks,repairs,supplies_collected,max_alerts,phase_ticks])
 	_check(_types.size() == HazardAttack.Kind.size(), "Every hazard kind appears in real wave scheduling")
@@ -79,8 +79,8 @@ func _report_rooms(label: String) -> void:
 
 func _on_attack(attack: HazardAttack) -> void:
 	_types[attack.kind] = true
-	var required: float = 1.0 if attack.pattern == HazardAttack.Pattern.FULL_ROW else .55
-	var maximum: float = 1.0 if attack.pattern == HazardAttack.Pattern.FULL_ROW else .75
+	var required: float = attack.minimum_warning()
+	var maximum: float = 1.0 if required == 1.0 else .75
 	if attack.warning_elapsed < required - 0.00001 or attack.warning_elapsed > maximum + 0.017:
 		_bad_warning += 1
 
