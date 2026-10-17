@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="AFET KUŞATMASI — Disaster Siege"
-config/description="Dört faz: FIRTINA, DEPREM, SEL ve DEPREM • SEL • FIRTINA. 16 oda, önbellekli pixel-art, 60/7 sn kampanya, sinematik girişler, kesintisiz WAV BGM, dengelenmiş final, 19 kart ve aktif onarım."
+config/description="Dört faz: FIRTINA, DEPREM, SEL ve DEPREM • SEL • FIRTINA. 16 oda, önbellekli pixel-art, 50/5 sn kampanya, sinematik girişler, kesintisiz WAV BGM, dengelenmiş final, 9 aktif mekanik, kısa ikonlu kartlar ve uzaktan onarım."
 run/main_scene="res://scenes/MainGame.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 

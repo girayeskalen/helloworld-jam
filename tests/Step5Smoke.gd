@@ -230,10 +230,18 @@ func _events() -> void:
 	_check(sound.history.back()["key"] == "block", "A storm hit on a shuttered room plays the BLOKLANDI block")
 	sound.advance(0.2)
 	game.mechanics.blocked.emit(Vector2.ZERO)
-	_check(sound.history.back()["key"] == "block", "Deflector turbine interceptions also play the block")
+	_check(sound.history.back()["key"] == "block", "Active shield and orbital interceptions play the block")
+	for pair: Array in [[SiegeUpgrades.Kind.AWARE_BAG,"heal"],[SiegeUpgrades.Kind.AUTO_DRONE,"repair"]]:
+		sound.advance(.3)
+		game.mechanics.activated.emit(pair[0],Vector2.ZERO)
+		_check(sound.history.back()["key"] == pair[1],"Active module event %d plays %s through the bounded SFX pool" % pair)
 	sound.advance(0.2)
 	game.projectiles.dodged.emit(Vector2.ZERO)
 	_check(sound.history.back()["key"] == "dodge", "DODGE! plays the reflex chime")
+	sound.advance(0.2)
+	game.player.hit_invulnerability = 0.0
+	game.projectiles.grazed.emit(game.player.global_position)
+	_check(sound.history.back()["key"] == "graze", "A real graze (energy granted) plays the soft electric tick")
 	# Real player actions.
 	_siege(DisasterWaveManager.Mode.STORM)
 	var p: SiegePlayer = game.player

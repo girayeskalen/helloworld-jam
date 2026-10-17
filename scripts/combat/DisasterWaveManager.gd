@@ -6,6 +6,8 @@ signal attack_launched(attack: HazardAttack)
 ## The four elements collide during the final boss entry (camera shake + sky flash).
 signal fusion_burst
 signal intro_beat(mode_id: int, beat: int)
+## A graze the player actually cashed in (energy granted); drives FX and sound.
+signal grazed(world_position: Vector2)
 
 enum State { PREPARATION_PHASE, SIEGE_PHASE, BUILD_PREPARATION_PHASE, VICTORY, WAVE_INTRO, WAVE_OUTRO }
 enum Mode { STORM, EARTHQUAKE, FLOOD, CATACLYSM }
@@ -24,9 +26,9 @@ const ROOM_DAMAGE: Dictionary = {
 	HazardAttack.Kind.ROW_SWEEP: 4.0,
 }
 @export var preparation_duration: float = 8.0
-@export var build_duration: float = 7.0
+@export var build_duration: float = 5.0
 @export var secondary_damage_rate: float = 0.15
-@export var siege_duration: float = 60.0
+@export var siege_duration: float = 50.0
 @export var autoplay: bool = true
 @export var storm_interval: float = 1.95
 @export var quake_interval: float = 2.8
@@ -42,6 +44,26 @@ const INTRO_DURATION: float = 2.5
 const FINAL_INTRO_DURATION: float = 2.8
 const FUSION_IMPACT: float = 0.55
 const OUTRO_DURATION: float = 1.0
+## Step 7 tempo ramp (seconds into the fight): a calm warm-up, a linear build and a
+## readable climax. Cadence scales with the full tempo; bullet travel only with half
+## of the excess above 1.0 so paths stay dodgeable.
+const WARMUP_END: float = 15.0
+const RAMP_END: float = 35.0
+const WARMUP_TEMPO: float = 0.9
+const RAMP_TOP: float = 1.25
+const CLIMAX_TEMPO: float = 1.45
+## Short eases at both seams so the cadence never jumps within one frame.
+const TEMPO_EASE: float = 1.0
+## Final phase already has the nova; it takes half of the ramp on top of it.
+const FINAL_RAMP_SHARE: float = 0.5
+## Light geometric bullets chip rooms less than heavy debris (index: pattern).
+const PATTERN_ROOM_DAMAGE: Dictionary = {
+	HazardAttack.Pattern.PINWHEEL: 0.45, HazardAttack.Pattern.SINE_TUNNEL: 0.4, HazardAttack.Pattern.CYCLONE_RING: 0.4,
+	HazardAttack.Pattern.SCISSOR: 1.2, HazardAttack.Pattern.SAFE_FLOOR: 1.5, HazardAttack.Pattern.TECTONIC_RING: 0.5,
+	HazardAttack.Pattern.FAULT_WAVE: 1.5, HazardAttack.Pattern.BOULDER_STAMPEDE: 2.5,
+}
+## Room HP per second while a ceiling collapse covers a room (~1.1 per crush).
+const ROCKFALL_ROOM_RATE: float = 3.0
 ## The titan overloads (Kataklizma Nova) during the last 15 seconds of its fight.
 const NOVA_WINDOW: float = 15.0
 var transition_remaining: float = 0.0
@@ -51,7 +73,7 @@ var fail_reason: FailReason = FailReason.NONE
 var mode: Mode = Mode.STORM
 var wave_number: int = 0
 var preparation_remaining: float = 8.0
-var siege_remaining: float = 60.0
+var siege_remaining: float = 50.0
 var boss_endurance: float = 100.0
 var failed: bool = false
 var victory: bool = false
@@ -61,6 +83,7 @@ var upgrade_pending: bool:
 	get: return upgrades != null and upgrades.pending
 const VICTORY_TEXT: String = "4 AFET FAZI ATLATILDI! BİNANIZ HAYATTA KALDI!"
 var dodge_count: int = 0
+var graze_count: int = 0
 var completed_waves: int = 0
 var building: ApartmentBuilding
 var player: SiegePlayer
@@ -111,6 +134,7 @@ func configure(home: ApartmentBuilding, actor: SiegePlayer, view: GameCamera, wa
 	# building-wide structure_hit signal is no longer consumed.
 	pool.projectile_impacted.connect(Callable(self, "_on_projectile_impacted"))
 	pool.dodged.connect(Callable(self, "_on_dodged"))
+	pool.grazed.connect(Callable(self, "_on_grazed"))
 	reset_cycle()
 
 func reset_cycle() -> void:
@@ -127,6 +151,7 @@ func reset_cycle() -> void:
 	wave_number = 0
 	completed_waves = 0
 	dodge_count = 0
+	graze_count = 0
 	failed = false
 	fail_reason = FailReason.NONE
 	preparation_remaining = preparation_duration
@@ -307,7 +332,7 @@ func advance_wave(delta: float, simulation_delta: float = -1.0) -> void:
 	var combat_delta: float = delta if simulation_delta < 0.0 else simulation_delta
 	if mode == Mode.CATACLYSM:
 		if not nova and siege_remaining <= NOVA_WINDOW: _begin_nova()
-		_marathon_clock -= combat_delta
+		_marathon_clock -= combat_delta * final_tempo()
 		if _marathon_clock <= 0.0:
 			cataclysm_burst()
 			_marathon_clock += (nova_interval if nova else cataclysm_interval)*CataclysmPatterns.COOLDOWN_SCALE
@@ -318,21 +343,21 @@ func advance_wave(delta: float, simulation_delta: float = -1.0) -> void:
 				_drop_nova_supply()
 		return
 	if mode == Mode.FLOOD:
-		_marathon_clock -= combat_delta
+		_marathon_clock -= combat_delta * tempo()
 		if _marathon_clock <= 0.0:
 			marathon_burst()
 			_marathon_clock += flood_interval
 		return
 	if mode != Mode.EARTHQUAKE:
-		_storm_clock -= combat_delta
+		_storm_clock -= combat_delta * tempo()
 		if _storm_clock <= 0:
 			storm_burst()
-			_storm_clock += storm_interval
+			_storm_clock += storm.next_delay if storm.next_delay > 0.0 else storm_interval
 	if mode != Mode.STORM:
-		_quake_clock -= combat_delta
+		_quake_clock -= combat_delta * tempo()
 		if _quake_clock <= 0:
 			quake_burst()
-			_quake_clock += quake_interval
+			_quake_clock += earthquake.next_delay if earthquake.next_delay > 0.0 else quake_interval
 
 func fail_siege(reason: FailReason = FailReason.PLAYER) -> void:
 	if victory or failed:
@@ -409,9 +434,9 @@ func chaos_burst() -> void:
 	_storm_pattern += 1
 	_quake_pattern += 1
 
+## Step 7 choreographies aim at the player's own floor (the storm dives there).
 func storm_burst() -> void:
-	var target: int = (player.current_floor + _storm_pattern / 6) % building.floor_count
-	storm.plan_pattern(self, _storm_pattern, target)
+	storm.plan_pattern(self, _storm_pattern, player.current_floor)
 	_storm_pattern += 1
 
 ## The roar announces a whole-building gust that drifts the player away from the storm.
@@ -426,8 +451,7 @@ func storm_gust(direction: float = 1.0, strength: float = -1.0) -> void:
 	telegraphs.warn_gust(area, floors, direction, gust_strength if strength < 0.0 else strength, gust_duration, .65, CataclysmPatterns.WARNING_EXTRA if mode == Mode.CATACLYSM else 0.0)
 
 func quake_burst() -> void:
-	var target: int = (player.current_floor + _quake_pattern / 3) % building.floor_count
-	earthquake.plan_pattern(self, _quake_pattern, target)
+	earthquake.plan_pattern(self, _quake_pattern, player.current_floor)
 	_quake_pattern += 1
 
 func _on_projectile_impacted(attack: HazardAttack, point: Vector2) -> void:
@@ -452,12 +476,17 @@ func _on_projectile_impacted(attack: HazardAttack, point: Vector2) -> void:
 
 static func room_damage(attack: HazardAttack) -> float:
 	var base: float = 0.6 if attack.pattern in CataclysmPatterns.LIGHT_PATTERNS else float(ROOM_DAMAGE.get(attack.kind, 3.0 if attack.source >= 2 else 0.8))
+	if PATTERN_ROOM_DAMAGE.has(attack.pattern): base = float(PATTERN_ROOM_DAMAGE[attack.pattern])
 	return base*attack.difficulty_damage_scale
 
 func plan_attack(attack: HazardAttack, warning_seconds: float = 0.65) -> void:
 	if state == State.SIEGE_PHASE and not failed:
 		var prepared: HazardAttack = attack.frozen_copy()
 		if mode == Mode.CATACLYSM: CataclysmPatterns.tune(prepared)
+		if mode == Mode.EARTHQUAKE and prepared.source == 1: prepared.scale_travel_speed(BossPatterns.QUAKE_SPEED_SCALE)
+		# Ramp: later in the fight bullets travel a little faster (same endpoints).
+		var travel: float = bullet_tempo()
+		if travel > 1.0001: prepared.scale_travel_speed(travel)
 		if upgrades != null: prepared = upgrades.prepare_attack(prepared)
 		if prepared.kind in [HazardAttack.Kind.FLOOD_ZONE,HazardAttack.Kind.FIRE_ZONE]:
 			for room: RoomDiorama in building.rooms:
@@ -554,7 +583,8 @@ func _on_zone_tick(attack: HazardAttack, delta: float) -> void:
 		if room.auto_protection or room.floor_index != attack.floor_index or not attack.area.intersects(Rect2(room.global_position, room.room_size)): continue
 		if attack.kind == HazardAttack.Kind.FIRE_ZONE:
 			room.heat = minf(100.0, room.heat + delta * 30.0 * factor)
-		room.apply_damage(delta * (4.0 if attack.kind == HazardAttack.Kind.FIRE_ZONE else 1.0) * factor,attack.source)
+		var rate: float = 4.0 if attack.kind == HazardAttack.Kind.FIRE_ZONE else (ROCKFALL_ROOM_RATE if attack.kind == HazardAttack.Kind.ROCKFALL else 1.0)
+		room.apply_damage(delta * rate * factor,attack.source)
 
 func _on_gust_ready(direction: float, strength: float, duration: float) -> void:
 	if state != State.SIEGE_PHASE or failed:
@@ -565,6 +595,41 @@ func _on_gust_ready(direction: float, strength: float, duration: float) -> void:
 
 func _on_dodged(_point: Vector2) -> void:
 	dodge_count += 1
+
+## Near miss: the player gains dash energy (their own cooldown filters bursts).
+func _on_grazed(point: Vector2) -> void:
+	if state != State.SIEGE_PHASE or failed: return
+	if player.graze(point):
+		graze_count += 1
+		grazed.emit(point)
+
+## Seconds since the current fight started (0 outside a siege).
+func fight_elapsed() -> float:
+	return clampf(siege_duration - siege_remaining, 0.0, siege_duration) if state == State.SIEGE_PHASE else 0.0
+
+## Tempo at `elapsed` fight seconds: 0.90 warm-up, 1.00 -> 1.25 build, 1.45 climax.
+static func tempo_at(elapsed: float) -> float:
+	if elapsed < WARMUP_END - TEMPO_EASE: return WARMUP_TEMPO
+	if elapsed < WARMUP_END: return lerpf(WARMUP_TEMPO, 1.0, smoothstep(WARMUP_END - TEMPO_EASE, WARMUP_END, elapsed))
+	if elapsed < RAMP_END - TEMPO_EASE: return lerpf(1.0, RAMP_TOP, (elapsed - WARMUP_END) / (RAMP_END - WARMUP_END))
+	if elapsed < RAMP_END:
+		var edge: float = lerpf(1.0, RAMP_TOP, (RAMP_END - TEMPO_EASE - WARMUP_END) / (RAMP_END - WARMUP_END))
+		return lerpf(edge, CLIMAX_TEMPO, smoothstep(RAMP_END - TEMPO_EASE, RAMP_END, elapsed))
+	return CLIMAX_TEMPO
+
+func tempo() -> float:
+	return tempo_at(fight_elapsed()) if state == State.SIEGE_PHASE else 1.0
+
+func final_tempo() -> float:
+	return 1.0 + (tempo() - 1.0) * FINAL_RAMP_SHARE
+
+## Bullet travel multiplier: never slower than authored, half of the cadence excess.
+func bullet_tempo() -> float:
+	var live: float = final_tempo() if mode == Mode.CATACLYSM else tempo()
+	return maxf(1.0, 1.0 + (live - 1.0) * 0.5)
+
+func is_climax() -> bool:
+	return state == State.SIEGE_PHASE and not failed and fight_elapsed() >= RAMP_END
 
 func _clear_attacks() -> void:
 	enrage = false

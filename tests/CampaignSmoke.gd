@@ -145,8 +145,8 @@ func _upgrades() -> void:
 	var b: ApartmentBuilding = game.building
 	var p: SiegePlayer = game.player
 	var loot: LootSystem = game.loot
-	_check(SiegeUpgrades.CATALOG.size() == 19, "Nineteen upgrade definitions, each with a distinct mechanical effect")
-	for id: int in range(19):
+	_check(SiegeUpgrades.CATALOG.size() == 9, "Nine active upgrade definitions, each with a distinct mechanical effect")
+	for id: int in range(9):
 		_fresh()
 		_check(up.apply_upgrade(id) and not up.apply_upgrade(id), "Upgrade %d applies once per run, no stacking duplicates" % id)
 	_fresh()
@@ -169,13 +169,13 @@ func _campaign() -> void:
 	w.advance_wave(90)
 	await _tap(KEY_D)
 	await _tap(KEY_F)
-	_check(w.preparation_remaining == 7 and up.pending and game.player.global_position == saved_position, "Card choice freezes timer and movement; F cannot bypass selection")
+	_check(w.preparation_remaining == 5 and up.pending and game.player.global_position == saved_position, "Card choice freezes timer and movement; F cannot bypass selection")
 	var chosen: int = up.offers[0]
 	await _tap(KEY_1)
 	_check(up.has_upgrade(chosen) and not up.pending and w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE and w.wave_number == 1, "Key 1 chooses a card without launching the storm debug shortcut")
 	_check(game.loot.column_kits == 2 and game.building.rooms[0].hp >= 80, "Resources and room damage carry across the wave boundary")
-	w.advance_wave(6.9)
-	_check(w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE, "Construction remains available for the full 7 seconds")
+	w.advance_wave(4.9)
+	_check(w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE, "Construction remains available for the full 5 seconds")
 	w.advance_wave(.11)
 	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
@@ -263,13 +263,13 @@ func _capture(directory: String) -> void:
 	await _save(directory,"01-original-night.png")
 	game.waves.debug_enabled = true
 	game.waves.test_upgrades()
-	game.upgrades.offers.assign([0,1,2])
+	game.upgrades.offers.assign([0,3,4])
 	game.upgrade_overlay._refresh()
 	await _save(directory,"02-cards-structure.png")
-	game.upgrades.offers.assign([3,4,5])
+	game.upgrades.offers.assign([1,5,6])
 	game.upgrade_overlay._refresh()
 	await _save(directory,"03-cards-survival.png")
-	game.upgrades.offers.assign([6,7,8])
+	game.upgrades.offers.assign([2,7,8])
 	game.upgrade_overlay._refresh()
 	await _save(directory,"04-cards-equipment.png")
 	game.upgrades.choose(0)

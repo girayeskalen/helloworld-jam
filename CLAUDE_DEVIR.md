@@ -1,6 +1,19 @@
 # Claude için devir — AFET KUŞATMASI / Adım 4.8
 
+> **18 Ekim 2026 — Adım 8 (Codex) günceldir.** Eski19 kart yerine9 aktif mekanik ve kısa ikonlu A/B/B seçim; yalnız deprem cooldown×1,1/hız×0,9/boşluk×1,1. 50/5sn, dört faz, 2xW, gece cache ve BGM korunur. `STATUS.md` en üstte gerçek sonuç/kanıt ve sınırları içerir; `tests/Step8Smoke.gd` yeni davranışları sınar. Claude Adım7 değişiklikleriyle birlikte çalışma ağacındadır; bu görevde commit/push yapılmadı. Eski kart/12sn drone/tümkat iniş temizliği/global bullet-time maddeleri tarihçedir.
+
 17 Ekim 2026. Kullanıcı sonraki geliştirmeyi Claude ile sürdürecek. Bu dosya, beş dalgalı maraton ve Adım 4.8 değişiklikleriyle aynı teslim commitindedir. Yeni görev henüz verilmedi; aşağıdaki bekleyen işler kendiliğinden kapsam sayılmaz.
+
+## Adım 7 güncellemesi (Claude, 17 Ekim 2026) — en güncel
+
+Önce [STATUS.md](STATUS.md) en üstteki Adım 7 bölümünü ve [AGENTS.md](AGENTS.md) sonundaki Adım 7 maddelerini oku. Özet:
+
+- **Süreler:** faz 50 sn (`siege_duration`), kart sonrası inşaat 5 sn (`build_duration`), ilk hazırlık 8 sn. Dört faz, BossCinematic, alt boss barı, BGM ve Adım 6 önbellekleri korunur.
+- **Tempo:** `DisasterWaveManager.tempo_at(elapsed)`; boss saatleri ×tempo, final yarım pay; `bullet_tempo()` mermi hızını uç nokta sabit kalacak şekilde artırır; `is_climax()` (35 sn+) BGM'yi 1,05× yapar.
+- **Desenler:** fırtına ve deprem `BossPatterns` sonundaki Adım 7 fonksiyonlarını kullanır (`pinwheel`, `safe_floor_roulette`, `sine_tunnel`, `scissor`, `cyclone_rings`, `checker_crush`, `fault_wave`, `tectonic_rings`, `boulder_stampede`). Eski yardımcılar (`vortex`, `crossfire`, `corridor`, `fan`, `furniture`, `room_objects` …) yalnız eski doğrudan testler için durur, bosslar çağırmaz. Yeni Kind `ROCKFALL` (oda alanı), yeni Pattern'ler `PINWHEEL … BOULDER_STAMPEDE`.
+- **Görünürlük:** `HazardProjectile` kontur/neon/beyaz çekirdek ve 12 gövde dokusu; `TelegraphSystem` sabit 0,55 sn, lazer/dolgu, `is_flashing()` son 0,12 sn; `ApartmentBuilding.set_combat_dim`.
+- **Sıyrılma:** `ProjectilePool.grazed` → `DisasterWaveManager._on_grazed` → `Player.graze` (+25) → `grazed` sinyali (CombatFeedback, WorldLabels, SoundManager `graze`).
+- **Testler:** yeni `tests/Step7Smoke.gd`; eski paketler 50/5 sn ve yeni desenlere uyarlandı. Toplam **16 paket**.
 
 ## Adım 4.9 güncellemesi (Claude, 17 Ekim 2026)
 

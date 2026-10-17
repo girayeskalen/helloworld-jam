@@ -1,5 +1,9 @@
 # Codex devir notu — güncel Adım 6 (17 Ekim 2026)
 
+> **18 Ekim 2026 — Adım 8 (Codex) günceldir.** Eski19 kart yerine9 aktif mekanik ve kısa ikonlu A/B/B seçim; yalnız deprem cooldown×1,1/hız×0,9/boşluk×1,1. 50/5sn, dört faz, 2xW, gece cache ve BGM korunur. `STATUS.md` en üstte gerçek sonuç/kanıt ve sınırları içerir; `tests/Step8Smoke.gd` yeni davranışları sınar. Claude Adım7 değişiklikleriyle birlikte çalışma ağacındadır; bu görevde commit/push yapılmadı. Eski kart/12sn drone/tümkat iniş temizliği/global bullet-time maddeleri tarihçedir.
+
+> **Adım 7 (Claude, 17 Ekim 2026) bu notun üstündedir:** 50 sn faz / 5 sn inşaat, 0,90→1,25→1,45 tempo rampası, beş fırtına + dört deprem koreografisi (eşya fırlatma yok), sabit 0,55 sn uyarı + beyaz parlama, konturlu neon mermiler, kuşatmada karartılan mobilya ve sıyrılma (+25 enerji). Ayrıntı: STATUS.md en üst bölüm, AGENTS.md sonundaki Adım 7 maddeleri ve CLAUDE_DEVIR.md. Aşağıdaki 60/7 sn ifadeleri tarihçedir.
+
 **Önce STATUS.md'nin Adım 6 bölümünü oku.** Dört faz/BossCinematic/alt HUD/1–4 korunur. Yeni sürümde statik render önbellekleri, bağımsız −5 dB mono WAV BGM ve yalnız finalde azaltılmış yoğunluk/hız/hasar + uzatılmış uyarı vardır. Aşağıdaki Claude/Adım 5.5 devri tarihçedir; canlı generator müzik yolu kaldırılmıştır.
 
 Claude, Adım 4.9 ve Adım 5'i tamamladı. Önce `AGENTS.md`'yi (güncel kurallar) ve `STATUS.md`'nin en üstteki iki bölümünü oku.

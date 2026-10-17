@@ -1,5 +1,5 @@
 extends SceneTree
-## Full 60-second fights at 60 simulated physics ticks/sec, not skipped phase timers.
+## Full 50-second fights at 60 simulated physics ticks/sec, not skipped phase timers.
 ## --headless --fixed-fps 60 disables wall-clock waiting without increasing delta.
 
 var _failures: int = 0
@@ -28,7 +28,7 @@ func _run() -> void:
 		phase_ticks[phase] = int(phase_ticks.get(phase,0)) + 1
 		max_alerts = maxi(max_alerts,_game.building.repair_count())
 		if _game.upgrades.pending:
-			_game.upgrades.offers.assign([_game.waves.completed_waves-1,9,10])
+			_game.upgrades.offers.assign([_game.waves.completed_waves-1,3,4])
 			_game.upgrades.choose(0)
 		# Integration driver, not a human playability claim: collect actual drops
 		# and walk the repair API using only earned cement. HP enlarged to isolate
@@ -49,10 +49,10 @@ func _run() -> void:
 		ticks += 1
 	_report_rooms("after full campaign")
 	_check(_modes == [0,1,2,3], "Campaign runs storm, quake, flood and three-disaster finale exactly once")
-	_check(_game.waves.completed_waves == 4 and _game.waves.victory and not _game.waves.failed, "All four full 60-second battles complete with earned-resource repairs")
+	_check(_game.waves.completed_waves == 4 and _game.waves.victory and not _game.waves.failed, "All four full 50-second battles complete with earned-resource repairs")
 	_check(max_alerts <= 3, "Real attack scheduling never exceeds three simultaneous repair alerts")
-	_check(abs(int(phase_ticks.get(DisasterWaveManager.State.SIEGE_PHASE,0))-14400) <= 3, "Four battles contain exactly 240 seconds of simulated fight time")
-	_check(abs(int(phase_ticks.get(DisasterWaveManager.State.BUILD_PREPARATION_PHASE,0))-1260) <= 3, "Three construction windows contain 21 seconds total")
+	_check(abs(int(phase_ticks.get(DisasterWaveManager.State.SIEGE_PHASE,0))-12000) <= 3, "Four battles contain exactly 200 seconds of simulated fight time")
+	_check(abs(int(phase_ticks.get(DisasterWaveManager.State.BUILD_PREPARATION_PHASE,0))-900) <= 3, "Three construction windows contain 15 seconds total")
 	_check(_game.building.integrity < 100 and _game.building.integrity > 0 and repairs > 0, "Visible wear is managed with real collected supplies")
 	print("SOAK_DRIVER ticks=%d repairs=%d collected=%d max_alerts=%d phases=%s" % [ticks,repairs,supplies_collected,max_alerts,phase_ticks])
 	var fire_free: bool = true

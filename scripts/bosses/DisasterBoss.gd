@@ -8,6 +8,9 @@ enum Kind { STORM, EARTHQUAKE, FLOOD, CATACLYSM }
 signal cued(seconds: float)
 const SLAM_TIME: float = 0.4
 const STORM_RINGS: int = 12
+## Step 7: the storm dives toward the target floor before every choreography.
+const SWOOP_TIME: float = 0.3
+const SWOOP_SPEED: float = 5200.0
 
 @export var kind: Kind = Kind.STORM
 @export var boss_sprite: Texture2D
@@ -22,6 +25,16 @@ var _relocate: float = 0.0
 var retreat: float = 0.0
 var _home: Vector2
 var pattern_label: String = ""
+## Seconds until the next choreography at tempo 1.0 (the wave manager divides it by
+## the live tempo). Set by plan_pattern for the storm and the golem.
+var next_delay: float = 0.0
+## Storm silhouette: 0 = tall spine over the full height, 1 = compact tornado core
+## hugging one floor's windows.
+var focus: float = 0.0
+var _focus_target: float = 0.0
+var _swoop: float = 0.0
+## Floors left open by the last Güvenli Kat Ruleti (first, second).
+var safe_floors: Array[int] = []
 var _clock: float = 0.0
 var _charge_left: float = 0.0
 var _charge_total: float = 0.7
@@ -90,46 +103,36 @@ func plan_pattern(waves: DisasterWaveManager, index: int, floor_index: int) -> v
 		return
 	if kind >= Kind.FLOOD:
 		pattern_label = MarathonPatterns.flood(waves,index,floor_index)
-		cue_attack((1.0 if index % 6 in [3,4] else .75) + waves.telegraphs.warning_bonus)
+		cue_attack((1.0 if index % 6 in [3,4] else HazardAttack.STANDARD_WARNING) + waves.telegraphs.warning_bonus)
 		return
-	var floors: int = waves.building.floor_count
 	if kind == Kind.STORM:
-		# Bullet-hell cycle: every beat is telegraphed; one corridor beat forces a floor change.
-		match index % 6:
-			0:
-				pattern_label = "GİRDAP HALKASI"
-				BossPatterns.vortex(waves, floor_index, index, 12 if (index / 6) % 2 == 1 else 10)
-			1:
-				pattern_label = "ÇAPRAZ YAYLIM"
-				BossPatterns.crossfire(waves, floor_index, index)
-			2:
-				pattern_label = "RÜZGÂR KÜKREMESİ"
-				waves.storm_gust()
-				BossPatterns.fan(waves, floor_index, index)
-			3:
-				pattern_label = "HORTUM KORİDORU"
-				BossPatterns.corridor(waves, waves.player.current_floor, index)
-			4:
-				pattern_label = "SAVRULAN EŞYALAR"
-				BossPatterns.furniture(waves, floor_index)
-				BossPatterns.vortex(waves, (floor_index + 2) % floors, index, 8)
-			5:
-				pattern_label = "CAM YELPAZESİ"
-				BossPatterns.fan(waves, floor_index, index)
-	else:
-		match index % 3:
-			0:
-				pattern_label = "ZEMİN ŞOKU"
-				BossPatterns.ground_wave(waves, floor_index, index % 2 == 1)
-				BossPatterns.cluster(waves, (floor_index + 1) % floors, index)
-			1:
-				pattern_label = "PARÇALANAN ENKAZ"
-				BossPatterns.cluster(waves, floor_index, index)
-			2:
-				pattern_label = "YIKIM TÜNELİ"
-				BossPatterns.full_row(waves, floor_index, 1)
-		BossPatterns.room_objects(waves, index)
-	cue_attack((1.0 if pattern_label in ["HORTUM KORİDORU", "YIKIM TÜNELİ"] else .7) + waves.telegraphs.warning_bonus)
+		# Five geometric choreographies in a fixed order; only the active one is on screen.
+		var beat: int = index % 5
+		var cycle: int = index / 5
+		pattern_label = BossPatterns.STORM_LABELS[beat]
+		next_delay = BossPatterns.STORM_BEATS[beat]
+		match beat:
+			0: BossPatterns.pinwheel(waves, cycle)
+			1: safe_floors = BossPatterns.safe_floor_roulette(waves, cycle)
+			2: BossPatterns.sine_tunnel(waves, waves.player.current_floor, cycle)
+			3: BossPatterns.scissor(waves, cycle)
+			4: BossPatterns.cyclone_rings(waves, waves.player.current_floor, cycle)
+		cue_attack((HazardAttack.SAFE_FLOOR_WARNING if beat == 1 else HazardAttack.STANDARD_WARNING) + waves.telegraphs.warning_bonus)
+		return
+	# Sismik Golem: four clean choreographies; furniture is never thrown any more.
+	var step: int = index % 4
+	var round_index: int = index / 4
+	pattern_label = BossPatterns.QUAKE_LABELS[step]
+	next_delay = BossPatterns.QUAKE_BEATS[step]
+	if waves.mode == DisasterWaveManager.Mode.EARTHQUAKE: next_delay *= BossPatterns.QUAKE_COOLDOWN_SCALE
+	match step:
+		0: BossPatterns.checker_crush(waves, round_index)
+		1: BossPatterns.fault_wave(waves, round_index)
+		2: BossPatterns.tectonic_rings(waves, round_index)
+		3: BossPatterns.boulder_stampede(waves, waves.player.current_floor, round_index)
+	# The building trembles through the wind-up; purely visual, no furniture launches.
+	for prop: BuildingProp in waves.building.props: prop.shake_unsecured(HazardAttack.STANDARD_WARNING)
+	cue_attack(HazardAttack.STANDARD_WARNING + waves.telegraphs.warning_bonus)
 
 func set_active(value: bool) -> void:
 	visible = value
@@ -149,6 +152,11 @@ func set_active(value: bool) -> void:
 	_slam_left = 0.0
 	_arrival = 0.0
 	_particles.clear()
+	focus = 0.0
+	_focus_target = 0.0
+	_swoop = 0.0
+	next_delay = 0.0
+	safe_floors.clear()
 	fusion = 1.0
 	if kind == Kind.CATACLYSM:
 		_place_behind()
@@ -220,8 +228,11 @@ func reposition(waves: DisasterWaveManager, serial: int, floor_index: int) -> vo
 		else:
 			_target = _home + Vector2(sin(serial * 1.3) * 55.0, 0)
 		return
-	if kind <= Kind.EARTHQUAKE:
-		_target = _home + Vector2((35.0 if kind == Kind.STORM else -25.0) * (1 if serial%2 == 0 else -1), -minf(170.0 if kind == Kind.STORM else 85.0, floor_index*65.0))
+	if kind == Kind.STORM:
+		_storm_swoop(b, serial, floor_index)
+		return
+	if kind == Kind.EARTHQUAKE:
+		_target = _home + Vector2(-25.0 * (1 if serial%2 == 0 else -1), -minf(85.0, floor_index*65.0))
 		return
 	z_as_relative = true
 	z_index = 0
@@ -234,6 +245,22 @@ func reposition(waves: DisasterWaveManager, serial: int, floor_index: int) -> vo
 		_relocate = .32
 	if waves.upgrades != null and waves.upgrades.game.mechanics != null:
 		waves.upgrades.game.mechanics.burst(global_position+Vector2(0,-260),Color("66f1df") if kind == Kind.FLOOD else LAVA_HOT,24)
+
+## Fast dive toward the target floor. Tunnel and cyclone beats condense the storm into
+## a one-floor tornado core at that floor's windows; the others stretch it full height.
+func _storm_swoop(b: ApartmentBuilding, serial: int, floor_index: int) -> void:
+	_focus_target = 1.0 if serial % 5 in [2, 4] else 0.0
+	if _focus_target > .5:
+		_target = Vector2(_home.x + 40.0, b.floor_y(floor_index) + 30.0)
+	else:
+		_target = _home + Vector2(35.0 * (1 if serial % 2 == 0 else -1), -minf(170.0, floor_index * 65.0))
+	_swoop = SWOOP_TIME
+	var travel: Vector2 = _target - position
+	if travel.length() < 8.0: return
+	var back: Vector2 = -travel.normalized()
+	for i: int in range(10):
+		_particles.append({"p": Vector2(_rng.randf_range(-90, 90), -40.0 - i * 40.0), "v": back * _rng.randf_range(700, 1000), "life": .26, "max": .26,
+			"r": 3.0, "grow": 0.0, "color": Color(0.75, 0.92, 1.0, 0.75), "line": true})
 
 ## Wind-up lasts exactly as long as the attack's warning.
 func cue_attack(seconds: float) -> void:
@@ -277,11 +304,16 @@ func advance(delta: float) -> void:
 			_relocate = maxf(0.0,_relocate-delta)
 			modulate.a = .25+absf(sin(_relocate*PI*4))*.75
 			position = position.move_toward(_target,delta*8500.0)
+		elif _swoop > 0.0:
+			_swoop = maxf(0.0, _swoop - delta)
+			modulate = Color.WHITE
+			position = position.move_toward(_target, delta * SWOOP_SPEED)
 		else:
 			modulate = Color.WHITE
 			var push: Vector2 = Vector2(0, -lunge*.5) if kind == Kind.CATACLYSM else Vector2(direction*lunge, 0)
 			position = position.lerp(_target+push+Vector2(0,sin(_clock*1.7)*9),1.0-exp(-delta*6))
 		scale = scale.lerp(Vector2.ONE*_target_scale,1.0-exp(-delta*15))
+		focus = move_toward(focus, _focus_target, delta * 4.5)
 	_update_particles(delta)
 	if kind == Kind.CATACLYSM:
 		_titan_particles(delta)
@@ -429,12 +461,15 @@ func storm_rig() -> Dictionary:
 	var s: float = slam_progress()
 	var burst: float = sin(clampf(s, 0.0, 1.0) * PI) if s >= 0.0 else 0.0
 	var rings: Array[Dictionary] = []
+	# Compact tornado core: rings pack tightly and widen; the S-wave calms down.
+	var spacing: float = lerpf(44.0, 17.0, focus)
+	var girth: float = 1.0 + 0.35 * focus
 	for i: int in range(STORM_RINGS):
 		var h: float = float(i) / float(STORM_RINGS - 1)
-		var amplitude: float = (6.0 + i * 2.6) * (1.0 - 0.55 * wind)
+		var amplitude: float = (6.0 + i * 2.6) * (1.0 - 0.55 * wind) * (1.0 - 0.5 * focus)
 		var x: float = sin(t * 2.2 - i * 0.55) * amplitude + sin(t * 1.1 + i * 0.3) * 4.0 * (1.0 - wind) + burst * 55.0 * h
-		var width: float = (24.0 + i * 8.6) * (1.0 + 0.1 * sin(t * 3.0 + i * 0.7)) * (1.0 - 0.35 * wind) * (1.0 + 0.28 * burst)
-		rings.append({"center": Vector2(x, -30.0 - i * 44.0), "width": width})
+		var width: float = (24.0 + i * 8.6) * girth * (1.0 + 0.1 * sin(t * 3.0 + i * 0.7)) * (1.0 - 0.35 * wind) * (1.0 + 0.28 * burst)
+		rings.append({"center": Vector2(x, -30.0 - i * spacing), "width": width})
 	var arcs: Array[PackedVector2Array] = []
 	if wind > 0.05:
 		var frame: int = int(t * 14.0)
@@ -450,7 +485,7 @@ func storm_rig() -> Dictionary:
 				bolt.append(p + Vector2(sin(frame * 3.1 + step * 2.3 + k) * 16.0, cos(frame * 2.7 + step) * 8.0))
 			bolt.append(to)
 			arcs.append(bolt)
-	return {"rings": rings, "face": Vector2(rings[7]["center"]) + Vector2(0, 20), "wind": wind, "burst": burst, "arcs": arcs}
+	return {"rings": rings, "face": Vector2(rings[7]["center"]) + Vector2(0, 20), "wind": wind, "burst": burst, "arcs": arcs, "focus": focus}
 
 ## Local bounding box of the current pose (both bosses), for framing checks.
 func pose_bounds() -> Rect2:

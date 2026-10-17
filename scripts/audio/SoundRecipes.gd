@@ -11,7 +11,7 @@ const ORDER: Array[String] = [
 	"fire_in", "fire_out", "titan_in", "titan_fuse", "titan_out",
 	"cast_storm", "cast_quake", "cast_flood", "cast_fire",
 	"whoosh", "impact_glass", "impact_wood", "impact_stone", "impact_metal", "impact_water", "impact_fire", "block",
-	"jump", "floor_up", "drop_land", "dash", "dodge", "hurt", "heartbeat",
+	"jump", "floor_up", "drop_land", "dash", "dodge", "graze", "hurt", "heartbeat",
 	"loot_drop", "pickup", "heal", "safety", "repair",
 	"collapse_room", "collapse_building", "victory", "defeat",
 ]
@@ -209,6 +209,12 @@ static func all() -> Dictionary:
 			{"type": "tone", "f0": 1046.5, "chord": [1.0, 1.4983], "lp": 3200.0, "gain": 0.7, "env": [0.004, 0.45, 0.0, 0.1]},
 			{"type": "tone", "wave": "warm", "f0": 523.25, "lp": 2000.0, "gain": 0.25, "env": [0.004, 0.3, 0.0, 0.1]},
 			{"type": "noise", "filter": "bp", "f0": 3200.0, "q": 0.9, "gain": 0.05, "env": [0.01, 0.3, 0.0, 0.1]},
+		]},
+		# Graze: a short, soft electric tick with a rising sparkle (never harsh).
+		"graze": {"length": 0.22, "peak": 0.42, "lp": 3400.0, "layers": [
+			{"type": "tone", "f0": 1174.7, "f1": 1568.0, "lp": 3000.0, "gain": 0.5, "env": [0.003, 0.1, 0.0, 0.05]},
+			{"type": "noise", "filter": "bp", "f0": 2400.0, "q": 1.1, "gain": 0.22, "dur": 0.05, "env": [0.003, 0.03, 0.0, 0.02]},
+			{"type": "crackle", "rate": 55.0, "decay": 0.003, "f_lp": 2800.0, "gain": 0.1, "env": [0.003, 0.08, 0.0, 0.04]},
 		]},
 		"hurt": {"length": 0.34, "peak": 0.8, "lp": 1600.0, "layers": [
 			{"type": "tone", "f0": 140.0, "f1": 60.0, "gain": 0.9, "env": [0.002, 0.2, 0.0, 0.08]},

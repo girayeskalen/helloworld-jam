@@ -213,6 +213,7 @@ func next_component(room: RoomDiorama) -> int:
 	return -1
 
 func interaction_hint() -> String:
+	if _remote_available(): return "[E] UZAKTAN ÇİFT ONARIM · 1 MALZEME"
 	var room: RoomDiorama = current_room()
 	if room == null or room.is_collapsed(): return ""
 	if repair_alert(room):
@@ -228,6 +229,7 @@ func interaction_hint() -> String:
 
 ## Two-word prompt drawn over the player; empty when E would do nothing.
 func short_hint() -> String:
+	if _remote_available(): return "[E] UZAKTAN ONAR"
 	var room: RoomDiorama = current_room()
 	if room == null or room.is_collapsed(): return ""
 	if repair_alert(room):
@@ -299,8 +301,17 @@ func _install(room: RoomDiorama, kind: int) -> void:
 		room.reinforce(RoomDiorama.Reinforcement.ANCHOR)
 		room.reinforce(RoomDiorama.Reinforcement.SHUTTER)
 
+func _remote_available() -> bool:
+	if waves == null or waves.upgrades == null or not waves.upgrades.has_upgrade(SiegeUpgrades.Kind.REMOTE_CRANE): return false
+	if materials() <= 0 or waves.failed or waves.victory or waves.upgrade_pending or waves.state not in [DisasterWaveManager.State.SIEGE_PHASE,DisasterWaveManager.State.BUILD_PREPARATION_PHASE]: return false
+	for room: RoomDiorama in building.rooms:
+		if not room.is_collapsed() and room.hp < room.max_hp: return true
+	return false
+
 ## Siege E still requires a visible repair alert. Safety deploys on collection.
 func repair_current_room() -> RepairResult:
+	if waves != null and waves.upgrades != null and waves.upgrades.has_upgrade(SiegeUpgrades.Kind.REMOTE_CRANE):
+		return RepairResult.REPAIRED if waves.upgrades.game.mechanics.remote_repair() else RepairResult.NOT_NEEDED
 	var room: RoomDiorama = current_room()
 	if room == null or waves == null or waves.failed or waves.victory or waves.upgrade_pending: return RepairResult.NOT_NEEDED
 	if not can_build() and not repair_alert(room): return RepairResult.NOT_NEEDED
@@ -327,6 +338,7 @@ func repair_current_room() -> RepairResult:
 	return RepairResult.NO_MATERIAL
 
 func _message(world: Vector2, text: String, color: Color) -> void:
+	if messages.size() >= 32: messages.pop_front()
 	messages.append({"position": world, "text": text, "color": color, "life": 1.4})
 
 func item_draw_position(item: Dictionary) -> Vector2:

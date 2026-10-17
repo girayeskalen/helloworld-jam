@@ -40,7 +40,7 @@ const MIX: Dictionary = {
 	"impact_water": [PROJECTILE_DB, BUS_SFX, 0.11], "impact_fire": [PROJECTILE_DB, BUS_SFX, 0.11],
 	"block": [-12.0, BUS_SFX, 0.14],
 	"jump": [-14.0, BUS_SFX, 0.09], "floor_up": [-12.0, BUS_SFX, 0.09], "drop_land": [-12.0, BUS_SFX, 0.09],
-	"dash": [-11.0, BUS_SFX, 0.09], "dodge": [-9.0, BUS_SFX, 0.12], "hurt": [-8.0, BUS_SFX, 0.12],
+	"dash": [-11.0, BUS_SFX, 0.09], "dodge": [-9.0, BUS_SFX, 0.12], "graze": [-12.0, BUS_SFX, 0.06], "hurt": [-8.0, BUS_SFX, 0.12],
 	"heartbeat": [-14.0, BUS_SFX, 0.3],
 	"loot_drop": [-14.0, BUS_SFX, 0.1], "pickup": [-10.0, BUS_SFX, 0.08], "heal": [-9.0, BUS_SFX, 0.1],
 	"safety": [-11.0, BUS_SFX, 0.1], "repair": [-8.0, BUS_SFX, 0.2],
@@ -52,6 +52,8 @@ const CASTS: Array[String] = ["cast_storm", "cast_quake", "cast_flood", "cast_fi
 const INTROS: Array = [["storm_in"], ["quake_in"], ["flood_in"], ["titan_in"]]
 const OUTROS: Array = [["storm_out"], ["quake_out"], ["flood_out"], ["titan_out"]]
 var bgm_player: AudioStreamPlayer
+## BGM playback rate during the fight climax (~+5% tempo).
+const CLIMAX_PITCH: float = 1.05
 var bgm_restarts: int = 0
 
 var game: MainGame
@@ -134,6 +136,7 @@ func configure(owner_game: MainGame) -> void:
 	w.attack_launched.connect(_on_launch)
 	w.fusion_burst.connect(func() -> void: play("titan_fuse"))
 	w.intro_beat.connect(_on_intro_beat)
+	w.grazed.connect(func(_point: Vector2) -> void: play("graze"))
 	game.projectiles.projectile_impacted.connect(_on_impact)
 	game.projectiles.dodged.connect(func(_point: Vector2) -> void: play("dodge"))
 	game.player.dash_started.connect(func() -> void: play("dash"))
@@ -146,6 +149,7 @@ func configure(owner_game: MainGame) -> void:
 	game.loot.repaired.connect(func(_room: RoomDiorama) -> void: play("repair"))
 	game.upgrades.selection_changed.connect(_on_cards)
 	game.upgrades.upgrade_selected.connect(func(_id: int) -> void: play("ui_confirm"))
+	game.mechanics.activated.connect(_on_module_activated)
 	game.mechanics.blocked.connect(func(_point: Vector2) -> void: play("block"))
 	for room: RoomDiorama in game.building.rooms:
 		room.state_changed.connect(_on_room_state)
@@ -325,6 +329,9 @@ func _update_music(delta: float, frozen: bool) -> void:
 	var siege: bool = w.state == DisasterWaveManager.State.SIEGE_PHASE and not w.failed and not w.victory
 	var preparing: bool = w.state in [DisasterWaveManager.State.PREPARATION_PHASE, DisasterWaveManager.State.BUILD_PREPARATION_PHASE] and not w.failed
 	bpm = MusicScore.BPM if siege else (MusicScore.BPM*.5 if preparing else 0.0)
+	# Step 7 climax (last 15 s): the score runs a touch faster; eased, never a jump.
+	if bgm_player != null and not frozen:
+		bgm_player.pitch_scale = move_toward(bgm_player.pitch_scale, CLIMAX_PITCH if w.is_climax() else 1.0, delta * 0.12)
 	music_target["rain"] = -31.0
 	music_target["drone"] = -60.0
 	music_target["siege_pad"] = -60.0
@@ -403,3 +410,7 @@ func _on_cards() -> void:
 
 func _on_room_state(_room: RoomDiorama, state: int) -> void:
 	if state == RoomDiorama.RoomState.COLLAPSED: play("collapse_room")
+
+func _on_module_activated(id: int, _point: Vector2) -> void:
+	if id == SiegeUpgrades.Kind.AWARE_BAG: play("heal")
+	elif id == SiegeUpgrades.Kind.AUTO_DRONE: play("repair")

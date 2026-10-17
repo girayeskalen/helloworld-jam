@@ -45,7 +45,7 @@ func _phases() -> void:
 		w.advance_wave(w.intro_duration()*.5)
 		game.cinematic._process(0)
 		_check(game.cinematic.letterbox > .99 and game.game_camera.cinematic_offset.length() > 1 and game.game_camera.zoom.x > game.base_zoom/game.pixel_scale,"Mid-intro letterbox and gentle camera focus are active")
-		_check(game.telegraphs.pending.is_empty() and game.projectiles.active_count() == 0 and w.siege_remaining == 60 and game.player.health == 100,"Intro cannot launch hazards or spend player HP/fight seconds")
+		_check(game.telegraphs.pending.is_empty() and game.projectiles.active_count() == 0 and w.siege_remaining == 50 and game.player.health == 100,"Intro cannot launch hazards or spend player HP/fight seconds")
 		w.advance_wave(w.transition_remaining)
 		game.cinematic._process(0)
 		_check(w.state == DisasterWaveManager.State.SIEGE_PHASE and not game.player.controls_locked and game.cinematic.letterbox == 0 and game.game_camera.cinematic_offset == Vector2.ZERO,"Battle starts once, restores input/framing and removes cinema bars")

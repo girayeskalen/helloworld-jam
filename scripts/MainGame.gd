@@ -112,6 +112,7 @@ func _ready() -> void:
 	add_child(pause_menu)
 	pause_menu.configure(self)
 	projectiles.dodged.connect(Callable(feedback, "show_dodge"))
+	waves.grazed.connect(Callable(feedback, "show_graze"))
 	player.damaged.connect(Callable(self, "_on_player_damaged"))
 	if art_assets != null:
 		player.custom_sprite = art_assets.player
@@ -156,6 +157,9 @@ func _apply_atmosphere() -> void:
 	var ambient: Color = night_tint
 	building.set_darkness(ambient.lerp(flash_tint, weather.flash * 0.6))
 	building.lighting.tremor = clampf((game_camera.shake_strength() - 3.0) / 10.0, 0.0, 1.0)
+	# Furniture eases to 25% darker while a fight runs, back to full between phases.
+	var dim_target: float = 1.0 if waves.state == DisasterWaveManager.State.SIEGE_PHASE and not waves.failed else 0.0
+	building.set_combat_dim(move_toward(building.combat_dim, dim_target, get_process_delta_time() * 2.5))
 
 func _bind_action(action: StringName, keys: Array[int], mouse_button: int = 0) -> void:
 	if not InputMap.has_action(action):

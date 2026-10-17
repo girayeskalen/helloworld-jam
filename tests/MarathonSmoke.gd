@@ -179,18 +179,12 @@ func _hazards() -> void:
 	_check(room.hp < hp-3 and room.heat == 30,"Room fire increases temperature and real room damage")
 	var other: RoomDiorama = w.building.room_at(0,0)
 	_check(other.heat == 0,"Fire damage stays inside the impacted room")
-	game.upgrades.apply_upgrade(SiegeUpgrades.Kind.SPRINKLER)
-	var reduced: HazardAttack = game.upgrades.prepare_attack(fire_zone)
-	_check(is_equal_approx(reduced.damage,fire_zone.damage*.6) and is_equal_approx(reduced.lifetime,1.8),"Sprinkler cuts fire damage and floor fire duration by exactly 40 percent")
-	game.upgrades.apply_upgrade(SiegeUpgrades.Kind.DRAINAGE)
+	var copy: HazardAttack = game.upgrades.prepare_attack(fire_zone)
+	_check(copy.damage == fire_zone.damage and copy.lifetime == fire_zone.lifetime,"Retired fire passive no longer changes hazard stats")
 	var water: HazardAttack = w._attack(HazardAttack.Kind.FLOOD_ZONE,0,point,Vector2.ZERO)
-	water.source = 2
 	water.effect_strength = .35
-	var drained: HazardAttack = game.upgrades.prepare_attack(water)
-	_check(is_equal_approx(drained.damage,water.damage*.6) and is_equal_approx(drained.effect_strength,.21),"Drainage cuts water damage and slowdown by exactly 40 percent")
-	room.restore()
-	w._on_projectile_impacted(meteor,point)
-	_check(room.hp == 98.2,"Sprinkler also reduces real impact damage to the room")
+	var unmodified: HazardAttack = game.upgrades.prepare_attack(water)
+	_check(unmodified.damage == water.damage and unmodified.effect_strength == .35,"Retired drainage passive no longer changes water stats")
 	game.reset_game()
 	_check(room.heat == 0 and not game.upgrades.has_upgrade(9) and p.hazard_drag == 0,"Reset clears heat, resistances and environment")
 
@@ -292,7 +286,7 @@ func _capture(directory: String) -> void:
 	_fresh()
 	game.waves.debug_enabled = true
 	game.waves.test_upgrades()
-	game.upgrades.offers.assign([9,10,1])
+	game.upgrades.offers.assign([0,4,6])
 	game.upgrade_overlay._refresh()
 	await _frames(25)
 	await _save(directory,"cards-fire-flood.png")
@@ -315,7 +309,7 @@ func _capture(directory: String) -> void:
 	event = event.duplicate() as InputEventMouseButton
 	event.pressed = false
 	root.push_input(event,true)
-	_check(game.upgrades.has_upgrade(10) and not game.upgrades.pending,"Scaled window card hit testing selects drainage")
+	_check(game.upgrades.has_upgrade(4) and not game.upgrades.pending,"Scaled window card hit testing selects drone")
 	await _save(directory,"scaled-window.png",Vector2i(root.get_texture().get_size()))
 
 func _save(directory: String, name: String, size: Vector2i = Vector2i(1920,1080)) -> void:

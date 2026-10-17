@@ -147,138 +147,39 @@ func _zone(floor_index: int) -> HazardAttack:
 
 func _awareness() -> void:
 	_fresh()
-	var u: SiegeUpgrades = game.upgrades
-	var p: SiegePlayer = game.player
-	var b: ApartmentBuilding = game.building
-	u.apply_upgrade(SiegeUpgrades.Kind.AWARE_BAG)
-	_check(p.max_health == 130 and p.health == 130,"72-hour package raises max HP by 30 and fully heals")
-	p.health = 50
-	u._rewarded_wave = 0
-	u.begin_wave()
-	u.begin_wave()
-	_check(p.health == 65,"Bag wave heal is 15 exactly once per wave")
-	u.apply_upgrade(SiegeUpgrades.Kind.AWARE_ANCHOR)
-	var anchored: int = 0
-	for r: RoomDiorama in b.rooms: anchored += 1 if r.has_reinforcement(RoomDiorama.Reinforcement.ANCHOR) else 0
-	_check(anchored == 4,"Awareness package anchors exactly four distinct standing rooms")
-	var a: HazardAttack = HazardAttack.new()
-	a.source = 1
-	a.pattern = HazardAttack.Pattern.ROOM_OBJECT
-	_check(is_equal_approx(u.prepare_attack(a).damage,a.damage*.6),"Falling furniture player damage drops by 40 percent")
-	b.rooms[0].hp = 80
-	b.rooms[1].hp = 40
-	b.rooms[2].hp = 0
-	u.apply_upgrade(SiegeUpgrades.Kind.AWARE_STRUCTURE)
-	_check(b.rooms[0].hp == 115 and b.rooms[1].hp == 75 and b.rooms[2].hp == 0 and b.rooms[2].max_hp == 130,"Structure package adds 30 max HP, heals even light damage by 35, never revives rubble")
-	a.pattern = HazardAttack.Pattern.FAN
-	_check(is_equal_approx(u.prepare_attack(a).damage,a.damage*.65) and b.structural_factor == .65,"Structure package reduces quake and structural damage by 35 percent")
-	b.rooms[1].hp = 50
-	b.erode(1,10)
-	_check(is_equal_approx(b.rooms[1].hp,43.5),"Actual structural erosion uses the 35-percent reduction")
-	u.apply_upgrade(SiegeUpgrades.Kind.AWARE_UTILITIES)
-	b.secondary_damage(1,10)
-	_check(is_equal_approx(b.rooms[1].hp,38) and b.secondary_factor == .55,"Actual secondary utility damage drops by 45 percent")
-	a.kind = HazardAttack.Kind.FIRE_ZONE
-	a.source = 3
-	_check(is_equal_approx(u.prepare_attack(a).damage,a.damage*.55),"Floor-fire player damage drops by 45 percent")
-	var fire_before: float = b.rooms[1].hp
-	a.area = Rect2(b.rooms[1].global_position,b.rooms[1].room_size)
-	a.floor_index = 0
-	game.waves._on_zone_tick(a,1)
-	_check(is_equal_approx(b.rooms[1].hp,fire_before-2.2),"Floor-fire room damage also drops by exactly 45 percent")
-	u.apply_upgrade(SiegeUpgrades.Kind.AWARE_FLOOD)
-	a = _zone(0)
-	_check(u.prepare_attack(a).effect_strength == 0,"Flood awareness package removes floor-water slowing")
-	var r: RoomDiorama = b.rooms[0]
-	r.reinforce(RoomDiorama.Reinforcement.SHUTTER)
-	_check(is_equal_approx(r.damage_factor(0),.3) and is_equal_approx(r.damage_factor(2),.3) and is_equal_approx(r.damage_factor(3),.5),"Flood barrier increases storm/water block by 40 percent, keeps fire block at 50 percent")
+	game.upgrades.apply_upgrade(SiegeUpgrades.Kind.AWARE_STRUCTURE)
+	var r: RoomDiorama = game.loot.current_room()
+	r.hp = 40
+	game.loot.column_kits = 1
+	game.loot.repair_current_room()
+	_check(r.hp == 85 and r.bullet_armor,"Real manual repair enables visible bullet armor")
+	_check(game.player.max_health == 100 and game.building.structural_factor == 1,"New awareness modules do not apply retired passive stats")
 
 func _action() -> void:
 	_fresh()
-	var p: SiegePlayer = game.player
-	var u: SiegeUpgrades = game.upgrades
-	var l: LootSystem = game.loot
-	u.apply_upgrade(SiegeUpgrades.Kind.AUTO_DRONE)
-	_check(l.loot_lifetime == 7 and l.pickup_radius == 90,"Drone extends life to seven seconds and ordinary pickup reach by 2.5x")
-	l._next_spawn = 999
-	l.spawn(0,8)
-	l.advance(.45)
-	l.advance(6.999)
-	_check(l.items.size() == 1,"Drone loot exists at grounded age 6.999")
-	l.advance(.001)
-	_check(l.items.is_empty(),"Drone loot expires exactly at seven grounded seconds")
-	u.apply_upgrade(SiegeUpgrades.Kind.LOOT_MAGNET)
-	_check(l.loot_lifetime == 8,"Existing eight-second magnet is never downgraded by drone synergy")
-	u.apply_upgrade(SiegeUpgrades.Kind.RESCUE_BOOTS)
-	_check(is_equal_approx(p.run_speed,403*1.18) and is_equal_approx(p.dash_cooldown,.304*.7) and p.dash_duration == .35,"Boots apply +18% run, -30% cooldown and .35-second dash")
-	p.set_physics_process(true)
-	await _frames(4)
-	_check(p.try_dash(Vector2.RIGHT),"Upgraded dash starts through real movement API")
-	await _frames(18)
-	_check(p.is_dashing and not p.take_damage(10),"Dash is still genuinely invulnerable after .30 seconds")
-	await _frames(6)
-	_check(not p.is_dashing and p.take_damage(10),"Extended dash ends and damage is possible again")
-	p.set_physics_process(false)
-	_fresh()
-	u.apply_upgrade(SiegeUpgrades.Kind.EPOXY_SHIELD)
-	var r: RoomDiorama = l.current_room()
-	r.hp = 10
-	l.column_kits = 1
-	_check(l.repair_current_room() == LootSystem.RepairResult.REPAIRED and r.hp == 95 and p.repair_shield == 2.5,"Actual E repair heals 85 and supplies a 2.5-second shield")
-	_check(not p.take_damage(20),"Repair shield actually rejects incoming damage")
-	_fresh()
-	u.apply_upgrade(SiegeUpgrades.Kind.EARLY_WARNING)
-	for boss: DisasterBoss in game.waves.bosses():
-		game.telegraphs.clear()
-		game.telegraphs.warning_bonus = 0
-		boss.plan_pattern(game.waves,0,1)
-		var base_duration: float = game.telegraphs.pending[0].warning_duration
-		game.telegraphs.clear()
-		game.telegraphs.warning_bonus = .25
-		boss.plan_pattern(game.waves,0,1)
-		var duration: float = game.telegraphs.pending[0].warning_duration
-		_check(is_equal_approx(duration,base_duration+.25),"Boss %d receives full additional .25-second warning" % boss.kind)
-	game.telegraphs.clear()
-	var a: HazardAttack = HazardAttack.new()
-	a.origin = p.global_position+Vector2(250,-100)
-	a.velocity = Vector2.RIGHT*100
-	game.waves.plan_attack(a,.65)
-	_check(is_equal_approx(game.telegraphs.pending[0].warning_duration,.9),"Normal .65 warning becomes .90 seconds")
-	game.telegraphs._physics_process(.899)
-	_check(game.projectiles.active_count() == 0,"Radar warning cannot launch one millisecond early")
-	game.telegraphs._physics_process(.001)
-	var shot: HazardProjectile = game.projectiles.entries[0]
-	game.projectiles._physics_process(.1)
-	_check(is_equal_approx(shot.age,.088) and shot.global_position.is_equal_approx(a.point_at(.088)),"Radar slows actual path clock 12 percent without retargeting geometry")
-	var zone: HazardAttack = _zone(0)
-	game.projectiles.clear()
-	game.telegraphs.clear()
-	game.waves.plan_attack(zone,1)
-	game.telegraphs._physics_process(1.25)
-	var field: HazardProjectile = game.projectiles.entries[0]
-	game.projectiles._physics_process(.5)
-	_check(is_equal_approx(field.age,.5),"Radar does not lengthen stationary floor-hazard lifetimes")
-	u._rewarded_wave = 0
-	u.begin_wave()
-	u.begin_wave()
-	_check(l.column_kits == 1 and l.barricade_kits == 1,"Radar grants exactly two construction kits once per wave")
-	_fresh()
+	game.upgrades.apply_upgrade(SiegeUpgrades.Kind.REMOTE_CRANE)
+	game.building.rooms[15].hp = 20
+	game.building.rooms[14].hp = 30
+	game.loot.column_kits = 1
+	_check(game.loot.short_hint() == "[E] UZAKTAN ONAR","Remote crane advertises E even in a healthy current room")
+	_check(game.loot.repair_current_room() == LootSystem.RepairResult.REPAIRED and game.building.rooms[15].hp == 65 and game.building.rooms[14].hp == 75 and game.loot.column_kits == 0,"E consumes one actual material for two remote repairs")
+	_check(game.mechanics.freeze_remaining == 1,"Remote repair freezes real pooled bullets")
 
 func _offers() -> void:
 	var correct: bool = true
 	for seed_value: int in range(50):
 		_fresh()
 		game.upgrades._rng.seed = seed_value
-		for wave: int in range(5):
+		for wave: int in range(3):
 			game.upgrades.open_selection()
 			var offers: Array[int] = game.upgrades.offers
 			correct = correct and offers.size() == 3 and SiegeUpgrades.is_awareness(offers[0]) and not SiegeUpgrades.is_awareness(offers[1]) and not SiegeUpgrades.is_awareness(offers[2]) and offers[1] != offers[2]
 			correct = correct and not game.upgrades.selected.has(offers[0]) and not game.upgrades.selected.has(offers[1]) and not game.upgrades.selected.has(offers[2])
 			game.upgrades.choose((seed_value+wave)%3)
-	_check(correct,"250 selections across 50 runs (five card screens) guarantee left awareness, two distinct unowned action cards")
-	var text: bool = SiegeUpgrades.CATALOG.size() == 19
+	_check(correct,"150 selections across 50 runs (three card screens) guarantee left awareness, two distinct unowned action cards")
+	var text: bool = SiegeUpgrades.CATALOG.size() == 9
 	for card: Dictionary in SiegeUpgrades.CATALOG: text = text and card["effect"].length()>20 and card["note"].length()>20
-	_check(text,"All nineteen cards retain an effect plus a short awareness note")
+	_check(text,"All nine cards retain an effect plus a short awareness note")
 
 func _framing() -> void:
 	_fresh()
@@ -305,7 +206,7 @@ func _framing() -> void:
 
 func _reset() -> void:
 	_fresh()
-	for id: int in range(19): game.upgrades.apply_upgrade(id)
+	for id: int in range(9): game.upgrades.apply_upgrade(id)
 	game.loot.activate_safety(game.building.rooms[0])
 	game.reset_game()
 	var clean: bool = game.player.max_health == 100 and game.player.run_speed == 403 and game.player.dash_duration == .25 and game.loot.loot_lifetime == 4 and game.loot.pickup_radius == 36 and game.loot.repair_amount == 45 and game.telegraphs.warning_bonus == 0 and game.building.secondary_factor == 1 and game.building.structural_factor == 1
@@ -321,12 +222,12 @@ func _capture(directory: String) -> void:
 	root.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
 	root.content_scale_size = Vector2i(1920,1080)
 	await _frames(15)
-	for mode: int in [0,1,3,4]:
+	for mode: int in range(4):
 		_fresh()
 		game.waves.start_siege(mode as DisasterWaveManager.Mode,true)
 		game.waves.advance_wave(1.2)
 		game.building.pacing_enabled = false
-		var boss: DisasterBoss = [game.storm,game.earthquake,game.flood,game.titan][[0,1,3,4].find(mode)]
+		var boss: DisasterBoss = [game.storm,game.earthquake,game.flood,game.titan][mode]
 		boss.advance(.45)
 		await _save(directory,"boss-%d-idle.png" % boss.kind)
 		boss.cue_attack(.75)
@@ -376,13 +277,13 @@ func _capture(directory: String) -> void:
 	game.game_camera.position = camera_position
 	game.game_camera.zoom = camera_zoom
 	var action_ids: Array[int] = []
-	for id: int in range(19):
+	for id: int in range(9):
 		if not SiegeUpgrades.is_awareness(id): action_ids.append(id)
-	for group: int in range(7):
+	for group: int in range(3):
 		_fresh()
 		game.waves.state = DisasterWaveManager.State.BUILD_PREPARATION_PHASE
 		game.upgrades.pending = true
-		game.upgrades.offers.assign([SiegeUpgrades.AWARENESS[group%5],action_ids[group*2],action_ids[group*2+1]])
+		game.upgrades.offers.assign([SiegeUpgrades.AWARENESS[group%3],action_ids[group*2],action_ids[group*2+1]])
 		game.upgrade_overlay._refresh()
 		await _frames(25)
 		await _save(directory,"upgrade-cards-%02d.png" % (group+1))
@@ -393,7 +294,7 @@ func _capture(directory: String) -> void:
 		_check(fits,"Card group %d text fits every title/effect/awareness field" % group)
 	# Native keyboard and real mouse hit testing at design and scaled sizes.
 	await _tap(KEY_1)
-	_check(not game.upgrades.pending and game.upgrades.has_upgrade(12),"Native key 1 selects the visible left awareness card")
+	_check(not game.upgrades.pending and game.upgrades.has_upgrade(2),"Native key 1 selects the visible left awareness card")
 	game.upgrades.open_selection()
 	var id: int = game.upgrades.offers[2]
 	await _frames(25)

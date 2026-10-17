@@ -6,6 +6,11 @@ signal zone_tick(attack: HazardAttack, delta: float)
 signal dodged(world_position: Vector2)
 signal structure_hit(amount: float, world_position: Vector2)
 signal projectile_impacted(attack: HazardAttack, world_position: Vector2)
+## A bullet passed within GRAZE_DISTANCE of the player without touching (Step 7).
+signal grazed(world_position: Vector2)
+
+## Edge-to-edge near-miss window (inside the requested 18-26 px band).
+const GRAZE_DISTANCE: float = 22.0
 
 @export_range(16, 256) var capacity: int = 128
 var entries: Array[HazardProjectile] = []
@@ -28,21 +33,16 @@ func _ready() -> void:
 
 func warm_body_cache() -> void:
 	if not body_textures.is_empty(): return
-	# Warm all ordinary spinning silhouettes before combat. Area/wall/orb artwork
-	# remains live; no cache viewport or projectile node is allocated in a battle.
-	for kind: int in [HazardAttack.Kind.GLASS,HazardAttack.Kind.POT,HazardAttack.Kind.CHAIR,HazardAttack.Kind.WIND_BLADE,HazardAttack.Kind.BRICK,HazardAttack.Kind.CONCRETE,HazardAttack.Kind.CHANDELIER,HazardAttack.Kind.SHOCKWAVE,HazardAttack.Kind.BOOK,HazardAttack.Kind.WIND_ORB,HazardAttack.Kind.SHARD,HazardAttack.Kind.WARDROBE,HazardAttack.Kind.KNIFE,HazardAttack.Kind.PLATE,HazardAttack.Kind.SAW,HazardAttack.Kind.TOOL,HazardAttack.Kind.TOY,HazardAttack.Kind.DEBRIS,HazardAttack.Kind.WATER_SHARD,HazardAttack.Kind.HARPOON,HazardAttack.Kind.FLOATING_DEBRIS]:
-		var view: SubViewport = StaticCanvasCache.create(get_parent(),HazardProjectile.BODY_BOUNDS)
-		var painter: HazardProjectile = HazardProjectile.new()
-		painter._cache_source = true
-		painter.process_mode = Node.PROCESS_MODE_DISABLED
-		painter.active = true
-		painter.attack = HazardAttack.new()
-		painter.attack.kind = kind as HazardAttack.Kind
-		painter.attack.source = 2 if kind >= HazardAttack.Kind.FLOOD_ZONE else 0
-		painter.attack.radius = 27 if kind == HazardAttack.Kind.CONCRETE else 12
-		painter.attack.velocity = Vector2.RIGHT
-		view.add_child(painter)
-		body_textures[kind] = view.get_texture()
+	# Step 7: four silhouettes x three boss neons, rasterised once before combat.
+	# Every ordinary bullet is one of these 12 rim|body atlases, scaled to its radius.
+	for shape: int in range(HazardProjectile.Shape.size()):
+		for source: int in range(3):
+			var view: SubViewport = StaticCanvasCache.create(get_parent(),HazardProjectile.ATLAS_BOUNDS)
+			var painter: Node2D = Node2D.new()
+			painter.process_mode = Node.PROCESS_MODE_DISABLED
+			painter.draw.connect(HazardProjectile.paint_atlas.bind(painter, shape, source, HazardProjectile.CACHE_RADIUS))
+			view.add_child(painter)
+			body_textures[shape * 10 + source] = view.get_texture()
 
 func spawn(attack: HazardAttack) -> HazardProjectile:
 	if not attack.is_armed():
@@ -50,7 +50,8 @@ func spawn(attack: HazardAttack) -> HazardProjectile:
 		return null
 	for projectile: HazardProjectile in entries:
 		if not projectile.active:
-			projectile.body_texture = body_textures.get(attack.kind) if (attack.source >= 2) == (attack.kind >= HazardAttack.Kind.FLOOD_ZONE) and attack.kind != HazardAttack.Kind.SHOCKWAVE else null
+			var key: int = HazardProjectile.Shape.ROCK * 10 + clampi(attack.source, 0, 2) if attack.kind == HazardAttack.Kind.ROCKFALL else HazardProjectile.cache_key(attack.kind, attack.source)
+			projectile.body_texture = body_textures.get(key)
 			if projectile.activate(attack):
 				spawn_count += 1
 				last_spawn_warning = attack.warning_elapsed
@@ -82,6 +83,8 @@ func _physics_process(delta: float) -> void:
 	for projectile: HazardProjectile in entries:
 		if not projectile.active:
 			continue
+		# Crane freezes collision, zone ticks and lifetime as well as motion.
+		if mechanics != null and mechanics.freeze_remaining > 0.0: continue
 		var previous: Vector2 = projectile.global_position
 		projectile.advance(delta * (mechanics.projectile_speed(projectile) if mechanics != null else 1.0))
 		if projectile.attack.is_area():
@@ -93,6 +96,7 @@ func _physics_process(delta: float) -> void:
 					player.hazard_pull += signf(projectile.attack.area.get_center().x - player.global_position.x) * projectile.attack.effect_strength
 		elif mechanics != null and mechanics.intercept(projectile, previous): continue
 		if projectile.crosses_player(player, previous):
+			if mechanics != null and mechanics.block_hit(projectile): continue
 			projectile.contacted_player = true
 			if player.is_dashing or player.dashing_this_tick:
 				if not projectile.dodge_reported: dodged.emit(player.global_position)
@@ -106,6 +110,15 @@ func _physics_process(delta: float) -> void:
 			# A death callback may have cleared the complete pool synchronously.
 			if not projectile.active:
 				continue
+		elif not projectile.graze_reported and not projectile.contacted_player and not projectile.attack.is_area() and not projectile.attack.is_wall() and player.hit_invulnerability <= 0.0 and player.health > 0.0:
+			# Graze: the bullet came inside the window and is now receding (or left it)
+			# without a hit, so a near miss that becomes a hit next frame never pays out.
+			var gap: float = projectile.clearance(player, previous)
+			if gap <= GRAZE_DISTANCE and gap <= projectile.graze_gap + 0.01:
+				projectile.graze_gap = gap
+			elif projectile.graze_gap <= GRAZE_DISTANCE:
+				projectile.graze_reported = true
+				grazed.emit(projectile.global_position)
 		if projectile.age + 0.000001 >= projectile.attack.lifetime:
 			var amount: float = projectile.attack.structure_damage
 			var finished: HazardAttack = projectile.attack
@@ -130,5 +143,21 @@ func clear_floor(floor_index: int) -> int:
 	for projectile: HazardProjectile in entries:
 		if projectile.active and projectile.attack.floor_index == floor_index:
 			dissolve(projectile)
+			count += 1
+	return count
+
+## Landing shock is local to the destination room, never the whole floor.
+func clear_room(room: RoomDiorama) -> int:
+	var count: int = 0
+	var rect: Rect2 = Rect2(room.global_position,room.room_size)
+	for shot: HazardProjectile in entries:
+		if not shot.active: continue
+		if shot.attack.is_area():
+			if not shot.attack.area.intersects(rect): continue
+			shot.attack.safe_areas.append(rect)
+			if shot.attack.area_segments().is_empty(): dissolve(shot)
+			count += 1
+		elif rect.has_point(shot.global_position):
+			dissolve(shot)
 			count += 1
 	return count

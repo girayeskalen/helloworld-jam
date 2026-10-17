@@ -1,6 +1,27 @@
 class_name BossPatterns
 extends RefCounted
 ## Pattern authors only describe paths. All damaging activations go through warn().
+## Step 7: the storm and quake bosses use the geometric choreographies at the end of
+## this file (no random clutter, no room furniture). The older helpers above remain
+## for compatibility tests and are not part of the normal boss cycles.
+
+## Base recovery after each choreography (divided by the live tempo). Index = pattern.
+const STORM_BEATS: Array[float] = [2.7, 2.9, 2.4, 2.0, 2.5]
+const QUAKE_BEATS: Array[float] = [2.0, 1.8, 2.5, 2.1]
+const QUAKE_COOLDOWN_SCALE: float = 1.1
+const QUAKE_SPEED_SCALE: float = .9
+const QUAKE_GAP_SCALE: float = 1.1
+## Circular corridors are measured edge-to-edge at this world radius.
+const QUAKE_RING_REFERENCE: float = 200.0
+
+static func quake_gap_scale(w: DisasterWaveManager) -> float:
+	return QUAKE_GAP_SCALE if w.mode == DisasterWaveManager.Mode.EARTHQUAKE else 1.0
+
+static func quake_ring_radius(w: DisasterWaveManager) -> float:
+	var spacing: float = 2.0*QUAKE_RING_REFERENCE*sin(PI/12.0)
+	return (spacing-(spacing-24.0)*quake_gap_scale(w))*.5
+const STORM_LABELS: Array[String] = ["İKİZ GİRDAP ÇARKI", "GÜVENLİ KAT RULETİ", "SİNÜS RÜZGÂR TÜNELİ", "ÇAPRAZ RÜZGÂR MAKASI", "SİKLON HALKASI & İTME"]
+const QUAKE_LABELS: Array[String] = ["DAMA TAHTASI SÜTUN ÇÖKMESİ", "YÜRÜYEN SİSMİK FAY DALGASI", "SİSMİK MERKEZ HALKALARI", "KAT EZİCİ BALYOZ"]
 
 static func fan(w: DisasterWaveManager, floor_index: int, serial: int) -> void:
 	var count: int = 7 if serial % 2 == 0 else 5
@@ -186,3 +207,226 @@ static func splinters(w: DisasterWaveManager, parent: HazardAttack, impact: Vect
 		a.lifetime = minf(1.8, w._flight_time(a))
 		a.room_source = parent.room_source
 		w.plan_attack(a, .55)
+
+# ============================================================ Step 7: storm ====
+
+## Building centre used by the pinwheel and the tectonic rings.
+static func core_point(b: ApartmentBuilding) -> Vector2:
+	return Vector2(b.center_x(), (b.floor_y(3) + b.floor_y(0)) * .5 - 100.0)
+
+## A: four continuous spiral arms turning clockwise around a storm eye at the centre.
+static func pinwheel(w: DisasterWaveManager, serial: int) -> void:
+	var center: Vector2 = core_point(w.building)
+	var steps: int = 9
+	var turn: float = deg_to_rad(11.0)
+	var base: float = (serial % 2) * PI / 4.0
+	for k: int in range(steps):
+		for arm: int in range(4):
+			var a: HazardAttack = w._attack(HazardAttack.Kind.WIND_ORB, 0, center, Vector2.from_angle(base + arm * PI * .5 + k * turn) * 330.0)
+			a.source = 0
+			a.pattern = HazardAttack.Pattern.PINWHEEL
+			a.radius = 10
+			a.damage = 10
+			a.lead = k == 0 and arm == 0
+			a.warning_delay = k * .1
+			CataclysmPatterns._ray(w, a)
+			w.plan_attack(a)
+
+## B: three floors are swept by wind corridors, one adjacent floor stays safe; then
+## a second safe floor next to the first. Returns both safe floors.
+static func safe_floor_roulette(w: DisasterWaveManager, serial: int) -> Array[int]:
+	var b: ApartmentBuilding = w.building
+	var current: int = w.player.current_floor
+	var up: bool = current == 0 or (current < b.floor_count - 1 and serial % 2 == 0)
+	var first: int = current + (1 if up else -1)
+	var step: int = 1 if up else -1
+	var second: int = first + step if first + step >= 0 and first + step < b.floor_count else first - step
+	var sweep: float = 2400.0
+	var travel: float = (b.building_width - 54.0) / sweep
+	for wave: int in range(2):
+		var safe: int = first if wave == 0 else second
+		var from_left: bool = wave == 0
+		for f: int in range(b.floor_count):
+			if f == safe: continue
+			var a: HazardAttack = w._attack(HazardAttack.Kind.ROW_SWEEP, f, Vector2(b.global_position.x + (27.0 if from_left else b.building_width - 27.0), b.floor_y(f) - 87.0), Vector2(sweep if from_left else -sweep, 0))
+			a.source = 0
+			a.pattern = HazardAttack.Pattern.SAFE_FLOOR
+			a.row_height = 174.0
+			a.radius = 12
+			a.damage = 18
+			a.lifetime = travel
+			a.room_source = StringName("safe_%d" % safe)
+			a.lead = f == (0 if safe != 0 else 1)
+			# The second corridor set appears only after the first one has passed.
+			a.warning_delay = 0.0 if wave == 0 else HazardAttack.SAFE_FLOOR_WARNING + travel + .05
+			w.plan_attack(a, HazardAttack.SAFE_FLOOR_WARNING)
+	return [first, second]
+
+## C: two parallel sine streams form a tunnel that flows right along one floor.
+## All bullets of a stream share one frozen path, so its laser reads as one wave.
+static func sine_tunnel(w: DisasterWaveManager, floor_index: int, serial: int) -> void:
+	var b: ApartmentBuilding = w.building
+	var speed: float = 520.0
+	var x0: float = b.interior_left() + 10.0
+	var low: float = b.floor_y(floor_index) - 47.0
+	var phase: float = PI if serial % 2 == 1 else 0.0
+	for stream: int in range(2):
+		for k: int in range(9):
+			var a: HazardAttack = w._attack(HazardAttack.Kind.WIND_ORB, floor_index, Vector2(x0, low - stream * TUNNEL_GAP), Vector2(speed, 0))
+			a.source = 0
+			a.pattern = HazardAttack.Pattern.SINE_TUNNEL
+			a.motion = HazardAttack.Motion.WAVE
+			a.amplitude = 33.0
+			a.frequency = TAU * speed / 420.0
+			a.spiral_angle = phase
+			a.radius = 9
+			a.damage = 10
+			a.lead = k == 0 and stream == 0
+			a.warning_delay = k * .075
+			a.lifetime = (b.interior_right() - 10.0 - x0) / speed
+			w.plan_attack(a)
+
+## Vertical distance between the two tunnel streams.
+const TUNNEL_GAP: float = 96.0
+
+## D: blades from the top-left and bottom-left corners cross in an X at the player's
+## room, then a narrower second X follows.
+static func scissor(w: DisasterWaveManager, serial: int) -> Vector2:
+	var b: ApartmentBuilding = w.building
+	var target: Vector2 = Vector2(clampf(w.player.global_position.x, b.interior_left() + 260.0, b.interior_right() - 60.0), b.floor_y(w.player.current_floor) - 60.0)
+	var corners: Array[Vector2] = [Vector2(b.interior_left() + 18.0, b.floor_y(3) - 168.0), Vector2(b.interior_left() + 18.0, b.floor_y(0) - 34.0)]
+	for cut: int in range(2):
+		var spread: float = .09 if cut == 0 else .045
+		for corner: Vector2 in corners:
+			var aim: float = (target - corner).angle()
+			for i: int in range(3):
+				var a: HazardAttack = w._attack(HazardAttack.Kind.WIND_BLADE, 0, corner, Vector2.from_angle(aim + (i - 1) * spread) * (640.0 if cut == 0 else 720.0))
+				a.source = 0
+				a.pattern = HazardAttack.Pattern.SCISSOR
+				a.radius = 14
+				a.damage = 14
+				a.cross_floor = true
+				a.lead = i == 1 and cut == 0 and corner == corners[0]
+				a.warning_delay = .45 * cut
+				CataclysmPatterns._ray(w, a)
+				w.plan_attack(a)
+	return target
+
+## E: a gentle push plus three expanding rings: low (jump), head height (stay down),
+## and a full gapped ring (find the gap or dash).
+static func cyclone_rings(w: DisasterWaveManager, floor_index: int, serial: int) -> void:
+	var b: ApartmentBuilding = w.building
+	w.storm_gust(1.0, w.gust_strength * .7)
+	# Two columns away from the player, so most of each ring stays inside the building.
+	var column: int = (b.column_at(w.player.global_position.x) + 2) % ApartmentBuilding.COLUMN_COUNT
+	var x: float = b.global_position.x + b.room_width * (column + .5)
+	var y0: float = b.floor_y(floor_index)
+	var rings: Array = [[y0 - 14.0, 8.0, [0.0, .35, -.35, PI, PI - .35, PI + .35]], [y0 - 84.0, 8.0, [0.0, .35, -.35, PI, PI - .35, PI + .35]], [y0 - 60.0, 60.0, []]]
+	for slot: int in range(12):
+		if slot % 3 != 2: (rings[2][2] as Array).append(slot * TAU / 12.0)
+	for ring: int in range(3):
+		var angles: Array = rings[ring][2]
+		for i: int in range(angles.size()):
+			var a: HazardAttack = w._attack(HazardAttack.Kind.WIND_ORB, floor_index, Vector2(x, float(rings[ring][0])), Vector2.ZERO)
+			a.source = 0
+			a.pattern = HazardAttack.Pattern.CYCLONE_RING
+			a.motion = HazardAttack.Motion.SPIRAL
+			a.radius = 9
+			a.damage = 10
+			a.amplitude = float(rings[ring][1])
+			a.spiral_angle = float(angles[i]) + (serial % 2) * .13
+			a.spiral_spin = .55 if ring == 2 else 0.0
+			a.spiral_speed = 400.0
+			a.spiral_start = 18.0
+			a.lead = i == 0
+			a.warning_delay = ring * .5
+			a.lifetime = w._spiral_time(a, 3.2)
+			w.plan_attack(a)
+
+# ========================================================== Step 7: quake ====
+
+## 1: columns A+C then B+D collapse on every floor (room-sized ceiling rock falls).
+static func checker_crush(w: DisasterWaveManager, serial: int) -> Array[int]:
+	var b: ApartmentBuilding = w.building
+	var first: Array[int] = [0, 2]
+	var second: Array[int] = [1, 3]
+	if serial % 2 == 1:
+		first = [1, 3]
+		second = [0, 2]
+	for strike: int in range(2):
+		for column: int in (first if strike == 0 else second):
+			for f: int in range(b.floor_count):
+				var room: RoomDiorama = b.room_at(f, column)
+				var base_width: float = room.room_size.x-28.0
+				var base_gap: float = 2*b.room_width-base_width
+				var inset: float = base_gap*(quake_gap_scale(w)-1)*.5
+				var area: Rect2 = Rect2(room.global_position.x+14+inset,b.floor_y(f)-196,base_width-2*inset,196)
+				var a: HazardAttack = w._attack(HazardAttack.Kind.ROCKFALL, f, area.get_center(), Vector2.ZERO)
+				a.source = 1
+				a.pattern = HazardAttack.Pattern.CHECKER_CRUSH
+				a.area = area
+				a.lifetime = .38
+				a.damage = 18
+				a.lead = f == 0 and column == (first if strike == 0 else second)[0]
+				a.starts_slam = a.lead and strike == 0
+				a.warning_delay = .5 * strike
+				w.plan_attack(a)
+	var order: Array[int] = first.duplicate()
+	order.append_array(second)
+	return order
+
+## 2: a fist plants and a spike wave runs right-to-left along every floor in turn.
+static func fault_wave(w: DisasterWaveManager, serial: int) -> void:
+	var b: ApartmentBuilding = w.building
+	for f: int in range(b.floor_count):
+		var order: int = f if serial % 2 == 0 else b.floor_count - 1 - f
+		var a: HazardAttack = w._attack(HazardAttack.Kind.SHOCKWAVE, f, Vector2(b.interior_right() - 10.0, b.floor_y(f) - 13.0), Vector2(-560.0, 0))
+		a.source = 1
+		a.pattern = HazardAttack.Pattern.FAULT_WAVE
+		a.radius = 13
+		a.damage = 14
+		a.starts_slam = order == 0
+		a.lead = order == 0
+		a.warning_delay = order * .16
+		a.lifetime = w._flight_time(a)
+		w.plan_attack(a)
+
+## 3: the golem hits the central column; three aligned 12-rock rings expand, leaving
+## the same clear corridors between rays every time.
+static func tectonic_rings(w: DisasterWaveManager, serial: int) -> void:
+	var center: Vector2 = core_point(w.building)
+	var offset: float = deg_to_rad(15.0) if serial % 2 == 0 else 0.0
+	for ring: int in range(3):
+		for i: int in range(12):
+			var a: HazardAttack = w._attack(HazardAttack.Kind.SHARD, 0, center, Vector2.from_angle(offset + i * TAU / 12.0) * 360.0)
+			a.source = 1
+			a.pattern = HazardAttack.Pattern.TECTONIC_RING
+			a.radius = quake_ring_radius(w)
+			a.damage = 12
+			a.lead = i == 0
+			a.starts_slam = i == 0 and ring == 0
+			a.warning_delay = ring * .45
+			CataclysmPatterns._ray(w, a)
+			w.plan_attack(a)
+
+## 4: boulders roll right-to-left across two floors: one low (jump it), one high
+## (stay on the ground under it); the second pair swaps heights.
+static func boulder_stampede(w: DisasterWaveManager, floor_index: int, serial: int) -> Array[int]:
+	var b: ApartmentBuilding = w.building
+	var other: int = floor_index + 1 if floor_index < b.floor_count - 1 else floor_index - 1
+	var floors: Array[int] = [floor_index, other]
+	for pair: int in range(2):
+		for i: int in range(2):
+			var f: int = floors[i]
+			var high: bool = (i + pair + serial) % 2 == 1
+			var a: HazardAttack = w._attack(HazardAttack.Kind.CONCRETE, f, Vector2(b.interior_right() - 30.0, b.floor_y(f) - (98.0 if high else 24.0)), Vector2(-600.0, 0))
+			a.source = 1
+			a.pattern = HazardAttack.Pattern.BOULDER_STAMPEDE
+			a.radius = 22
+			a.damage = 18
+			a.lead = i == 0 and pair == 0
+			a.starts_slam = a.lead
+			a.warning_delay = pair * .62
+			a.lifetime = w._flight_time(a)
+			w.plan_attack(a)
+	return floors

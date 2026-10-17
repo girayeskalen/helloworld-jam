@@ -124,3 +124,25 @@ Kullanıcının FPS/BGM/final zorluğu talebi doğrultusunda AI yardımıyla mev
 MusicScore artık çalışma karesinde canlı sentez yapmaz; açılışta özgün Re minör bas/davul/melodi/akor katmanlarından 22.050 Hz 16-bit mono AudioStreamWAV üretir. Ayrı Master/−5 dB/ALWAYS oynatıcı, örnek adedine göre ileri döngü ve mute'a saygılı watchdog eklendi. 120 BPM'de sekiz 4/4 ölçü 16 sn olduğundan, çelişen 12,8 sn yerine bu müzikal uzunluk kullanıldı. Dış müzik, ses örneği, servis, asset veya bağımlılık indirilmedi; önbellekler mevcut prosedürel çizimlerin çalışma anındaki kopyalarıdır.
 
 Yalnız finalde cooldown×1,3, adet round(×0,7), hız×0,8, oyuncu/bina hasarı×0,7 ve uyarı+0,20 sn uygulandı. Bu mekanik katsayılar ölçülür; insanın algıladığı toplam zorluğun tam %30 değiştiği iddia edilmez. Step6Smoke ve PerformanceBench eklendi, eski test beklentileri güncellendi. Gerçek test/FPS/ses çıkışı ölçümleri ve sınırlar STATUS.md'dedir; insan kulakla dinleme veya bütün bilgisayarlarda FPS garantisi iddiası yoktur.
+
+
+## 17 Ekim 2026 — Adım 7 teknik başvuruları (Claude)
+
+- [AudioStreamPlayer.pitch_scale — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_audiostreamplayer.html): doruk sırasında aynı BGM döngüsünün 1,05× oynatılması (hız ve perde birlikte değişir; WAV yeniden üretilmez).
+- [CanvasItem.self_modulate — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_canvasitem.html): önbellekli mobilyayı yeniden render etmeden kuşatmada karartma.
+- [Geometry2D.get_closest_points_between_segments — Godot 4.3](https://docs.godotengine.org/en/4.3/classes/class_geometry2d.html): mevcut kapsül/segment çarpışmasıyla aynı testten sıyrılma mesafesi.
+
+Tempo eğrisi, koreografi geometrisi ve sıyrılma kuralı proje içinde yazıldı; hazır bullet-hell paketi veya başka oyundan kod alınmadı. Bu adımda yeni afet bilgisi metni eklenmedi; mevcut AFAD/USGS kaynaklı kart notları değişmedi.
+
+## 18 Ekim 2026 — Adım 8 kaynak eşleştirmesi
+
+Araç: OpenAI Codex; mevcut Claude Adım 7 kodu üzerinde GDScript, özgün kod tabanlı piksel ikon/efektler ve metin desteği. Harici görsel/ses/kod paketi eklenmedi. Kart metinleri özgün kısa özetlerdir, kurumsal metinlerin uzun alıntısı yoktur. Kalkan, zaman bükme, mermi temizleme ve uzaktan anlık onarım bu kaynaklarda tanımlanan gerçek uygulamalar değildir.
+
+| Kart / veri anahtarı | Kaynak ve doğrulanan kapsam |
+| --- | --- |
+| Çök-Kapan-Tutun, oda sabitleme, tahliye yolu, baş-boyun koruma, merdivene koşmama, hasarlı binaya girmeme (`afad_quake`) | [AFAD: Deprem öncesi, anı ve sonrası](https://afad.gov.tr/deprem-oncesi-ani-ve-sonrasi-alabileceginiz-onlemleri-biliyor-musunuz), [AFAD: Önlemini al, güvende kal](https://afad.gov.tr/deprem-oncesi-ani-ve-sonrasi-onlemini-al-guvende-kal). 18 Ekim 2026 resmî arama sonuçlarında davranışlar ve sabitleme bilgileri doğrulandı. Yapı onarım/güçlendirmesi için garanti veya uygulama reçetesi verilmez. |
+| 72 saatlik afet çantası (`afad_bag`) | [AFAD Gümüşhane: Afet ve acil durum çantasında neler bulunmalı?](https://gumushane.afad.gov.tr/afet-ve-acil-durum-cantasinda-neler-bulunmali). İlk 72 saat ve ihtiyaç malzemeleri resmî kaynak taramasıyla kontrol edildi. Çantanın oyun içi iyileştirmesi/bullet temizliği kurgudur. |
+| Sismograf (`usgs_warning`) | [USGS: Earthquake Early Warning — Overview](https://www.usgs.gov/programs/earthquake-hazards/science/earthquake-early-warning-overview?items_per_page=6&page=1). Resmî arama sonucu, uyarının başlamış depremi algıladığı ve deprem tahmini olmadığı ayrımını destekler; kesin tepki süresi vaadi yoktur. |
+| Swept collision / iki segment arası yakınlık | [Godot 4.3 Geometry2D](https://docs.godotengine.org/en/4.3/classes/class_geometry2d.html). Resmî API sayfası açılarak get_closest_points_between_segments ve segment_intersects_segment işlevleri incelendi; kaynak kod kopyalanmadı. |
+
+Bu taramada `www.afad.gov.tr/afet-ve-acil-durum-cantasi-nasil-hazirlanmali` ve `www.usgs.gov/programs/earthquake-hazards/science/early-warning` doğrudan açılışları hata döndürdü; bu iki başarısız bağlantı doğrulanmış kaynak sayılmadı. Yukarıdaki resmî arama sonuçları ve açılabilen Godot sayfası kullanıldı.

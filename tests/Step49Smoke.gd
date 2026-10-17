@@ -88,7 +88,7 @@ func _hud() -> void:
 	game.loot.activate_safety(game.building.rooms[5])
 	game.building.rooms[3].apply_damage(44)
 	await _rendered()
-	for text: String in ["85/100", "FIRTINA", "60s", "x2", "x1"]:
+	for text: String in ["85/100", "FIRTINA", "50s", "x2", "x1"]:
 		_check(hud.drawn_texts.has(text), "Siege HUD shows %s" % text)
 	_check(hud.drawn_texts.has("%%%d" % roundi(game.building.integrity)), "Building bar prints integrity as %%NN")
 	_check(hud.slot_count(0) == 2 and hud.slot_count(1) == 1 and hud.slot_count(2) == 1, "Slots count column kits, fixing kits and protected rooms")
@@ -102,7 +102,7 @@ func _hud() -> void:
 
 func _timing() -> void:
 	var w: DisasterWaveManager = game.waves
-	_check(w.siege_duration == 60.0 and w.build_duration == 7.0 and DisasterWaveManager.TOTAL_WAVES == 4 and DisasterWaveManager.Mode.size() == 4, "Four phases of 60 seconds, with seven-second construction")
+	_check(w.siege_duration == 50.0 and w.build_duration == 5.0 and DisasterWaveManager.TOTAL_WAVES == 4 and DisasterWaveManager.Mode.size() == 4, "Four phases of 50 seconds, with five-second construction")
 	game.reset_game()
 	_quiet()
 	var flashes: int = game.weather.flash_count
@@ -115,16 +115,16 @@ func _timing() -> void:
 	w.advance_wave(.002)
 	_check(fusions == 1 and game.weather.flash_count > flashes and game.game_camera.shake_strength() > 10.0, "At 55% the four energies collide: lightning flash and heavy shake")
 	w.advance_wave(1.258)
-	_check(w.state == DisasterWaveManager.State.WAVE_INTRO and is_equal_approx(w.siege_remaining, 60.0), "Fusion cannot end before 2.0 s nor spend fight time")
+	_check(w.state == DisasterWaveManager.State.WAVE_INTRO and is_equal_approx(w.siege_remaining, 50.0), "Fusion cannot end before 2.0 s nor spend fight time")
 	w.advance_wave(.001)
 	_check(w.state == DisasterWaveManager.State.SIEGE_PHASE and game.titan.fusion == 1.0 and fusions == 1, "Titan is formed exactly at 2.0 s; the collision fires once")
 	_check(w.boss_name() == "DEPREM • SEL • FIRTINA" and w.phase_label() == "AFET KUŞATMASI", "Exact plain final boss name and siege label")
-	w.advance_wave(44.999)
+	w.advance_wave(34.999)
 	_check(not w.nova, "No nova before the final 15 seconds")
 	w.advance_wave(.002)
 	_check(w.nova and w.phase_label() == "SON 15 SANİYE · KATAKLİZMA NOVA", "Nova begins in the last 15 seconds")
 	w.advance_wave(15.0)
-	_check(w.state == DisasterWaveManager.State.WAVE_OUTRO and not w.nova, "60 s ends the final fight and clears the overload")
+	_check(w.state == DisasterWaveManager.State.WAVE_OUTRO and not w.nova, "50 s ends the final fight and clears the overload")
 	w.advance_wave(DisasterWaveManager.OUTRO_DURATION)
 	_check(w.victory and w.completed_waves == 4, "Fourth retreat is the campaign victory")
 
@@ -408,7 +408,7 @@ func _final_fight() -> void:
 		if not a.is_armed() or a.warning_elapsed < required - .00001 or a.warning_elapsed > a.warning_duration + .017: bad += 1
 	w.autoplay = false
 	print("FINAL_FIGHT ticks=%d siege=%d launches=%d peak=%d supplies=%d integrity=%.1f" % [ticks, siege_ticks, launches.size(), peak, w.nova_supplies, game.building.integrity])
-	_check(w.victory and not w.failed and absi(siege_ticks - 3600) <= 2, "A real 60-second final fight runs to victory (%d siege ticks)" % siege_ticks)
+	_check(w.victory and not w.failed and absi(siege_ticks - 3000) <= 2, "A real 50-second final fight runs to victory (%d siege ticks)" % siege_ticks)
 	var all_combos: bool = true
 	for pattern: int in [HazardAttack.Pattern.STEAM_TSUNAMI, HazardAttack.Pattern.STEAM_BURST, HazardAttack.Pattern.FIRENADO, HazardAttack.Pattern.SEISMIC_TIDE, HazardAttack.Pattern.QUADRANT_SEAL, HazardAttack.Pattern.CATACLYSM_NOVA]:
 		all_combos = all_combos and patterns.has(pattern)
