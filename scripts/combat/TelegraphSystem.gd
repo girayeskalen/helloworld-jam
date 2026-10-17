@@ -7,11 +7,15 @@ signal gust_ready(direction: float, strength: float, duration: float)
 
 const MIN_WARNING: float = 0.55
 const MAX_WARNING: float = 0.75
-## Neon warning palette for the blackout: electric blue storm, ember/red quake.
-const STORM_WARNING: Color = Color("62d0ff")
-const QUAKE_WARNING: Color = Color("ff6a3a")
-const STORM_ROW: Color = Color("7fe0ff")
-const QUAKE_ROW: Color = Color("ff4a3a")
+## Step 7 neon palette, shared with the projectiles: cyan storm, amber quake, blue flood.
+const STORM_WARNING: Color = Color("00f0ff")
+const QUAKE_WARNING: Color = Color("ff9500")
+const FLOOD_WARNING: Color = Color("2b7fff")
+const STORM_ROW: Color = Color("00f0ff")
+const QUAKE_ROW: Color = Color("ff9500")
+## Safe-floor roulette corridors: turquoise wind with red danger edges.
+const ROULETTE_EDGE: Color = Color("ff3b4e")
+const FLASH: Color = Color("ffffff")
 const GUST: Color = Color("a8ecff")
 @export var custom_sprite: Texture2D
 var pending: Array[HazardAttack] = []
@@ -44,18 +48,19 @@ func warn_gust(area: Rect2, floor_lines: PackedFloat32Array, direction: float, s
 func warn(attack: HazardAttack, seconds: float = 0.65) -> int:
 	# The trajectory cannot be retargeted after this copy is placed on screen.
 	attack = attack.frozen_copy()
-	# Long minimums (1.0 sweeps/floods, 0.8 elemental seal) replace the normal clamp.
+	# Step 7: every ordinary telegraph is exactly STANDARD_WARNING (0.55 s), whatever
+	# the pattern asked for. Whole-floor/area hazards keep their longer minimum
+	# (1.0 flood/wall, 0.8 seal, 0.65 safe-floor roulette); radar/final extras add on.
 	var required: float = attack.minimum_warning()-attack.warning_extension
-	attack.warning_duration = (required if required > MAX_WARNING else clampf(seconds, MIN_WARNING, MAX_WARNING)) + warning_bonus + attack.warning_extension
+	var base: float = required if required > HazardAttack.STANDARD_WARNING + 0.0001 else HazardAttack.STANDARD_WARNING
+	attack.warning_duration = base + warning_bonus + attack.warning_extension
 	attack.warning_elapsed = 0.0
 	attack.warning_confirmed = false
 	attack.warning_id = _next_id
 	if not attack.is_area() and not attack.is_wall() and not attack.is_vertical_warning():
-		var previous: Vector2 = attack.origin
-		for sample: int in range(1,33):
-			var next: Vector2 = attack.point_at(attack.lifetime*float(sample)/32.0)
-			_append_dashes(attack.warning_lines,previous,next)
-			previous = next
+		# One thin continuous laser along the frozen path (sampled once, drawn in one call).
+		for sample: int in range(0,25):
+			attack.warning_lines.append(attack.point_at(attack.lifetime*float(sample)/24.0))
 	_next_id += 1
 	pending.append(attack)
 	queue_redraw()
@@ -94,65 +99,57 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 static func warning_color(attack: HazardAttack) -> Color:
-	if attack.source >= 2: return Color("54e9dc") if attack.source == 2 else Color("ff9c48")
-	if attack.pattern == HazardAttack.Pattern.FULL_ROW:
-		return STORM_ROW if attack.source == 0 else QUAKE_ROW
-	return STORM_WARNING if attack.source == 0 else QUAKE_WARNING
+	return [STORM_WARNING, QUAKE_WARNING, FLOOD_WARNING, QUAKE_WARNING][clampi(attack.source, 0, 3)]
 
+## The last FLASH_WINDOW seconds of every telegraph flash white: "ŞİMDİ KAÇ!".
+static func is_flashing(attack: HazardAttack) -> bool:
+	return attack.warning_delay <= 0.0 and attack.warning_duration - attack.warning_elapsed <= HazardAttack.FLASH_WINDOW + 0.000001
+
+## Clean warning language: thin laser lines for paths, flat fills for floors, rooms
+## and ceiling drops. No circles or icons; the final 0.12 s turns everything white.
 ## Text for these warnings is drawn crisply in screen space by WorldLabels.
 func _draw() -> void:
 	_draw_gust()
 	for attack: HazardAttack in pending:
 		if attack.warning_delay > 0.0: continue
 		var progress: float = clampf(attack.warning_elapsed / attack.warning_duration, 0, 1)
-		var pulse: float = 0.65 + 0.35 * sin(progress * 26.0)
+		var flash: bool = is_flashing(attack)
 		var color: Color = warning_color(attack)
-		color.a = 0.75 + progress * 0.25
+		var edge: Color = FLASH if flash else color
 		if attack.is_area():
 			for segment: Rect2 in attack.area_segments():
-				draw_rect(segment, Color(color,.10 + progress*.14))
-				draw_rect(segment, color, false, 3.0)
-				_dashes(segment.position, Vector2(segment.end.x, segment.position.y),color)
-				_icon(segment.get_center()+Vector2(0,-32),color,pulse)
+				draw_rect(segment, Color(FLASH, .32) if flash else Color(color, .10 + progress * .16))
+				draw_line(segment.position, Vector2(segment.end.x, segment.position.y), edge, 2.0)
+				draw_line(Vector2(segment.position.x, segment.end.y), segment.end, edge, 2.0)
 		elif attack.is_wall():
 			var start: Vector2 = Vector2(minf(attack.origin.x, attack.point_at(attack.lifetime).x), attack.floor_y - attack.row_height)
-			var size: Vector2 = Vector2(absf(attack.velocity.x * attack.lifetime), attack.row_height)
-			draw_rect(Rect2(start, size), Color(color, .10 + .10 * progress))
-			draw_rect(Rect2(start, size).grow(3), Color(color, 0.25 * pulse), false, 9.0)
-			draw_rect(Rect2(start, size), Color(color, pulse), false, 3.2)
-			_dashes(start + Vector2(0, size.y * .5), start + Vector2(size.x, size.y * .5), color)
-			_icon(start + Vector2(size.x * .5, size.y * .70), color, pulse)
+			var band: Rect2 = Rect2(start, Vector2(absf(attack.velocity.x * attack.lifetime), attack.row_height))
+			var roulette: bool = attack.pattern == HazardAttack.Pattern.SAFE_FLOOR
+			draw_rect(band, Color(FLASH, .30) if flash else Color(color, .12 + progress * .14))
+			var rim: Color = FLASH if flash else (ROULETTE_EDGE if roulette else color)
+			draw_line(band.position, Vector2(band.end.x, band.position.y), rim, 3.0)
+			draw_line(Vector2(band.position.x, band.end.y), band.end, rim, 3.0)
+			# Direction ticks: the corridor sweeps from the origin side.
+			var dir: float = signf(attack.velocity.x)
+			for i: int in range(6):
+				var x: float = band.position.x + band.size.x * (i + .5) / 6.0
+				var y: float = band.get_center().y
+				draw_line(Vector2(x - dir * 10, y - 9), Vector2(x, y), Color(edge, .7), 2.0)
+				draw_line(Vector2(x - dir * 10, y + 9), Vector2(x, y), Color(edge, .7), 2.0)
 		elif attack.is_vertical_warning():
 			var bottom: float = attack.floor_y - 4.0
-			var top: float = bottom - 180.0
-			var half_width: float = maxf(attack.radius + 12.0, 22.0)
-			draw_rect(Rect2(attack.origin.x - half_width, top, half_width * 2, bottom - top), Color(color, 0.08 + progress * 0.12))
-			CelArt.line(self, Vector2(attack.origin.x - half_width, top), Vector2(attack.origin.x - half_width, bottom), Color(color, 0.45), 2.6)
-			CelArt.line(self, Vector2(attack.origin.x + half_width, top), Vector2(attack.origin.x + half_width, bottom), Color(color, 0.45), 2.6)
-			_dashes(Vector2(attack.origin.x, top), Vector2(attack.origin.x, bottom), color)
-			draw_set_transform(Vector2(attack.origin.x, bottom), 0, Vector2(1, 0.28))
-			draw_arc(Vector2.ZERO, half_width + 5.0, 0, TAU, 32, Color(color, 0.3), 14.0, true)
-			draw_arc(Vector2.ZERO, half_width + 5.0, 0, TAU, 32, color, 5.0, true)
-			draw_set_transform(Vector2.ZERO)
-			_icon(Vector2(attack.origin.x, top + 18), color, pulse)
-		else:
-			if attack.pattern == HazardAttack.Pattern.EMBER_DETONATION and attack.lead:
-				draw_circle(attack.origin,20,Color("391810"))
-				draw_arc(attack.origin,29,-PI/2,-PI/2+TAU*maxf(.01,progress),28,color,5.0)
-				draw_circle(attack.origin,9,Color("fff1a2"))
-			if attack.pattern == HazardAttack.Pattern.VORTEX and attack.lead:
-				draw_vortex_eye(self, attack.origin, attack.warning_elapsed * 6.0, 0.35 + progress * 0.55, 0.4 + progress * 0.6)
-			if attack.pattern in [HazardAttack.Pattern.QUADRANT_SEAL, HazardAttack.Pattern.CATACLYSM_NOVA] and attack.lead:
-				draw_element_orb(self, attack.origin, color, progress, attack.warning_elapsed)
-			if attack.pattern == HazardAttack.Pattern.SPLINTER:
-				for fragment: int in range(3):
-					var p: Vector2 = attack.origin + Vector2((fragment - 1) * 11, -4 - fragment % 2 * 5)
-					CelArt.poly(self, PackedVector2Array([p + Vector2(-5, 3), p + Vector2(0, -5), p + Vector2(6, 2)]), Color("8f8370"), 1.5)
-			if not attack.warning_lines.is_empty(): draw_multiline(attack.warning_lines,color,3.2)
-			if attack.kind == HazardAttack.Kind.WIND_BLADE:
-				draw_line(attack.origin, attack.point_at(attack.lifetime), Color(color, 0.08), attack.radius * 2, true)
-			if (attack.pattern not in [HazardAttack.Pattern.VORTEX,HazardAttack.Pattern.EMBER_DETONATION,HazardAttack.Pattern.QUADRANT_SEAL,HazardAttack.Pattern.CATACLYSM_NOVA,HazardAttack.Pattern.STEAM_BURST]) or attack.lead:
-				_icon(attack.origin + Vector2(0, -31), color, pulse)
+			var top: float = bottom - 176.0
+			var half_width: float = maxf(attack.radius + 8.0, 18.0)
+			draw_rect(Rect2(attack.origin.x - half_width, top, half_width * 2, bottom - top), Color(FLASH, .30) if flash else Color(color, .10 + progress * .16))
+			draw_line(Vector2(attack.origin.x, top), Vector2(attack.origin.x, bottom), edge, 2.0)
+			draw_line(Vector2(attack.origin.x - half_width, bottom), Vector2(attack.origin.x + half_width, bottom), edge, 3.0)
+		elif attack.warning_lines.size() >= 2:
+			draw_polyline(attack.warning_lines, Color(edge, .22), 7.0)
+			draw_polyline(attack.warning_lines, edge, 2.0)
+			if attack.lead:
+				# A tiny emitter mark where the volley is born (no rings, no icons).
+				var o: Vector2 = attack.origin
+				draw_colored_polygon(PackedVector2Array([o + Vector2(0, -7), o + Vector2(7, 0), o + Vector2(0, 7), o + Vector2(-7, 0)]), edge)
 
 func _draw_gust() -> void:
 	if gust_warning_left <= 0.0 and gust_active_left <= 0.0:

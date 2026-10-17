@@ -14,6 +14,7 @@ func _run() -> void:
 		quit(1)
 		return
 	var game: MainGame = packed.instantiate() as MainGame
+	game.intro_enabled = false
 	root.add_child(game)
 	# Isolate movement regressions from automatic combat; Step2Smoke covers waves.
 	game.waves.autoplay = false

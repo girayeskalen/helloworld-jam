@@ -10,7 +10,6 @@ const HOT: Color = Color("ffe5a0")
 
 static func hydra(c: DisasterBoss, rig: Dictionary, root: Vector2) -> void:
 	var t: float = rig["time"]
-	var retreat: float = rig["retreat"]
 	var roar: float = sin(float(rig["strike"])*PI)
 	c.draw_set_transform(root)
 	# Overlapping tide ribbons form one curling body rather than a rectangular sprite.
@@ -37,7 +36,7 @@ static func hydra(c: DisasterBoss, rig: Dictionary, root: Vector2) -> void:
 		c.draw_polyline(neck,CelArt.INK,60,true)
 		c.draw_polyline(neck,WATER,50,true)
 		c.draw_polyline(neck,Color("388d9c"),18,true)
-		c.draw_set_transform(root+head,sin(t*1.5+i)*.12+retreat*.8*(i-1))
+		c.draw_set_transform(root+head,sin(t*1.5+i)*.12)
 		# Crest folds into a hooked wave jaw and ragged foam teeth.
 		CelArt.poly(c,PackedVector2Array([Vector2(-57,12),Vector2(-65,-29),Vector2(-43,-63),Vector2(-12,-77),Vector2(33,-64),Vector2(60,-30),Vector2(49,-8),Vector2(26,-25),Vector2(2,-36),Vector2(-16,-17),Vector2(-6,13),Vector2(45,30),Vector2(26,56),Vector2(-22,49)]),OCEAN,4)
 		CelArt.poly(c,PackedVector2Array([Vector2(-59,-22),Vector2(-40,-57),Vector2(-10,-69),Vector2(31,-56),Vector2(55,-29),Vector2(27,-36),Vector2(2,-48),Vector2(-29,-29)]),FOAM,3)
@@ -88,7 +87,6 @@ static func titan(c: DisasterBoss, rig: Dictionary, root: Vector2) -> void:
 	var t: float = rig["time"]
 	var hot: Color = Color("fff3df") if rig["enrage"] else HOT
 	var ember: Color = Color("ff3a2c") if rig["enrage"] else EMBER
-	var retreat: float = rig["retreat"]
 	var charge: float = rig["charge"]
 	var roar: float = sin(float(rig["strike"])*PI)
 	var opening: float = (.4 + charge*.6 + roar*.2) if rig["helix"] else charge*.15
@@ -103,7 +101,7 @@ static func titan(c: DisasterBoss, rig: Dictionary, root: Vector2) -> void:
 		var side: float = -1.0 if i%2 == 0 else 1.0
 		var shoulder: Vector2 = Vector2(side*65,-290-(i/2)*72)
 		var hand: Vector2 = rig["arms"][i]
-		hand += Vector2(side*(retreat*35+roar*20),retreat*90-charge*35)
+		hand += Vector2(side*roar*20,-charge*35)
 		var elbow: Vector2 = shoulder.lerp(hand,.5)+Vector2(side*24,25*sin(t+i))
 		CelArt.line(c,shoulder,elbow,CelArt.INK,38)
 		CelArt.line(c,elbow,hand,CelArt.INK,32)
@@ -117,7 +115,7 @@ static func titan(c: DisasterBoss, rig: Dictionary, root: Vector2) -> void:
 	CelArt.poly(c,PackedVector2Array([Vector2(-82,-395),Vector2(-38,-428),Vector2(48,-419),Vector2(89,-373),Vector2(64,-206),Vector2(25,-147),Vector2(-43,-164),Vector2(-78,-255)]),Color("261c22"),4)
 	for row: int in range(4):
 		for side: float in [-1.0,1.0]:
-			var offset: Vector2 = Vector2(side*(9+retreat*80+opening*22),-391+row*53+sin(t*1.7+row)*4)
+			var offset: Vector2 = Vector2(side*(9+opening*22),-391+row*53+sin(t*1.7+row)*4)
 			CelArt.poly(c,PackedVector2Array([offset+Vector2(side*6,0),offset+Vector2(side*57,-10),offset+Vector2(side*66,23),offset+Vector2(side*36,53),offset+Vector2(side*8,37)]),Color("59403c") if row%2 == 0 else COAL,3)
 			CelArt.poly(c,PackedVector2Array([offset+Vector2(side*57,-10),offset+Vector2(side*66,23),offset+Vector2(side*36,53),offset+Vector2(side*31,26)]),Color("201e24"),1.5)
 			CelArt.line(c,offset+Vector2(side*14,8),offset+Vector2(side*49,4),Color("a76b54"),3)
@@ -130,7 +128,7 @@ static func titan(c: DisasterBoss, rig: Dictionary, root: Vector2) -> void:
 	c.draw_polyline(seam,hot,4,true)
 	CelArt.ellipse(c,Vector2(0,-330),Vector2(22+opening*13,31+opening*16+sin(t*3)*5),hot,3)
 	# Crown, hollow black jaw and swept flame horns.
-	var head: Vector2 = Vector2(sin(t*1.8)*5,-465-retreat*50)
+	var head: Vector2 = Vector2(sin(t*1.8)*5,-465)
 	for side: float in [-1.0,1.0]:
 		flame(c,head+Vector2(side*42,3),93,23,t*6+side,ember)
 		flame(c,Vector2(side*82,-350),98,31,t*4+side,ember)

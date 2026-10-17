@@ -35,8 +35,8 @@ static func plan(w: DisasterWaveManager, index: int, floor_index: int) -> String
 
 ## Wind-up time of the titan art; equals the longest warning it announces.
 static func cue_seconds(w: DisasterWaveManager, index: int) -> float:
-	if w.nova: return .75+WARNING_EXTRA
-	return [1.0, .75, 1.0, HazardAttack.SEAL_WARNING][index % 4]+WARNING_EXTRA
+	if w.nova: return HazardAttack.STANDARD_WARNING+WARNING_EXTRA
+	return [1.0, HazardAttack.STANDARD_WARNING, 1.0, HazardAttack.SEAL_WARNING][index % 4]+WARNING_EXTRA
 
 ## SKILL 1 — flood on both lower floors, roof meteors fall into that water.
 static func steam_tsunami(w: DisasterWaveManager, index: int) -> String:

@@ -9,6 +9,8 @@ var game: MainGame
 var drawn: int = 0
 var repair_markers: int = 0
 var feedback_rects: Array[Rect2] = []
+const GRAZE_TEXT: String = "SIYRILDI! +ENERJİ"
+const SAFE_FLOOR_COLOR: Color = Color("7dffb2")
 
 func configure(owner_game: MainGame) -> void:
 	game = owner_game
@@ -25,6 +27,7 @@ func _draw() -> void:
 	var telegraphs: TelegraphSystem = game.telegraphs
 	for attack: HazardAttack in telegraphs.pending:
 		if attack.warning_delay > 0.0: continue
+		if attack.kind == HazardAttack.Kind.ROCKFALL: continue
 		if attack.is_area():
 			var message: String = "GİRDAP ÇEKİMİ" if attack.source == 2 else "TERMAL VAKUM"
 			if attack.kind == HazardAttack.Kind.STEAM_COLUMN: message = "BUHAR SÜTUNU"
@@ -47,6 +50,11 @@ func _draw() -> void:
 			HazardAttack.Pattern.VORTEX:
 				if attack.lead:
 					_text(attack.origin + Vector2(-34, -112), "GİRDAP", 18, color)
+			HazardAttack.Pattern.SAFE_FLOOR:
+				if attack.lead:
+					var safe: int = int(String(attack.room_source).get_slice("_", 1))
+					var arrow: String = "▲" if safe > game.player.current_floor else ("▼" if safe < game.player.current_floor else "●")
+					_plate(Vector2(game.building.center_x(), game.building.floor_y(safe) - 110), "%s GÜVENLİ KAT %s" % [arrow, arrow], 20, SAFE_FLOOR_COLOR)
 	if telegraphs.gust_warning_left > 0.0:
 		var area: Rect2 = telegraphs.gust_area
 		var arrow: String = "→" if telegraphs.gust_direction > 0 else "←"
@@ -61,6 +69,9 @@ func _draw() -> void:
 	for dodge: Dictionary in game.feedback.texts:
 		var alpha: float = minf(1.0, float(dodge["life"]) * 3.0)
 		_text(Vector2(dodge["position"]), "DODGE!", 28, Color(Color("f5d986"), alpha))
+	for graze: Dictionary in game.feedback.grazes:
+		var fade: float = minf(1.0, float(graze["life"]) * 4.0)
+		_text(Vector2(graze["position"]), GRAZE_TEXT, 17, Color(CombatFeedback.GRAZE_GOLD, fade))
 	_draw_rooms_and_loot()
 
 ## Critical rooms get an elegant "[!] ONAR [E]" marker; loot/repair feedback floats up.

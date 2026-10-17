@@ -9,6 +9,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	game = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
+	game.intro_enabled = false
 	(game.get_node("DisasterWaveManager") as DisasterWaveManager).autoplay = false
 	root.add_child(game)
 	root.unfocusable = true
@@ -105,7 +106,7 @@ func _pool_and_weather() -> void:
 	for i: int in range(20): p.advance(1.0/60.0)
 	_check(p._trail.size() == 4 and p._trail_line.size() == 4 and p.body_texture != null,"Active common shots reuse prewarmed bodies and at most four trail points")
 	game.projectiles.clear()
-	_check(game.projectiles.get_child_count() == 128 and game.projectiles.body_textures.size() == 21,"Artwork warming leaves the fixed 128-entry pool intact")
+	_check(game.projectiles.get_child_count() == 128 and game.projectiles.body_textures.size() == 12,"Artwork warming (4 shapes x 3 neons) leaves the fixed 128-entry pool intact")
 	var weather: NightWeather = game.weather
 	_check(weather._drops.size() == 40 and weather._ash.size() == 10 and weather._rain_segments.size() == 80,"Rain and ash total fifty particles with fixed line storage")
 	for i: int in range(60): weather.advance(1.0/60.0)
@@ -115,7 +116,7 @@ func _battle(mode: int) -> void:
 	game.reset_game()
 	game.waves.autoplay = false
 	game.waves.start_siege(mode as DisasterWaveManager.Mode,true)
-	game.waves.advance_wave(game.waves.intro_duration())
+
 	game.building.pacing_enabled = false
 
 func _tuning() -> void:
@@ -149,7 +150,7 @@ func _tuning() -> void:
 		var w: DisasterWaveManager = game.waves
 		w.plan_attack(w._attack(HazardAttack.Kind.GLASS,0,Vector2(600,900),Vector2(500,0)),.65)
 		var a: HazardAttack = game.telegraphs.pending[0]
-		_check(is_equal_approx(a.velocity.x,400 if mode == 3 else 500) and is_equal_approx(a.damage,7 if mode == 3 else 10) and is_equal_approx(a.warning_duration,.85 if mode == 3 else .65),"Only phase %d has its intended speed/damage/extra-warning settings" % (mode+1))
+		_check(is_equal_approx(a.velocity.x,400 if mode == 3 else 500) and is_equal_approx(a.damage,7 if mode == 3 else 10) and is_equal_approx(a.warning_duration,.75 if mode == 3 else .55),"Only phase %d has its intended speed/damage/extra-warning settings" % (mode+1))
 		_check(not a.warning_lines.is_empty(),"Frozen warning paths contain precomputed dashed line geometry")
 	_battle(3)
 	var w: DisasterWaveManager = game.waves
@@ -165,7 +166,7 @@ func _tuning() -> void:
 	_battle(3)
 	w._marathon_clock = 0
 	w.advance_wave(.01,.01)
-	_check(is_equal_approx(w._marathon_clock,w.cataclysm_interval*1.3-.01),"Final scheduler extends the actual skill interval by 1.3x")
+	_check(is_equal_approx(w._marathon_clock,w.cataclysm_interval*1.3-.01*w.final_tempo()),"Final scheduler extends the actual skill interval by 1.3x (clock runs at the final tempo)")
 	game.telegraphs.clear()
 	var room: RoomDiorama = game.building.rooms[0]
 	var zone: HazardAttack = w._attack(HazardAttack.Kind.FLOOD_ZONE,0,room.global_position,Vector2.ZERO)

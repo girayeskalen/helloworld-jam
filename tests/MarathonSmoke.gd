@@ -10,6 +10,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	game = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
+	game.intro_enabled = false
 	(game.get_node("DisasterWaveManager") as DisasterWaveManager).autoplay = false
 	root.add_child(game)
 	if DisplayServer.get_name() != "headless":
@@ -37,7 +38,7 @@ func _fresh(mode: DisasterWaveManager.Mode = DisasterWaveManager.Mode.FLOOD) -> 
 	game.reset_game()
 	game.waves.autoplay = false
 	game.waves.start_siege(mode,true)
-	game.waves.advance_wave(game.waves.intro_duration())
+
 	game.building.pacing_enabled = false
 	game.loot.set_physics_process(false)
 	game.mechanics.set_physics_process(false)
@@ -179,18 +180,12 @@ func _hazards() -> void:
 	_check(room.hp < hp-3 and room.heat == 30,"Room fire increases temperature and real room damage")
 	var other: RoomDiorama = w.building.room_at(0,0)
 	_check(other.heat == 0,"Fire damage stays inside the impacted room")
-	game.upgrades.apply_upgrade(SiegeUpgrades.Kind.SPRINKLER)
-	var reduced: HazardAttack = game.upgrades.prepare_attack(fire_zone)
-	_check(is_equal_approx(reduced.damage,fire_zone.damage*.6) and is_equal_approx(reduced.lifetime,1.8),"Sprinkler cuts fire damage and floor fire duration by exactly 40 percent")
-	game.upgrades.apply_upgrade(SiegeUpgrades.Kind.DRAINAGE)
+	var copy: HazardAttack = game.upgrades.prepare_attack(fire_zone)
+	_check(copy.damage == fire_zone.damage and copy.lifetime == fire_zone.lifetime,"Retired fire passive no longer changes hazard stats")
 	var water: HazardAttack = w._attack(HazardAttack.Kind.FLOOD_ZONE,0,point,Vector2.ZERO)
-	water.source = 2
 	water.effect_strength = .35
-	var drained: HazardAttack = game.upgrades.prepare_attack(water)
-	_check(is_equal_approx(drained.damage,water.damage*.6) and is_equal_approx(drained.effect_strength,.21),"Drainage cuts water damage and slowdown by exactly 40 percent")
-	room.restore()
-	w._on_projectile_impacted(meteor,point)
-	_check(room.hp == 98.2,"Sprinkler also reduces real impact damage to the room")
+	var unmodified: HazardAttack = game.upgrades.prepare_attack(water)
+	_check(unmodified.damage == water.damage and unmodified.effect_strength == .35,"Retired drainage passive no longer changes water stats")
 	game.reset_game()
 	_check(room.heat == 0 and not game.upgrades.has_upgrade(9) and p.hazard_drag == 0,"Reset clears heat, resistances and environment")
 
@@ -199,7 +194,7 @@ func _movement() -> void:
 	# The final titan is anchored around the building; it is covered by Step49Smoke.
 	for boss: DisasterBoss in [game.storm,game.earthquake,game.flood]:
 		boss.set_active(true)
-		boss.transition_pose(1.0,false)
+		boss.set_active(true)
 		var initial: Vector2 = boss.position
 		boss.reposition(game.waves,0,3)
 		for i: int in range(60): boss.advance(1.0/60)
@@ -232,7 +227,7 @@ func _controls_and_enrage() -> void:
 	await _tap(KEY_5)
 	_check(game.waves.mode == DisasterWaveManager.Mode.FLOOD,"Removed key 5 cannot launch a fire phase")
 	await _tap(KEY_4)
-	game.waves.advance_wave(game.waves.intro_duration())
+
 	game.waves.siege_remaining = 15.01
 	game.waves.advance_wave(.02,.02)
 	_check(game.waves.nova and game.titan.enraged,"Final combined boss keeps its last-fifteen-second overload")
@@ -251,13 +246,11 @@ func _capture(directory: String) -> void:
 	await _frames(10)
 	for mode: int in range(4):
 		_fresh(mode as DisasterWaveManager.Mode)
-		game.waves.state = DisasterWaveManager.State.WAVE_INTRO
-		game.waves.transition_remaining = game.waves.intro_duration()
 		for boss: DisasterBoss in game.waves.bosses():
 			boss.set_process(false)
-			if boss.visible: boss.transition_pose(.5,false)
-		await _save(directory,"intro-%d.png" % (mode+1))
-		game.waves.advance_wave(game.waves.intro_duration())
+			if boss.visible: boss.advance(.5)
+		await _save(directory,"direct-start-%d.png" % (mode+1))
+
 		if mode < 2:
 			if mode == 0: game.waves.storm_burst()
 			elif mode == 1: game.waves.quake_burst()
@@ -292,7 +285,7 @@ func _capture(directory: String) -> void:
 	_fresh()
 	game.waves.debug_enabled = true
 	game.waves.test_upgrades()
-	game.upgrades.offers.assign([9,10,1])
+	game.upgrades.offers.assign([0,4,6])
 	game.upgrade_overlay._refresh()
 	await _frames(25)
 	await _save(directory,"cards-fire-flood.png")
@@ -315,7 +308,7 @@ func _capture(directory: String) -> void:
 	event = event.duplicate() as InputEventMouseButton
 	event.pressed = false
 	root.push_input(event,true)
-	_check(game.upgrades.has_upgrade(10) and not game.upgrades.pending,"Scaled window card hit testing selects drainage")
+	_check(game.upgrades.has_upgrade(4) and not game.upgrades.pending,"Scaled window card hit testing selects drone")
 	await _save(directory,"scaled-window.png",Vector2i(root.get_texture().get_size()))
 
 func _save(directory: String, name: String, size: Vector2i = Vector2i(1920,1080)) -> void:

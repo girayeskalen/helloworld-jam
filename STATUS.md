@@ -1,5 +1,126 @@
 # AFET KUŞATMASI — proje durumu
 
+## Hesap değişimi için kayıt (18 Ekim 2026)
+
+Kullanıcı bu mevcut sürümün push edilmesini, son iki isteğin geri alınmasının başka hesapta yapılmasını istedi. Bu görevde oyun kodu değiştirilmedi ve geri alma yapılmadı. Tam Adım 8 çalışma ağacı, korunmuş görev öncesi yedekten `reference/pre-step9-20261018` dalında `55203269c1fb79252dbd2f7e66e041ec89320a27` commit'i olarak ayrıca kaydedildi (134 dosyanın Git ağaç içeriği doğrulandı). Uygulama adımları `SON_IKI_ISTEK_GERI_DONUS.md` dosyasında. Aşağıdaki test sonuçları önceki görevden; bu kayıt/push görevinde oyun testleri yeniden çalıştırılmadı.
+
+## Güncel — video intro ve sinematik temizliği (18 Ekim 2026)
+
+Son kullanıcı isteğiyle önceki Adım 9 ve beklemeli boss sinematikleri kaldırıldı. **F5 ile çalışır; gerçek hikâye videosu henüz yoktur.** Şu an lisanslı piksel fontlu isim kartı ve sakin bülten oynar. Önceki bölümler tarihçedir. Bu görevde commit/push yapılmadı.
+
+| Kapsam | Sonuç |
+| --- | --- |
+| Silinenler | CutsceneDirector, OpeningStoryArt, FinaleStoryArt, BossCinematic, eski Step9Smoke ve bunların UID'leri; diploma/koltuk/kuşanma/ulti-yıkım/gündüz çizimleri; boss fusion/retreat yolları; WAVE_INTRO/OUTRO durumları, bekleme sabitleri, kamera odağı/letterbox, I/V/K ve kullanılmayan 4 sinematik ses tarifi. Çalışan kaynaklarda eski yöneticilere başvuru kalmadı. |
+| Tek açılış katmanı | scenes/IntroOverlay.tscn ve IntroOverlay.gd, CanvasLayer30 üzerinde tam ekran VideoStreamPlayer. assets/cutscenes/intro_cutscene.ogv varsa otomatik oynar. Gerçek finished sinyali veya Space/Enter → 0,45 sn fade → apartman ve tam8 sn Fırtına hazırlığı. R girişsiz yeni oyundur. |
+| Videosuz durum | Siyah fon, Press Start 2P gerçek piksel font, istenen tam üniversite/bölüm/isim yazısı, sakin tarih içermeyen acil durum bülteni; yumuşak metin belirme/sönme. Sahte diploma/oda resmi veya başka oyun içi cutscene çizimi yoktur. Eksik/geçersiz OGV ve çözücüsüz WebM test edilmiştir. |
+| Ses/girdi | Video sesine alan açılırken mevcut WAV BGM oynatıcısı canlı kalır; fade'de normal seviyeye döner. M/−/+ ve ESC/P korunur; gerçek video duraklatılınca oynatma konumu sabit kalır. Skip Space taklaya sızmaz. Oyun girdileri ve hazırlık saati video arkasında işlemez. |
+| Sade dalga akışı | Yalnız hazırlık/savaş/inşaat/zafer durumları. Bosslar özgün animasyon ve giriş sesiyle hemen başlar, tam50 sn savaşır; bitişte doğrudan kart/5 sn inşaat veya finalde standart zafer HUD'u. Oyuncu ölümü/yapısal çöküş standart sonuç HUD'una gider. Saldırı telgrafı/wind-up/strike korunur. |
+| Korunan çekirdek | Görev başı ZIP'iyle karşılaştırmada Player, ApartmentBuilding, RoomDiorama, BossPatterns, CataclysmPatterns, ProjectilePool ve SiegeUpgrades birebir korunur. 9 aktif kart, 2x W, gece cache/palet, 128 havuz, loot/onarım ve 50/5 sn dengesine dokunulmadı. Boss nefes salınımının kökünü zeminin altına indirmesi engellendi; ayrıntılı rig ve saldırı animasyonu korunur. |
+| Yeni hazır kaynak | Press Start 2P TTF + özgün OFL1.1 lisansı assets/fonts içindedir. Yalnız açılışta kullanılır. Harici video, sprite, müzik veya çalışma zamanı eklentisi eklenmedi. FFmpeg test aracı ve test deseni yalnız geçici klasördedir. BEYAN/SOURCES güncellendi. |
+
+### Nihai doğrulama
+
+- **Godot 4.7.2.stable.official.ed1daf0bf ve 4.3.stable.official.77dcf97d8:** import/parse ve her sürümde **18 paket / 1.304 kontrol / sıfır başarısız kontrol / sıfır betik hatası veya uyarısı**. Kullanıcının kaldırdığı sinematik bekleme/çizim beklentileri doğrudan başlangıç/bitiş kontrollerine çevrildi; değişmeyen hareket, çarpışma, 16 oda, 9 buff, loot, uyarı/havuz, ses ve tam200 sn kampanya regresyonu tutuldu.
+- Yeni **VideoIntroSmoke 57/57**: otomatik ilk açılış, tam isim/Türkçe piksel glyph'leri, videosuz/bozuk/çözücüsüz durumlar, fade/tek bitiş, Space/Enter/numpad Enter, R, pause/mute, gerçek OGV çözme ve EOF, canlı decoder konumunun duraklaması, decoder bırakma, dört doğrudan boss ve standart zafer/yenilgi. Test için 640×360 özgün FFmpeg desen videosu üretildi; kullanıcıya ait bir hikâye videosu sağlanmış gibi gösterilmedi. Godot4.3 Theora dokusu 16px blok nedeniyle 640×368, kurulu4.7.2 ise 640×360 raporladı; test iki gerçek biçimi denetler.
+- **Native Compatibility / 1920×1080: iki motorda ayrı ayrı 75/75, sıfır betik/renderer hatası veya uyarısı.** Her motor için 9 PNG: isim kartı, bülten, yarım fade, hazırlık, dört doğrudan boss ve gerçekten çözülen video. İsim/bülten/fade/boss kareleri ve gerçek test videosu açılarak incelendi. Kurulu4.7.2 import önbelleği en son yenilendi. git diff --check temiz.
+- Kanıtlar: %TEMP%/siege-video-checks/, siege-video-checks43/, siege-video-native/, siege-video-native43/, siege-video-native-final.log, siege-video-native43.log, siege-video-import47-final.log. Görev öncesi kopya: %TEMP%/siege-video-intro-baseline.zip. Log/video/araç/test ekran görüntüleri repoya eklenmedi.
+- **Sınırlar:** gerçek hikâye videosu üretimi/teslimi bu görevde yapılmadı; dosya eklenene kadar minimal giriş çalışır. Standart Godot4 WebM çözücüsü içermez; WebM yalnız uygun çözücü kurulmuşsa oynar, eklentisiz kullanım OGV'dir. Yeni FPS benchmark'ı, insan oynanış/işitme değerlendirmesi, ikinci bilgisayar veya export paketi denenmedi. Otomatik testlerin kapsamı bunları garanti etmez.
+
+## Arşiv — Adım 9 (son kullanıcı isteğiyle kaldırıldı)
+
+Adım 7–8'in çalışma ağacındaki kodu ve dokuz aktif modülü korunarak sinematik hikâye eklendi. Hareket/2x W fizik yayı, 16 odalı gece dioraması, 50 sn savaş/5 sn inşaat, ilk üç fazın akışı, paternler, loot/onarım dengesi ve kesintisiz WAV BGM değişmedi. **Bu görevde commit veya push yapılmadı.**
+
+| İş | Gerçek sonuç |
+| --- | --- |
+| Açılış — 7,5 sn | Özgün salon dioraması, okunaklı ODTÜ/İnşaat Mühendisliği/Giray Eskalen diploması, 2,2 sn yakın plan, yumuşak açılma, TV alarmı, ayağa kalkıp dolaba koşma, açılan kapaklar, mevcut kurtarma kıyafeti/baret/fener ve görev yazısı. 6,95–7,5 sn apartmana geçiş. İlk 8 sn hazırlık sinematikten sonra başlar. |
+| Tekrar izleme / girdi | Space/Enter/numpad Enter geçer, aynı Space takla başlatmaz. I canlı turu veya kart seçimini dondurup durumunu geri getirir; sonuçtan I yeni hikâye açar. R girişsiz yeni oyun; V/K sonuç ön izlemesi, bitişte 1–4 de taze boss testine döner. ESC/P ve M/−/+ korunur. |
+| Yenilgi — 4,5 sn | Dört bossa özgü adlandırılmış ulti: hortum/şimşek, çift kaya yumruğu/fay, köpüklü tsunami, üçünün birleşimi. 1,5 sn yüklenme, kamera/ses darbesi, gerçek apartman görüntüsünden dört ayrı katın kademeli düşmesi ve sıkışarak enkaza dönüşmesi, kırık döşeme/demir/toz/moloz, temiz sonuç paneli. Can bitişi ve yapısal çöküş aynı akışa bağlıdır. |
+| Zafer — 6,5 sn | Finalin gerçek 50 sn'sinden sonra 2,2 sn son ulti; 2,2–3,8 sn altın/turkuaz 16 oda kalkanı ve boss parçalanması. Sonrasında yağmur kesilir, mavi/altın gökyüzü-güneş-ışınlar, yeşeren ağaç/çimen/çiçek/kuşlar ve çatıda kahraman. Giray Eskalen adına zafer paneli. Kalkan gerçek mermi veya ilave oda onarımı üretmez; kazanılmış HP/modüller korunur. |
+| Performans mimarisi | Salonun statik resmi bir kez 960×540 UPDATE_ONCE cache'e çizilir; kapak/karakter/metin ayrı. Bitişte tek çöküş dokusu, dört parça, sınırlı poligon/36 moloz/10 duman/24 boss parçası kullanılır. Düşen katlar collider'ı değiştirmez. Hikâyede simülasyon işlemeleri kilitlenir; Engine.time_scale=1 kalır. |
+| Ses / kaynak | 3 özgün PCM tarifi: TV alarmı, kuşanma, sıcak Re majör umut melodisi. Toplam 55 tarif mevcut SoundSynth worker/havuz/miks yolunda sınandı; BGM durmaz, hikâyede geçici kısılır, R ile −5 dB döner. Yeni harici asset/font/ses yoktur. USGS/NHC kurgu ayrımı SOURCES.md'de; diploma özgün oyun dekorudur. |
+
+### Adım 9 doğrulaması
+
+- **Godot 4.7.2.stable.official.ed1daf0bf ve Godot 4.3.stable.official.77dcf97d8**, Windows: import/parse başarılı; her sürümde **18 paket / 1.343 kontrol / sıfır başarısız kontrol / sıfır betik hatası veya uyarısı**. Önceki 17 paketin 1.271 kontrolü korunur; Step9Smoke 72 yeni kontroldür. Eski mekanik testleri hikâyeyi açıkça kapatır; Step9Smoke normal otomatik hikâyeli açılışı test eder. İki sürüm arasında test önbelleği son olarak kurulu 4.7.2 ile yenilendi.
+- Step9Smoke: 7,5/4,5/6,5 sn sınırları; ilk hazırlığın tüketilmemesi; gerçek skip/R/I/V/K girdileri; loot yaşı/stok/konum/HP/enerji/modül ve kart seçimi korunması; pause/mute/resume; dört boss yenilgisi; bina çöküşü; 3.000 adet 1/60 sn tikle gerçek 50 sn final; sonradan gece/girdi/boss katmanlarının geri açılması; gerçekten pişmiş PCM olayları ve kesintisiz WAV BGM. Değişmeyen hareket/kat geçişi, havuz/uyarı, oda/kit, dokuz aktif mekanik, ses sentezi/miksi ve tam kampanya testleri de geçti.
+- **Native 4.7.2 / Compatibility / 1920×1080: 134/134 kontrol, sıfır betik veya renderer hatası/uyarısı.** `%TEMP%/siege-step9-native/` içinde **25 PNG** kaydedildi; diploma/TV/kuşanma, dört ulti, ara çöküş/enkaz, sonuç, kalkan ve gündüz kareleri incelendi. Ayrıca giriş + dört farklı yenilgi + zaferin bütün geçiş kareleri gerçek renderer'da oynatıldı. İlk tam oynatmada çok küçük ağaç taçları üçgenleştirilemiyordu; bir dünya biriminden küçük taçlar çizilmeden büyütülerek düzeltildi ve bütün akış yeniden hatasız geçti.
+- Test sürücüsü/ses PCM ölçümü, insan klavye-fare oynanışı veya kulakla dinleme değildir. İkinci bilgisayar, yeni export ve teslim paketi bu görevde denenmedi. Erken `--quit-after` kapanış denemesinde iki WAV kaynak sızıntısı uyarısı görüldü; kontrollü scene-free/audio-drain kapanışlı bütün nihai paketler ve native oynatımda bu uyarı yoktur. Normal F5 penceresinin insan tarafından kapatılması ayrıca denenmedi.
+- Kanıtlar: `%TEMP%/siege-step9-checks/`, `%TEMP%/siege-step9-checks43/`, `%TEMP%/siege-step9-import47.log`, `%TEMP%/siege-step9-native-clean.log`. Görev öncesi dosyalar `%TEMP%/siege-step9-baseline.zip` ile karşılaştırıldı: mevcut boss/oyuncu/oda/patern/aktif kart kodu korunur; eski testlerde yalnız `story_enabled=false` satırı eklendi. Çalışan sahne/ses/faz/loot kilitleri, yeni üç hikâye dosyası/testi ve belgeler görev kapsamıdır. Test görüntüsü/log/araçlar repoya eklenmedi.
+
+### Adım 9 kısa native performans ölçümü
+
+RTX 4070 Laptop GPU, OpenGL Compatibility, 1920×1080, VSync/FPS sınırı kapalı. Her örnekte 0,5 sn ısınma + 1,8 sn ölçüm; aynı temsili zaman çevresinde director/boss animasyon geometrisi ve yeniden çizim işi her kare gerçek delta ile çalıştırıldı. Ölçüm sırasında başka ağır test çalışmadı. Aşağıdakiler bu bilgisayardaki kısa sinematik örnekleridir; bütün oyunun veya başka bilgisayarların FPS garantisi değildir.
+
+| Örnek | Ortalama kare (ms) | Ortalama FPS | p95 kare (ms) |
+| --- | ---: | ---: | ---: |
+| Açılış / TV | 3,00 | 333,1 | 3,77 |
+| Fırtına ultisi + çöküş | 7,33 | 136,3 | 8,76 |
+| Deprem ultisi + çöküş | 6,90 | 145,0 | 8,39 |
+| Sel ultisi + çöküş | 6,28 | 159,3 | 7,70 |
+| Birleşik ulti + çöküş | 11,15 | 89,7 | 13,30 |
+| Zafer / üçlü ulti + kalkan | 13,29 | 75,2 | 16,06 |
+| Gün doğumu | 6,31 | 158,4 | 7,64 |
+
+En ağır örnekte ortalama 75,2 FPS ve p95 16,06 ms ölçüldü; kısa örneklerin tamamı ortalamada 60 FPS hedefini geçti. İlk kare/uzun süre/başka cihaz ölçümü iddiası yoktur.
+
+## Güncel — Adım 8 (18 Ekim 2026, Codex)
+
+Claude'un çalışma ağacındaki Adım 7 değişiklikleri korunarak yeni istek uygulandı. Godot 4.3+ Compatibility, 4×4 gece dioraması, 2x W fizik yayı, mevcut tuşlar, dört adet 50 sn savaş, üç adet 5 sn hazırlık, Fırtına/Sel/Final paternleri ve WAV BGM korunur. Aşağıdaki 19 kart ve eski aktif modüllerle ilgili kayıtlar tarihçedir.
+
+| İş | Sonuç |
+| --- | --- |
+| Deprem fazını hafifletme | Yalnız faz 2: desen arası bekleme ×1,10; hareketli kaya/şok dalgası hızı ×0,90 ve aynı uç nokta. Dama sütunlarının net kaçış boşluğu ×1,10. 12'li halkada merkezden 200 px referansındaki net kenar aralığı ×1,10; kaya yarıçapı yaklaşık12→8,02. Sabit ROCKFALL alanının hasar süresi değişmez. Fırtına fonksiyon bloğu, Sel/Final desenleri ve karakter sanatı görev başındaki Claude kopyasıyla birebir aynı. Üç katsayı algılanan toplam zorluğun tam %10 azalması iddiası değildir. |
+| Dokuz aktif kart | 3 hazırlık +6 aksiyon: Çök-Kapan-Tutun Kalkanı, 72 Saatlik Afet Çantası, L-Demir & Karbon Manto; Sonik Takla, Otonom Onarım Dronu, Zaman Bükücü Sismograf, Hidrolik Kalkan Küreleri, Sismik Çivi Botları, Uzaktan Lazer Vinç. Önceki pasif stat bonusları ve etkisiz eşya-hasarı kartları kaldırıldı. |
+| Gerçek etkiler | Kalkan ilk isabeti siler/6sn şarj; çanta <45% can/fazda1/+40can/4sn hız ve tıbbi lootta2sn savma; onarılan odada %45 tek deneme ve enerji×2. Dash gerçek temasta parçalar; drone6,5sn ücretsiz45HP ve loot çekme; graze220px/2,5sn/hız×0,45; iki orbital gerçek süpürme; botlar gerçek inişe kadar koruma/hedef oda temizliği/+20; vinç tek kit/en fazla2uzak oda/45'erHP/1sn tam mermi donması. Ayrıntılar README'dedir. |
+| Kısa kartlar | Büyük özgün UpgradeIcon, kısa başlık, en fazla12 kelimelik kalın mekanik metin, tek satır bilgi; kesin yeşil/mavi/mor A/B/B düzeni. Yerel ve ölçekli fare/1–3 girişleri çalışır. İlk native incelemede drone açıklamasının son satırı kesiliyordu; metin alanı132px yapıldı ve tüm9 kart tekrar doğrulandı. |
+| Eğitim / ses / kaynak | Yanıltıcı garanti cümleleri yerine AFAD/USGS kısa notları; kalkan adı Çök-Kapan-Tutun. Yeni harici asset/font/ses yok. Var olan block/heal/repair/graze/dash/iniş sesleri yeni olaylara bağlı, sınırlı havuz korunur. |
+| Performans sınırları | Oda zırhı mevcut statik destek cache'inde; per-frame oda cache'i yok. Mermi128, efekt parçacığı480, ışın64, halka24, uçan metin32 sınırı. BGM ve atmosfer değişmedi. Bu adımda yeni FPS benchmark'ı yapılmadı. |
+
+### Adım 8 doğrulaması
+
+- **Godot 4.7.2.stable.official.ed1daf0bf ve 4.3.stable.official.77dcf97d8**, Windows: import/parse ve her sürümde **17 paket / 1.271 kontrol / sıfır başarısız kontrol / sıfır betik hatası**. Paket sayıları: Step1 129, Step2 53, Step25 145, Step3 43, Step27 61, Step3Loot76, Campaign59, Step45 73, Marathon90, Step48 42, Step49 94, Step5 73, Step55 77, Step6 57, Step7 99, Step2Soak11, Step8 **89**. Eski kart beklentileri kullanıcı isteğiyle kaldırılan tasarımın yerine geçirildi; değişmeyen oda/loot/hareket/uyarı/ses/faz testleri korunur.
+- Step8 her mekanik için gerçek mermi/sağlık/stok davranışını sınar. Örnekler: kubbe0,349'da kapalı/0,350'de açık; ilk mermi yok, ikinci isabet mümkün; çanta ölüm callback'inden önce kurtarır/fazda1; 1.000 zırh denemesinde424 blok, aynı mermi/oda tekrar şans denemez; mermi tek karede kapsülü geçse sonik takla parçalar; drone6,499'da bekler/6,500'de en hasarlı uzak odayı onarır; kubbe içindeki mermi .1sn'de .045sn ilerler/dışarıdaki .1sn; bot gerçek fizik inişinde yalnız odayı temizler ve çarpışma geri gelir; vinç 1kit/2oda, donmuş mermi vuramaz/yaşlanamaz ve tam1sn sonunda devam eder. İlk testte kayan nokta artığı nedeniyle donma bir tik fazla sürüyordu; sayaçlar mikro-saniye eşiğinde sıfırlanarak düzeltildi.
+- 300 kampanya seçim örneği ve Step48'in150 seçim örneği A/B/B, farklılık ve tekrar etmeme kurallarını geçer. Step5 yeni heal/repair modül sinyallerini mevcut miks/havuz içinde ayrıca doğrular.
+- **Native 4.7.2 / Compatibility / 1920×1080: Step8 103/103.** Üç kart grubu (dokuz kart), tüm aktif savunmalar, karakter/dron yakın planı, iki uzak odaya onarım ışını ve yeni deprem halka boşlukları için **7 PNG** `%TEMP%/siege-step8-native/` altında kaydedilip açılarak incelendi. Bütün metinlerde gerçek satır/alan boyu sığar. Native fare ve klavye1, gerçek E girdisiyle çift onarım,1280×720 ölçekli fare seçimi geçer. Bunlar sentetik girdidir; insan oynanışı iddiası değildir.
+- Step7 dört gerçek50sn savaş sürücüsü: fırtına428atış/tepe47 (Adım7 ile aynı), deprem376/40 (önce416/40), sel218/20 ve final479/37 (aynı). Her atış tam uyarılı; 128 havuz taşmadı. Tam kampanya sürücüsü Step2Soak:1.466atış/tepe47, dört faz zafer, en fazla3 onarım uyarısı. Oyuncu canı yalnız bu entegrasyon testinde yükseltilir, toplama/onarım programlıdır; insan denge ölçümü değildir.
+- Kanıt logları: `%TEMP%/siege-step8-checks/`, `%TEMP%/siege-step8-checks43/`, `%TEMP%/siege-step8-native.log`. Görev başındaki yerel dosyaların ek güvenlik kopyası `%TEMP%/siege-step8-baseline.zip` içinde; Git geçmişi ve ekip çalışması korunmuştur. Test/görüntü/motor dosyaları repoya eklenmedi.
+- **Denenmeyenler:** insan klavye/fare oynanışında eğlence-zorluk dengesi, insan kulakla dinleme, ikinci bilgisayar, yeni export ve teslim paketi. Standart F5 giriş sahnesi kullanılabilir. **Bu görevde commit/push yapılmadı.**
+
+
+## Güncel — Adım 7 (17 Ekim 2026, Claude)
+
+Kullanıcının “okunabilir, hızlanan bullet-hell” isteği uygulandı. Adım 6'nın 60 FPS önbellekleri, −5 dB WAV BGM, dört faz (FIRTINA → DEPREM → SEL → DEPREM • SEL • FIRTINA), BossCinematic ve alt boss barı korunur. Aşağıdaki Adım 6 ve öncesi kayıtlarındaki 60/7 sn ve 0,55–0,75 sn ifadeleri tarihçedir.
+
+| İş | Uygulama |
+| --- | --- |
+| Süre | Faz 50 sn (`siege_duration`), kart sonrası inşaat 5 sn (`build_duration`), ilk hazırlık 8 sn. Giriş 2,5/2,8 sn ve çıkış 1 sn savaş saatini tüketmez. |
+| Tempo rampası | `DisasterWaveManager.tempo_at`: 0–15 sn 0,90×, 15–35 sn 1,00→1,25× doğrusal, 35–50 sn 1,45×; iki geçiş 1 sn yumuşatılır (kare başı en çok ~0,005 artış). Fırtına/deprem/sel saati ×tempo; final ×(1+(t−1)·0,5), çünkü son 15 sn'de Nova da hızlandırıyor. Mermi hızı `bullet_tempo` = max(1, 1+(t−1)·0,5): dorukta 1,225×, ısınmada yazılan hız; `scale_travel_speed` yolun uç noktasını korur. Dorukta BGM aynı WAV ile 1,05× oynar (0,12/sn yumuşak geçiş; hız ve perde birlikte değişir). |
+| Fırtına | Beş koreografi sırayla: **A İkiz Girdap Çarkı** (merkezden saat yönünde 4 kol, 9 adım × 0,1 sn, 11°), **B Güvenli Kat Ruleti** (3 kat koridor, oyuncuya komşu güvenli kat, 0,65 sn; ilk süpürme geçince ona komşu ikinci güvenli kat), **C Sinüs Rüzgâr Tüneli** (iki paralel 9'lu akım, 78 px tünel), **D Çapraz Rüzgâr Makası** (sol üst/sol alt köşeden odaya üçer bıçak, 0,45 sn sonra yarı açılı ikinci X), **E Siklon Halkası & İtme** (%70 itme + alçak / kafa hizası / 4 boşluklu üç halka, oyuncudan iki sütun öte). Her desenden önce 0,3 sn dalış; C/E'de tek kat boyunda kompakt hortum çekirdeği, diğerlerinde tam boy. |
+| Deprem | Dört koreografi sırayla: **Dama Tahtası Sütun Çökmesi** (A+C oda sütunları `ROCKFALL`, 0,5 sn sonra B+D), **Yürüyen Sismik Fay Dalgası** (her katta sırayla sağdan sola diken dalgası), **Sismik Merkez Halkaları** (3 × 12 hizalı kaya, aynı koridorlar), **Kat Ezici Balyoz** (oyuncu + komşu kat; alçak 24 px zıpla, yüksek 98 px altında kal; ikinci çift yer değiştirir). Golem odalardan eşya fırlatmaz; wind-up'ta sabitlenmemiş mobilya yalnız görsel titrer. |
+| Sel/final | Desenler ve sayısal dengeleri aynı; yeni uyarı/mermi görünümü ve tempo rampası uygulanır. Final ayarı (`CataclysmPatterns.tune`) tam bir kez uygulanmaya devam eder. |
+| Görünürlük | Mermi: `#05070a` 4 dünya birimi (~3 ekran px) kontur + boss neonu (fırtına `#00f0ff`, deprem `#ff9500`, sel `#2b7fff`) + beyaz çekirdek; küre/bıçak/kaya/diken siluetleri, 12 önceden pişmiş atlas dokusu (eski 21'in yerine; sol hücre kontur silueti yarıçap+4'e, sağ hücre gövde yarıçapa ölçeklenir, mermi tek doku/tek batch kalır). Uyarı: olağan her tehlike tam 0,55 sn; yol için tek ince lazer, alan/kat için dolgu; son 0,12 sn beyaz. Uzun sınıflar korunur (duvar/taşkın 1,0, mühür 0,8, rulet 0,65; final +0,20, radar +0,25). Rastgele oda eşyası saldırısı bosslardan kaldırıldı. Kuşatmada gevşek mobilya `set_combat_dim` ile koyu/mat tona geçer (kolon/pencere hariç, önbellek yeniden çizilmez). |
+| Sıyrılma | Mermi kenarı oyuncu kapsülüne ≤22 px (istenen 18–26 bandı) yaklaşıp değmeden uzaklaşınca bir kez: +25 takla enerjisi (100 sınırı), turkuaz/sarı kıvılcım halkası, “SIYRILDI! +ENERJİ”, yeni `graze` sesi (−12 dB). Koşu/zıplama/taklada çalışır; isabet alan, isabetten hemen önce pencereye giren veya hasar korumasında geçen mermi, kat duvarları ve alanlar sayılmaz; iki ödül arası en az 0,12 sn. |
+
+### Doğrulama
+
+- **Godot 4.7.2.stable.official.ed1daf0bf ve 4.3.stable.official.77dcf97d8:** her motorda **16 paket / 1.247 kontrol geçti**, sıfır başarısız kontrol ve sıfır betik hatası. Paketler: Step1 129, Step2 53, Step25 145, Step3 43, Step27 61, Step3Loot 76, Campaign 69, Step45 103, Marathon 91, Step48 68, Step49 94, Step5 71, Step55 77, Step6 57, **Step7 99**, Step2Soak 11. Step3'teki bir eksilme, fırtına etiket döngüsünün altıdan beşe inmesidir; eski yardımcı paternlerin (girdap, çapraz yaylım, koridor, rüzgâr, eşya) doğrudan testleri korunmuştur. Son koşudan sonra kurulu 4.7.2 ile yeniden import hatasızdır.
+- Gerçek 50 sn savaş ölçümleri (Step7, 60 sabit tik/sn): fırtına 428 atış / tepe 47, deprem 416 / 40, sel 218 / 20, final 479 / 37; havuz 128'de büyümedi, reddedilen atış yok, bütün atışlar kendi kuralının tam süresiyle uyarıldı. Doruk/ısınma desen aralığı: fırtına 2,78→1,78 sn (1,56×), deprem 2,26→1,48 (1,53×), sel 2,00→1,24 (1,61×), final 2,87→1,22 (2,35×). Girdap çarkı mermisi 330→404 px/sn. Tam kampanya (Step2Soak): dört gerçek 50 sn savaş + üç 5 sn inşaat, 1.532 atış, tepe 47, bina %88,2, en fazla 3 onarım uyarısı, zafer.
+- Step7 dokuz koreografide geometriyi ve gerçek kaçışı ayrıca sınar: rulette zamanında güvenli kata geçen oyuncu iki süpürmeden de hasarsız, kalan oyuncu vurulur; tünel tepesinin altında ayakta durmak güvenli, çukurda vurulur; dama tahtasında temizlenen sütuna geçmek güvenli, B sütununda kalmak ezilir; fay dalgası ve alçak balyoz ayakta vurur, 60 px zıplama aşar; yüksek balyoz ayaktakini ıskalar, zıplayanı vurur. Sıyrılma için 15 px geçiş ödüllü, 30 px ödülsüz, isabet/isabete dönüşen yaklaşma/hasar koruması ödülsüz, eşzamanlı iki geçiş tek ödül, takla ve havada çalışır, 100'de durur.
+- **Native 1920×1080 (4.7.2, exclusive fullscreen): Step7 120/120**, 21 PNG `%TEMP%/siege-step7-native/` içinde ve tek tek incelendi: dört kollu çark lazerleri ve mermileri, rulet uyarısı/beyaz flash/süpürme/ikinci rulet ve “▲ GÜVENLİ KAT ▲” plakası, iki akımlı tünel ve kompakt hortum, makas X lazerleri, siklon halkaları, turuncu sütun uyarısı/kaya yağmuru, fay dalgası, 12'li halka koridorları, alçak/yüksek balyozlar, sel ve final neon mermileri, sıyrılma yazısı/halkası. Mobilya karartması aynı bölgenin hazırlık/kuşatma karelerinde ölçüldü: ilk ton (0,75 parlaklık) lamba konilerinin additive ışığı yüzünden ekranda yalnız ~%20 koyulaştırıyordu; ton 0,69'a çekildi ve yatak bölgesi ekranda **%24,5** koyulaştı (oda kırpımının tamamında %8, çünkü duvar/zemin/ışık değişmez).
+- Bilinen yan etki: odalardan eşya fırlatma kalktığı için L-Demir Eşya Sabitleme kartının ve barikat kitinin “eşya hasarı/eşya saldırısı” kısmı normal kampanyada artık etkisizdir (panjur ve oda hasarı etkileri sürer). Kart metinleri değiştirilmedi; ayrı bir denge kararı gerekir.
+- Yorum: “ŞİMDİ KAÇ!” uyarının son 0,12 sn'deki beyaz parlaması olarak uygulandı; ekrana ayrıca yazı basılmadı (0,12 sn okunamayacak kadar kısa ve dünya içi metin kuralını kalabalıklaştırırdı).
+- **Performans (PerformanceBench, aynı makine, 4.7.2, native 1920×1080, VSync kapalı, eşzamanlı başka iş yok):** Adım 6 (HEAD `355d890`, `git archive` ile geçici klasöre çıkarıldı) ve Adım 7 sırayla ikişer kez ölçüldü. İlk Adım 7 sürümünde her mermiye canlı çizilen kontur poligonu yalnız-mermi sahnesini 7,8→9,7 ms yapıyordu (+64 draw call, +4.096 primitif); kontur aynı dokunun ikinci hücresine taşındı. Son sonuçlar:
+
+  | Sahne | Adım 6 (HEAD) ort. ms / FPS | Adım 7 ort. ms / FPS | Draw call (6 → 7) |
+  | --- | --- | --- | --- |
+  | Hazırlık | 4,67–4,91 / 204–214 | 4,68–4,75 / 210–214 | 471 → 471 |
+  | Final + 64 mermi + 24 uyarı | 16,12–16,89 / 59–62 | 13,99–15,28 / 66–72 | 1.373 → 1.205 |
+  | Final + 64 mermi, uyarısız | 15,25–16,03 / 62–66 | 14,20–14,65 / 68–70 | 1.157 → 1.157 |
+  | 64 mermi, bosssuz | 8,04–8,46 / 118–124 | 8,42–8,92 / 112–119 | 662 → 662 |
+
+  Uyarılar artık daha ucuz (tek lazer polyline); mermi başına iki doku dikdörtgeni yalnız-mermi sahnesinde ~0,4 ms ekler. Bu dizüstü GPU'da en ağır yük Adım 6'dan beri final Titan çizimidir (boss gizlenince ~6 ms düşer). Bütün bilgisayarlarda kilitli 60 FPS iddiası yoktur; p95 değerleri 16,7 ms'yi aşabilir.
+- Denenmeyenler: insanın gerçek klavyeyle oynayıp zorluğu/okunabilirliği değerlendirmesi, doruk hızlanmasının ve yeni `graze` sesinin kulakla dinlenmesi, canlı 50 sn fırtına/deprem savaşının FPS örneği (stres sahnesi finaldir), ikinci bilgisayar ve export. Commit/push yapılmadı.
+
 ## Güncel — Adım 6 (17 Ekim 2026, Codex)
 
 Kullanıcının performans/BGM/final zorluğu isteği uygulandı. 16 oda kimliği, gece/pixel görünümü, karakter/2x W fizik yayı, mevcut loot/onarım/19 kart/SFX/dört faz ve kontroller korunur. Adım 5.5 ve Claude kayıtları aşağıda tarihçedir.

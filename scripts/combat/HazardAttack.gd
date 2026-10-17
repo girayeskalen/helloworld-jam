@@ -6,14 +6,22 @@ enum Kind { GLASS, POT, CHAIR, WIND_BLADE, BRICK, CONCRETE, CHANDELIER, SHOCKWAV
 	WIND_ORB, SHARD, ROW_SWEEP, WARDROBE, KNIFE, PLATE, SAW, TOOL, TOY, DEBRIS,
 	FLOOD_ZONE, TIDAL_WALL, WATER_BLADE, HYDRO_ORB, WATER_SHARD, HARPOON,
 	FLOATING_DEBRIS, WHIRLPOOL, METEOR, FIRE_ZONE, FIREBALL, FIRE_DART, FIRE_BEAM, LOW_FLAME,
-	STEAM_COLUMN }
+	STEAM_COLUMN, ROCKFALL }
 enum Motion { LINEAR, ARC, WAVE, BOUNCE, SPIRAL, REFLECT, HELIX }
 enum Pattern { FAN, FURNITURE, GROUND_WAVE, CLUSTER, FULL_ROW, ROOM_OBJECT, SPLINTER,
 	VORTEX, CROSSFIRE, CORRIDOR_WAVE, RISING_FLOOD, BILATERAL_TIDE, HYDRO_BOUNCE,
 	WHIRLPOOL_PULL, DEBRIS_CROSS, METEOR_SHOWER, NAPALM, DOUBLE_HELIX, EMBER_DETONATION, BACKDRAFT,
-	STEAM_TSUNAMI, STEAM_BURST, FIRENADO, SEISMIC_TIDE, QUADRANT_SEAL, CATACLYSM_NOVA }
+	STEAM_TSUNAMI, STEAM_BURST, FIRENADO, SEISMIC_TIDE, QUADRANT_SEAL, CATACLYSM_NOVA,
+	PINWHEEL, SAFE_FLOOR, SINE_TUNNEL, SCISSOR, CYCLONE_RING,
+	CHECKER_CRUSH, FAULT_WAVE, TECTONIC_RING, BOULDER_STAMPEDE }
 ## The elemental seal is the one 0.8 s telegraph requested for the final boss.
 const SEAL_WARNING: float = 0.8
+## Step 7: every ordinary telegraph lasts exactly this long; the last FLASH seconds
+## turn white ("ŞİMDİ KAÇ!"). Only whole-floor/area hazards keep longer minimums.
+const STANDARD_WARNING: float = 0.55
+const FLASH_WINDOW: float = 0.12
+## Safe-floor roulette: three floors are swept, the fourth must be reached in 0.65 s.
+const SAFE_FLOOR_WARNING: float = 0.65
 
 var kind: Kind = Kind.GLASS
 var motion: Motion = Motion.LINEAR
@@ -62,14 +70,15 @@ var warning_extension: float = 0.0
 var warning_lines: PackedVector2Array = PackedVector2Array()
 
 func is_area() -> bool:
-	return kind in [Kind.FLOOD_ZONE, Kind.FIRE_ZONE, Kind.WHIRLPOOL, Kind.STEAM_COLUMN]
+	return kind in [Kind.FLOOD_ZONE, Kind.FIRE_ZONE, Kind.WHIRLPOOL, Kind.STEAM_COLUMN, Kind.ROCKFALL]
 
 func is_wall() -> bool:
 	return kind in [Kind.ROW_SWEEP, Kind.TIDAL_WALL, Kind.FIRE_BEAM]
 
 func minimum_warning() -> float:
 	if pattern == Pattern.QUADRANT_SEAL: return SEAL_WARNING+warning_extension
-	return (1.0 if pattern in [Pattern.FULL_ROW, Pattern.EMBER_DETONATION] or is_wall() or kind == Kind.FLOOD_ZONE else 0.55)+warning_extension
+	if pattern == Pattern.SAFE_FLOOR: return SAFE_FLOOR_WARNING+warning_extension
+	return (1.0 if pattern in [Pattern.FULL_ROW, Pattern.EMBER_DETONATION] or is_wall() or kind == Kind.FLOOD_ZONE else STANDARD_WARNING)+warning_extension
 
 ## Stretch time without changing the endpoint, bounce geometry or warning path.
 func scale_travel_speed(factor: float) -> void:
@@ -134,7 +143,8 @@ func point_at(seconds: float) -> Vector2:
 	elif motion == Motion.ARC:
 		point.y += 0.5 * gravity * seconds * seconds
 	elif motion == Motion.WAVE:
-		point.y += sin(seconds * frequency) * amplitude
+		# spiral_angle doubles as the wave phase (0 keeps the original paths).
+		point.y += (sin(seconds * frequency + spiral_angle) - sin(spiral_angle)) * amplitude
 	elif motion == Motion.BOUNCE:
 		# Analytic damped hops: warning and projectile sample exactly the same path.
 		var cycle: float = seconds * frequency
@@ -147,8 +157,9 @@ func point_at(seconds: float) -> Vector2:
 		point = origin + Vector2(cos(angle) * reach, sin(angle) * minf(reach * 0.55, amplitude))
 	return point
 
+## A ceiling-to-floor drop column. Rolling boulders (mostly horizontal) use the laser line.
 func is_vertical_warning() -> bool:
-	return kind in [Kind.BRICK, Kind.CONCRETE, Kind.CHANDELIER, Kind.WARDROBE]
+	return kind in [Kind.BRICK, Kind.CONCRETE, Kind.CHANDELIER, Kind.WARDROBE] and (motion == Motion.ARC or absf(velocity.y) > absf(velocity.x) * 2.0)
 
 func is_armed() -> bool:
 	var required: float = minimum_warning()

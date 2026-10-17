@@ -212,6 +212,21 @@ func set_darkness(tint: Color) -> void:
 		if prop.get_parent() == self:
 			prop.modulate = tint
 
+## Step 7: during a siege loose furniture recedes (cooler, matte) so the neon bullets
+## read first. Additive lamp cones still light it, so the tint is ~31% to land at ~25%
+## darker on screen (measured on native 1920x1080 captures). Pillars/windows stay full.
+const COMBAT_DIM_TINT: Color = Color(0.68, 0.69, 0.74)
+var combat_dim: float = 0.0
+
+func set_combat_dim(amount: float) -> void:
+	amount = clampf(amount, 0.0, 1.0)
+	if is_equal_approx(amount, combat_dim): return
+	combat_dim = amount
+	var tint: Color = Color.WHITE.lerp(COMBAT_DIM_TINT, amount)
+	for prop: BuildingProp in props:
+		if prop.kind not in [BuildingProp.Kind.PILLAR, BuildingProp.Kind.WINDOW]:
+			prop.self_modulate = tint
+
 func floor_y(floor_index: int) -> float:
 	return global_position.y + (floor_count - floor_index) * floor_height - 20.0
 

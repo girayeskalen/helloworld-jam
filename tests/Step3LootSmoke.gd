@@ -10,6 +10,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	game = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
+	game.intro_enabled = false
 	(game.get_node("DisasterWaveManager") as DisasterWaveManager).autoplay = false
 	root.add_child(game)
 	await _frames(4)
@@ -145,7 +146,7 @@ func _room_state_checks(b: ApartmentBuilding, w: DisasterWaveManager) -> void:
 	_check(not study.repair(45.0, true) and study.hp == 0.0, "A collapsed room cannot be patched up mid-siege")
 	game.telegraphs.clear()
 	w.start_siege(DisasterWaveManager.Mode.EARTHQUAKE, true)
-	w.advance_wave(w.intro_duration())
+
 	w.building.pacing_enabled = false
 	b.room_at(1, 2).hp = 0.0
 	b.room_at(1, 2)._refresh_state()
@@ -185,7 +186,7 @@ func _room_state_checks(b: ApartmentBuilding, w: DisasterWaveManager) -> void:
 
 func _attack_damage_checks(p: SiegePlayer, b: ApartmentBuilding, w: DisasterWaveManager) -> void:
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-	w.advance_wave(w.intro_duration())
+
 	w.building.pacing_enabled = false
 	var target: RoomDiorama = b.room_at(2, 3)
 	var x: float = target.global_position.x + 200.0
@@ -206,7 +207,7 @@ func _attack_damage_checks(p: SiegePlayer, b: ApartmentBuilding, w: DisasterWave
 	await _frames(int((0.6 + brick.lifetime) * 60.0) + 4)
 	_check(is_equal_approx(fortified_before - target.hp, DisasterWaveManager.room_damage(brick) * 0.5), "The same brick does 50% damage to a fortified room")
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-	w.advance_wave(w.intro_duration())
+
 	w.building.pacing_enabled = false
 	p.current_floor = 0
 	BossPatterns.full_row(w, 1, 0)
@@ -216,7 +217,7 @@ func _attack_damage_checks(p: SiegePlayer, b: ApartmentBuilding, w: DisasterWave
 		swept = swept and is_equal_approx(b.room_at(1, column).hp, 100.0 - DisasterWaveManager.ROOM_DAMAGE[HazardAttack.Kind.ROW_SWEEP])
 	_check(swept and b.room_at(0, 0).hp == 100.0, "A full-floor sweep wears down all four rooms of that floor")
 	w.start_siege(DisasterWaveManager.Mode.EARTHQUAKE, true)
-	w.advance_wave(w.intro_duration())
+
 	w.building.pacing_enabled = false
 	BossPatterns.ground_wave(w, 3, false)
 	await _frames(46)
@@ -230,7 +231,7 @@ func _attack_damage_checks(p: SiegePlayer, b: ApartmentBuilding, w: DisasterWave
 
 func _collapse_checks(p: SiegePlayer, b: ApartmentBuilding, w: DisasterWaveManager, loot: LootSystem) -> void:
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-	w.advance_wave(w.intro_duration())
+
 	w.building.pacing_enabled = false
 	for index: int in [2, 7, 9]:
 		b.rooms[index].apply_damage(500.0)
@@ -258,7 +259,7 @@ func _collapse_checks(p: SiegePlayer, b: ApartmentBuilding, w: DisasterWaveManag
 	var fresh: bool = not w.failed and not b.collapsed_building and b.collapsed_count() == 0 and b.integrity == 100.0
 	_check(fresh and loot.materials() == 0 and loot.items.is_empty(), "R rebuilds the apartment and clears loot")
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-	w.advance_wave(w.intro_duration())
+
 	w.building.pacing_enabled = false
 	b.damage_integrity(100.0)
 	w.advance_wave(1.0 / 60.0)
@@ -270,7 +271,7 @@ func _collapse_checks(p: SiegePlayer, b: ApartmentBuilding, w: DisasterWaveManag
 
 func _loot_spawn_checks(p: SiegePlayer, b: ApartmentBuilding, loot: LootSystem) -> void:
 	game.waves.start_siege(DisasterWaveManager.Mode.STORM, true)
-	game.waves.advance_wave(game.waves.intro_duration())
+
 	game.waves.building.pacing_enabled = false
 	loot.reset()
 	p.reset_player()
@@ -332,7 +333,7 @@ func _loot_spawn_checks(p: SiegePlayer, b: ApartmentBuilding, loot: LootSystem) 
 
 func _pickup_checks(p: SiegePlayer, b: ApartmentBuilding, loot: LootSystem) -> void:
 	game.waves.start_siege(DisasterWaveManager.Mode.STORM, true)
-	game.waves.advance_wave(game.waves.intro_duration())
+
 	game.waves.building.pacing_enabled = false
 	p.reset_player()
 	await _frames(3)
@@ -368,7 +369,7 @@ func _pickup_checks(p: SiegePlayer, b: ApartmentBuilding, loot: LootSystem) -> v
 
 func _repair_checks(p: SiegePlayer, b: ApartmentBuilding, w: DisasterWaveManager, loot: LootSystem) -> void:
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-	w.advance_wave(w.intro_duration())
+
 	w.building.pacing_enabled = false
 	await _frames(3)
 	var room: RoomDiorama = loot.current_room()
@@ -405,7 +406,7 @@ func _repair_checks(p: SiegePlayer, b: ApartmentBuilding, w: DisasterWaveManager
 	await _rendered()
 	_check(game.labels.repair_markers == 1, "Critical rooms show the same actionable marker")
 	w.finish_wave()
-	w.advance_wave(DisasterWaveManager.OUTRO_DURATION)
+
 	game.upgrades.offers.assign([0,1,2])
 	game.upgrades.choose(0)
 	p.global_position.x = b.room_at(0,2).global_position.x + 200
@@ -468,7 +469,7 @@ func _capture(directory: String) -> void:
 	await _frames(1)
 	await _save(directory, "arc-land.png")
 	game.waves.start_siege(DisasterWaveManager.Mode.CATACLYSM, true)
-	game.waves.advance_wave(game.waves.intro_duration())
+
 	game.waves.building.pacing_enabled = false
 	for i: int in range(240):
 		loot.advance(1.0 / 60.0)

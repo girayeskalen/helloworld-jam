@@ -11,6 +11,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var game: MainGame = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
+	game.intro_enabled = false
 	(game.get_node("DisasterWaveManager") as DisasterWaveManager).autoplay = false
 	root.add_child(game)
 	await _frames(3)
@@ -31,7 +32,7 @@ func _run() -> void:
 	_key(KEY_F, true)
 	await _frames(2)
 	_key(KEY_F, false)
-	waves.advance_wave(waves.intro_duration())
+
 	waves.building.pacing_enabled = false
 	_check(waves.state == DisasterWaveManager.State.SIEGE_PHASE and waves.mode == DisasterWaveManager.Mode.STORM, "Physical F skips preparation and starts storm")
 	_check(game.storm.visible and not game.earthquake.visible, "Storm boss occupies left margin only")
@@ -64,11 +65,11 @@ func _run() -> void:
 	_check(pool.active_count() == 1, "Minimum warning arms normally")
 	pool.clear()
 	game.telegraphs.warn(_probe(Vector2(50, 200), Vector2.ZERO, 0.15), 9.0)
-	_check(game.telegraphs.pending[0].warning_duration == 0.75, "Warning clamps to 0.75 seconds")
-	await _frames(42)
-	_check(pool.active_count() == 0, "Maximum warning is still non-damaging at 0.7 seconds")
-	await _frames(6)
-	_check(pool.active_count() == 1, "Maximum warning then activates")
+	_check(is_equal_approx(game.telegraphs.pending[0].warning_duration, HazardAttack.STANDARD_WARNING), "Step 7: even a 9 s request gets exactly the 0.55 s telegraph")
+	await _frames(28)
+	_check(pool.active_count() == 0, "Fixed warning is still non-damaging at ~0.47 seconds")
+	await _frames(8)
+	_check(pool.active_count() == 1, "Fixed warning then activates")
 	pool.clear()
 	game.telegraphs.clear()
 	# Actual contact, red feedback and one-second hurt immunity.
@@ -120,45 +121,57 @@ func _run() -> void:
 		_check(pool.active_count() == 0 and game.telegraphs.pending.is_empty(), "Mode switch cancels obsolete hazards")
 	_check(game.flood.visible and not game.storm.visible and not game.earthquake.visible, "Key 3 selects only the flood boss")
 	waves.start_siege(DisasterWaveManager.Mode.EARTHQUAKE, true)
-	waves.advance_wave(waves.intro_duration())
+
 	waves.building.pacing_enabled = false
 	var bookcase: BuildingProp
 	for prop: BuildingProp in game.building.props:
 		if prop.kind == BuildingProp.Kind.BOOKCASE and prop.floor_index == 1:
 			bookcase = prop
 			break
+	_launch_types.clear()
+	player.repair_shield = 30.0
 	waves.quake_burst()
 	_check(bookcase != null and bookcase._shake_left > 0, "Unsecured furniture trembles during quake warning")
 	await _frames(46)
 	_check(game.game_camera._remaining > 0 and game.earthquake._slam_left > 0, "Golem impact is synchronized to camera shake")
 	await _frames(60)
 	_check(game.building.integrity < 100 and game.building.integrity > 90, "Heavy debris slowly erodes building integrity")
-	for kind: int in [HazardAttack.Kind.BRICK, HazardAttack.Kind.CONCRETE, HazardAttack.Kind.CHANDELIER, HazardAttack.Kind.SHOCKWAVE, HazardAttack.Kind.BOOK]:
+	# Step 7: the remaining three choreographies (fault wave, rings, boulders).
+	for i: int in range(3):
+		waves.quake_burst()
+		await _frames(50)
+	await _frames(40)
+	for kind: int in [HazardAttack.Kind.ROCKFALL, HazardAttack.Kind.SHOCKWAVE, HazardAttack.Kind.SHARD, HazardAttack.Kind.CONCRETE]:
 		_check(_launch_types.has(kind), "Quake hazard type launched: %d" % kind)
+	var thrown: bool = false
+	for kind: int in [HazardAttack.Kind.BOOK, HazardAttack.Kind.KNIFE, HazardAttack.Kind.PLATE, HazardAttack.Kind.SAW, HazardAttack.Kind.TOOL, HazardAttack.Kind.TOY, HazardAttack.Kind.POT, HazardAttack.Kind.CHAIR, HazardAttack.Kind.CHANDELIER, HazardAttack.Kind.WARDROBE, HazardAttack.Kind.BRICK]:
+		thrown = thrown or _launch_types.has(kind)
+	_check(not thrown, "The golem never throws room furniture any more")
+	player.repair_shield = 0.0
 	_check(_minimum_warning >= 0.55 - 0.00001 and _maximum_warning <= 0.75 + 0.017, "Every launched pattern had a full 0.55–0.75 second warning")
 	waves.reset_cycle()
 	player.reset_player()
 	waves.advance_wave(7.9)
 	_check(waves.state == DisasterWaveManager.State.PREPARATION_PHASE, "Preparation does not end early")
 	waves.advance_wave(0.11)
-	_check(waves.mode == DisasterWaveManager.Mode.STORM and waves.siege_remaining == 60, "Automatic first wave is a 60-second storm")
-	waves.advance_wave(waves.intro_duration())
-	waves.advance_wave(60.0)
+	_check(waves.mode == DisasterWaveManager.Mode.STORM and waves.siege_remaining == 50, "Automatic first wave is a 50-second storm")
+
+	waves.advance_wave(50.0)
 	waves.advance_wave(2.5)
 	_check(waves.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE and waves.upgrade_pending and game.telegraphs.pending.is_empty() and pool.active_count() == 0, "Wave completion clears attacks and returns to preparation")
-	game.upgrades.offers.assign([SiegeUpgrades.Kind.DASH_REPAIR, SiegeUpgrades.Kind.AUTO_DRONE, SiegeUpgrades.Kind.SLAM_SHIELD])
+	game.upgrades.offers.assign([SiegeUpgrades.Kind.SONIC_DASH, SiegeUpgrades.Kind.AUTO_DRONE, SiegeUpgrades.Kind.SLAM_SHIELD])
 	game.upgrades.choose(0 if game.upgrades.selected.is_empty() else 1)
 	waves.advance_wave(15.0)
-	waves.advance_wave(waves.intro_duration())
+
 	_check(waves.mode == DisasterWaveManager.Mode.EARTHQUAKE and waves.wave_number == 2, "Second automatic wave is earthquake")
 	waves.debug_enabled = true
 	waves.damage_boss_endurance(100)
 	waves.advance_wave(2.5)
 	_check(waves.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE, "Debug endurance shortcut finishes only in explicitly enabled test mode")
-	game.upgrades.offers.assign([SiegeUpgrades.Kind.DASH_REPAIR, SiegeUpgrades.Kind.AUTO_DRONE, SiegeUpgrades.Kind.SLAM_SHIELD])
+	game.upgrades.offers.assign([SiegeUpgrades.Kind.SONIC_DASH, SiegeUpgrades.Kind.AUTO_DRONE, SiegeUpgrades.Kind.SLAM_SHIELD])
 	game.upgrades.choose(0 if game.upgrades.selected.is_empty() else 1)
 	waves.advance_wave(15.0)
-	waves.advance_wave(waves.intro_duration())
+
 	_check(waves.mode == DisasterWaveManager.Mode.FLOOD and waves.wave_number == 3, "Third wave is flood, before the combined finale")
 	# Exhaust the fixed pool, then reuse it; no combat-time node growth.
 	for i: int in range(pool.capacity + 2):
@@ -206,7 +219,7 @@ func _capture(game: MainGame, directory: String) -> void:
 		return
 	DirAccess.make_dir_recursive_absolute(directory)
 	game.waves.start_siege(DisasterWaveManager.Mode.STORM, true)
-	game.waves.advance_wave(game.waves.intro_duration())
+
 	game.waves.building.pacing_enabled = false
 	BossPatterns.fan(game.waves, 0, 0)
 	await _frames(23)
@@ -220,7 +233,7 @@ func _capture(game: MainGame, directory: String) -> void:
 	await _frames(52)
 	await _save(directory, "storm-blade.png")
 	game.waves.start_siege(DisasterWaveManager.Mode.EARTHQUAKE, true)
-	game.waves.advance_wave(game.waves.intro_duration())
+
 	game.waves.building.pacing_enabled = false
 	game.waves.quake_burst()
 	await _frames(23)
@@ -230,7 +243,7 @@ func _capture(game: MainGame, directory: String) -> void:
 	await _frames(20)
 	await _save(directory, "quake-debris.png")
 	game.waves.start_siege(DisasterWaveManager.Mode.CATACLYSM, true)
-	game.waves.advance_wave(game.waves.intro_duration())
+
 	game.waves.building.pacing_enabled = false
 	game.waves.storm_burst()
 	game.waves.quake_burst()
@@ -239,7 +252,7 @@ func _capture(game: MainGame, directory: String) -> void:
 	await _frames(24)
 	await _save(directory, "chaos.png")
 	game.waves.start_siege(DisasterWaveManager.Mode.STORM, true)
-	game.waves.advance_wave(game.waves.intro_duration())
+
 	game.waves.building.pacing_enabled = false
 	game.feedback.clear()
 	game.telegraphs.warn(_probe(game.player.global_position + Vector2(90, -24), Vector2.ZERO, 1.0), 0.55)
@@ -248,7 +261,7 @@ func _capture(game: MainGame, directory: String) -> void:
 	await _frames(6)
 	await _save(directory, "dodge.png")
 	game.waves.start_siege(DisasterWaveManager.Mode.STORM, true)
-	game.waves.advance_wave(game.waves.intro_duration())
+
 	game.waves.building.pacing_enabled = false
 	game.feedback.clear()
 	game.telegraphs.warn(_probe(game.player.global_position + Vector2(0, -24), Vector2.ZERO, 0.15), 0.55)

@@ -53,6 +53,7 @@ var shutter_block: float = .5
 var flood_barrier_bonus: float = 0.0
 ## Support is typed: steel/FRP halves structural hits; shutters halve facade shots.
 var fortified: bool = false
+var bullet_armor: bool = false
 var _state: int = RoomState.INTACT
 ## Whole-building collapse: heavy dust curtains in every room.
 var shaking: bool = false:
@@ -75,6 +76,11 @@ var _visual_dirty: bool = false
 var static_revision: int = 0
 const CACHE_BOUNDS: Rect2 = Rect2(-8,-8,416,236)
 const CACHE_FIELDS: Array[String] = ["custom_sprite","wall_texture","wall_color","room_size","floor_index","room_kind","_state"]
+
+func set_bullet_armor(value: bool) -> void:
+	if bullet_armor == value: return
+	bullet_armor = value
+	_refresh_supports()
 
 func _ready() -> void:
 	if _cache_source: return
@@ -178,6 +184,7 @@ func has_reinforcement(component: int) -> bool:
 	return reinforcements.has(component)
 
 func restore() -> void:
+	set_bullet_armor(false)
 	auto_protection = false
 	utilities_isolated = false
 	shutter_block = .5
@@ -550,6 +557,14 @@ func _draw_fx() -> void:
 
 ## Full-sized retrofit silhouettes. Colors stay readable under the existing night tint.
 func _paint_supports(canvas: Node2D) -> void:
+	if bullet_armor and not is_collapsed():
+		var edge: Rect2 = Rect2(10,14,room_size.x-20,room_size.y-28)
+		canvas.draw_rect(edge,Color(.2,.65,1,.08))
+		canvas.draw_rect(edge,CelArt.INK,false,9)
+		canvas.draw_rect(edge,Color("70caff"),false,4)
+		for x: float in [18.0,room_size.x-34]:
+			for y: float in [22.0,room_size.y-40]:
+				CelArt.rect(canvas,Rect2(x,y,16,16),Color("ffc17a"),2)
 	if custom_sprite != null: return
 	if auto_protection and not is_collapsed(): EquipmentArt.draw_safety_installation(canvas,room_size,0)
 	if chain_support and not fortified:

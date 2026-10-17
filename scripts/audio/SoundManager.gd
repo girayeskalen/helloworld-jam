@@ -31,7 +31,7 @@ const MIX: Dictionary = {
 	"storm_in": [-6.0, BUS_SFX, 0.3], "storm_out": [-7.0, BUS_SFX, 0.3], "quake_in": [-6.0, BUS_SFX, 0.3],
 	"quake_out": [-6.0, BUS_SFX, 0.3], "flood_in": [-6.0, BUS_SFX, 0.3], "flood_out": [-7.0, BUS_SFX, 0.3],
 	"fire_in": [-6.0, BUS_SFX, 0.3], "fire_out": [-8.0, BUS_SFX, 0.3], "titan_in": [-4.0, BUS_SFX, 0.3],
-	"titan_fuse": [-3.0, BUS_SFX, 0.3], "titan_out": [-4.0, BUS_SFX, 0.3],
+	"titan_out": [-4.0, BUS_SFX, 0.3],
 	"cast_storm": [SFX_REFERENCE_DB, BUS_SFX, 0.14], "cast_quake": [SFX_REFERENCE_DB, BUS_SFX, 0.14],
 	"cast_flood": [SFX_REFERENCE_DB, BUS_SFX, 0.14], "cast_fire": [SFX_REFERENCE_DB, BUS_SFX, 0.14],
 	"whoosh": [PROJECTILE_DB, BUS_SFX, 0.12],
@@ -40,7 +40,7 @@ const MIX: Dictionary = {
 	"impact_water": [PROJECTILE_DB, BUS_SFX, 0.11], "impact_fire": [PROJECTILE_DB, BUS_SFX, 0.11],
 	"block": [-12.0, BUS_SFX, 0.14],
 	"jump": [-14.0, BUS_SFX, 0.09], "floor_up": [-12.0, BUS_SFX, 0.09], "drop_land": [-12.0, BUS_SFX, 0.09],
-	"dash": [-11.0, BUS_SFX, 0.09], "dodge": [-9.0, BUS_SFX, 0.12], "hurt": [-8.0, BUS_SFX, 0.12],
+	"dash": [-11.0, BUS_SFX, 0.09], "dodge": [-9.0, BUS_SFX, 0.12], "graze": [-12.0, BUS_SFX, 0.06], "hurt": [-8.0, BUS_SFX, 0.12],
 	"heartbeat": [-14.0, BUS_SFX, 0.3],
 	"loot_drop": [-14.0, BUS_SFX, 0.1], "pickup": [-10.0, BUS_SFX, 0.08], "heal": [-9.0, BUS_SFX, 0.1],
 	"safety": [-11.0, BUS_SFX, 0.1], "repair": [-8.0, BUS_SFX, 0.2],
@@ -52,6 +52,8 @@ const CASTS: Array[String] = ["cast_storm", "cast_quake", "cast_flood", "cast_fi
 const INTROS: Array = [["storm_in"], ["quake_in"], ["flood_in"], ["titan_in"]]
 const OUTROS: Array = [["storm_out"], ["quake_out"], ["flood_out"], ["titan_out"]]
 var bgm_player: AudioStreamPlayer
+## BGM playback rate during the fight climax (~+5% tempo).
+const CLIMAX_PITCH: float = 1.05
 var bgm_restarts: int = 0
 
 var game: MainGame
@@ -76,7 +78,6 @@ var _mutex: Mutex = Mutex.new()
 var _baked: Array = []
 var _cancel: bool = false
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
-var _last_state: int = -1
 var _was_failed: bool = false
 var _was_victory: bool = false
 
@@ -132,8 +133,9 @@ func configure(owner_game: MainGame) -> void:
 	var w: DisasterWaveManager = game.waves
 	w.phase_changed.connect(_on_phase)
 	w.attack_launched.connect(_on_launch)
-	w.fusion_burst.connect(func() -> void: play("titan_fuse"))
-	w.intro_beat.connect(_on_intro_beat)
+	w.siege_started.connect(_on_siege_started)
+	w.wave_completed.connect(_on_wave_completed)
+	w.grazed.connect(func(_point: Vector2) -> void: play("graze"))
 	game.projectiles.projectile_impacted.connect(_on_impact)
 	game.projectiles.dodged.connect(func(_point: Vector2) -> void: play("dodge"))
 	game.player.dash_started.connect(func() -> void: play("dash"))
@@ -146,12 +148,12 @@ func configure(owner_game: MainGame) -> void:
 	game.loot.repaired.connect(func(_room: RoomDiorama) -> void: play("repair"))
 	game.upgrades.selection_changed.connect(_on_cards)
 	game.upgrades.upgrade_selected.connect(func(_id: int) -> void: play("ui_confirm"))
+	game.mechanics.activated.connect(_on_module_activated)
 	game.mechanics.blocked.connect(func(_point: Vector2) -> void: play("block"))
 	for room: RoomDiorama in game.building.rooms:
 		room.state_changed.connect(_on_room_state)
 	for boss: DisasterBoss in w.bosses():
 		boss.cued.connect(func(_seconds: float) -> void: play("warn"))
-	_last_state = w.state
 
 # --------------------------------------------------------------- baking ----
 
@@ -325,7 +327,10 @@ func _update_music(delta: float, frozen: bool) -> void:
 	var siege: bool = w.state == DisasterWaveManager.State.SIEGE_PHASE and not w.failed and not w.victory
 	var preparing: bool = w.state in [DisasterWaveManager.State.PREPARATION_PHASE, DisasterWaveManager.State.BUILD_PREPARATION_PHASE] and not w.failed
 	bpm = MusicScore.BPM if siege else (MusicScore.BPM*.5 if preparing else 0.0)
-	music_target["rain"] = -31.0
+	# Step 7 climax (last 15 s): the score runs a touch faster; eased, never a jump.
+	if bgm_player != null and not frozen:
+		bgm_player.pitch_scale = move_toward(bgm_player.pitch_scale, CLIMAX_PITCH if w.is_climax() else 1.0, delta * 0.12)
+	music_target["rain"] = -60.0 if game.waves.intro_active else -31.0
 	music_target["drone"] = -60.0
 	music_target["siege_pad"] = -60.0
 	for key: String in music:
@@ -340,23 +345,15 @@ func _on_phase() -> void:
 	var w: DisasterWaveManager = game.waves
 	if w.failed and not _was_failed:
 		play("collapse_building" if w.fail_reason == DisasterWaveManager.FailReason.BUILDING else "defeat")
-	if w.victory and not _was_victory:
-		play("victory")
-	if w.state == DisasterWaveManager.State.WAVE_INTRO:
-		for key: String in INTROS[w.mode]: play(key)
-	elif w.state == DisasterWaveManager.State.WAVE_OUTRO and _last_state != DisasterWaveManager.State.WAVE_OUTRO:
-		for key: String in OUTROS[w.mode]: play(key)
+	if w.victory and not _was_victory: play("victory")
 	_was_failed = w.failed
 	_was_victory = w.victory
-	_last_state = w.state
 
-func _on_intro_beat(mode_id: int, beat: int) -> void:
-	match mode_id:
-		DisasterWaveManager.Mode.STORM: play("storm_in", -5.0)
-		DisasterWaveManager.Mode.EARTHQUAKE: play("cast_quake", -3.0 if beat == 0 else 0.0)
-		DisasterWaveManager.Mode.FLOOD: play("cast_flood", -3.0)
-		DisasterWaveManager.Mode.CATACLYSM:
-			for key: String in ["cast_storm","cast_quake","cast_flood"]: play(key,-6.0)
+func _on_siege_started(mode_id: int) -> void:
+	for key: String in INTROS[mode_id]: play(key)
+
+func _on_wave_completed(mode_id: int) -> void:
+	for key: String in OUTROS[mode_id]: play(key)
 
 func _on_launch(attack: HazardAttack) -> void:
 	play(CASTS[clampi(attack.source, 0, 3)])
@@ -403,3 +400,7 @@ func _on_cards() -> void:
 
 func _on_room_state(_room: RoomDiorama, state: int) -> void:
 	if state == RoomDiorama.RoomState.COLLAPSED: play("collapse_room")
+
+func _on_module_activated(id: int, _point: Vector2) -> void:
+	if id == SiegeUpgrades.Kind.AWARE_BAG: play("heal")
+	elif id == SiegeUpgrades.Kind.AUTO_DRONE: play("repair")

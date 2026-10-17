@@ -12,6 +12,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	game = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
+	game.intro_enabled = false
 	(game.get_node("DisasterWaveManager") as DisasterWaveManager).autoplay = false
 	root.add_child(game)
 	if DisplayServer.get_name() != "headless":
@@ -44,7 +45,7 @@ func _siege(mode: int) -> void:
 	game.reset_game()
 	_quiet()
 	game.waves.start_siege(mode as DisasterWaveManager.Mode, true)
-	game.waves.advance_wave(game.waves.intro_duration())
+
 	game.building.pacing_enabled = false
 	game.telegraphs.clear()
 	game.projectiles.clear()
@@ -115,7 +116,7 @@ func _pause_menu() -> void:
 	var w: DisasterWaveManager = game.waves
 	game.reset_game()
 	w.start_next_wave()
-	w.advance_wave(w.intro_duration())
+
 	game.building.pacing_enabled = false
 	w.autoplay = true
 	game.player.set_physics_process(true)
@@ -184,13 +185,13 @@ func _events() -> void:
 		w.start_siege(mode as DisasterWaveManager.Mode, true)
 		var intro: bool = true
 		for key: String in SoundManager.INTROS[mode]: intro = intro and sound.history.back()["key"] == key or _played_recently(key)
-		w.advance_wave(w.intro_duration())
+
 		sound.advance(1.0)
 		w.finish_wave()
 		var outro: bool = true
 		for key: String in SoundManager.OUTROS[mode]: outro = outro and _played_recently(key)
 		_check(intro and outro, "Boss mode %d plays its own entry and retreat sounds" % mode)
-	_check(sound.plays("titan_fuse") == 1, "The final fusion collision plays the four-element boom once")
+	_check(sound.plays("titan_fuse") == 0 and sound.plays("titan_in") > 0,"The final boss keeps its original entry sound without a fusion cutscene")
 	_siege(DisasterWaveManager.Mode.CATACLYSM)
 	sound.advance(1.0)
 	sound.history.clear()
@@ -230,10 +231,18 @@ func _events() -> void:
 	_check(sound.history.back()["key"] == "block", "A storm hit on a shuttered room plays the BLOKLANDI block")
 	sound.advance(0.2)
 	game.mechanics.blocked.emit(Vector2.ZERO)
-	_check(sound.history.back()["key"] == "block", "Deflector turbine interceptions also play the block")
+	_check(sound.history.back()["key"] == "block", "Active shield and orbital interceptions play the block")
+	for pair: Array in [[SiegeUpgrades.Kind.AWARE_BAG,"heal"],[SiegeUpgrades.Kind.AUTO_DRONE,"repair"]]:
+		sound.advance(.3)
+		game.mechanics.activated.emit(pair[0],Vector2.ZERO)
+		_check(sound.history.back()["key"] == pair[1],"Active module event %d plays %s through the bounded SFX pool" % pair)
 	sound.advance(0.2)
 	game.projectiles.dodged.emit(Vector2.ZERO)
 	_check(sound.history.back()["key"] == "dodge", "DODGE! plays the reflex chime")
+	sound.advance(0.2)
+	game.player.hit_invulnerability = 0.0
+	game.projectiles.grazed.emit(game.player.global_position)
+	_check(sound.history.back()["key"] == "graze", "A real graze (energy granted) plays the soft electric tick")
 	# Real player actions.
 	_siege(DisasterWaveManager.Mode.STORM)
 	var p: SiegePlayer = game.player
@@ -358,7 +367,7 @@ func _capture(directory: String) -> void:
 	game.reset_game()
 	game.waves.autoplay = false
 	game.waves.start_siege(DisasterWaveManager.Mode.FLOOD, true)
-	game.waves.advance_wave(game.waves.intro_duration())
+
 	game.building.pacing_enabled = false
 	game.flood.plan_pattern(game.waves, 2, 1)
 	await _frames(30)

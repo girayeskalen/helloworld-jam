@@ -11,6 +11,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	game = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
+	game.intro_enabled = false
 	(game.get_node("DisasterWaveManager") as DisasterWaveManager).autoplay = false
 	root.add_child(game)
 	await _frames(4)
@@ -222,7 +223,7 @@ func _run() -> void:
 	_check(p.is_on_floor() and p.try_dash(Vector2.RIGHT), "Landing replenishes the air dash")
 	# Pattern primitives and immutable warnings.
 	w.start_siege(DisasterWaveManager.Mode.CATACLYSM, true)
-	w.advance_wave(w.intro_duration())
+
 	w.building.pacing_enabled = false
 	BossPatterns.fan(w, 0, 0)
 	_check(game.telegraphs.pending.size() == 7, "Seven-shot radial fan")
@@ -234,7 +235,7 @@ func _run() -> void:
 	BossPatterns.fan(w, 0, 1)
 	_check(game.telegraphs.pending.size() == 5, "Alternate five-shot fan rotates its emission angle")
 	w.start_siege(DisasterWaveManager.Mode.EARTHQUAKE, true)
-	w.advance_wave(w.intro_duration())
+
 	w.building.pacing_enabled = false
 	BossPatterns.ground_wave(w, 0, true)
 	_check(game.telegraphs.pending.size() == 2 and game.telegraphs.pending[0].velocity.x < 0 and game.telegraphs.pending[1].velocity.x > 0, "Ground waves travel horizontally outward, not vertically")
@@ -250,7 +251,7 @@ func _run() -> void:
 	low.deactivate()
 	p.reset_player()
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-	w.advance_wave(w.intro_duration())
+
 	w.building.pacing_enabled = false
 	BossPatterns.full_row(w, 0, 0)
 	_check(game.telegraphs.pending[0].warning_duration == 1.0, "Full-row warning reserves a complete 1.0 second")
@@ -271,7 +272,7 @@ func _run() -> void:
 	p.previous_position = p.global_position
 	_check(not wall.crosses_player(p, wall.global_position), "A sweep cannot hit the neighboring floor")
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-	w.advance_wave(w.intro_duration())
+
 	w.building.pacing_enabled = false
 	var row: HazardAttack = w._attack(HazardAttack.Kind.ROW_SWEEP, 0, p.global_position + Vector2(-80, -82), Vector2(1900, 0))
 	row.pattern = HazardAttack.Pattern.FULL_ROW
@@ -284,7 +285,7 @@ func _run() -> void:
 	_check(p.health == 100 and w.dodge_count == dodges + 1, "Timed i-frame dash passes through a real full-row wall")
 	# Impact -> warning -> 3 hopping splinters, never instant unannounced damage.
 	w.start_siege(DisasterWaveManager.Mode.EARTHQUAKE, true)
-	w.advance_wave(w.intro_duration())
+
 	w.building.pacing_enabled = false
 	launched.clear()
 	BossPatterns.cluster(w, 0, 0)
@@ -308,7 +309,7 @@ func _run() -> void:
 			_check(a.warning_elapsed >= .55 and not a.splits and a.point_at(.15).y < a.floor_y - 18, "Splinter warns, hops above the floor and cannot split recursively")
 	_check(child_launches == 6 and split_directions.has(-1.0) and split_directions.has(1.0), "Cluster shards bounce left and right after warning")
 	w.start_siege(DisasterWaveManager.Mode.EARTHQUAKE, true)
-	w.advance_wave(w.intro_duration())
+
 	w.building.pacing_enabled = false
 	BossPatterns.room_objects(w, 0)
 	var room_kinds: Dictionary = {}
@@ -366,7 +367,7 @@ func _capture(directory: String) -> void:
 	await _frames(7)
 	await _save(directory, "floor-down-phase.png")
 	game.waves.start_siege(DisasterWaveManager.Mode.CATACLYSM, true)
-	game.waves.advance_wave(game.waves.intro_duration())
+
 	game.waves.building.pacing_enabled = false
 	BossPatterns.fan(game.waves, 0, 0)
 	BossPatterns.ground_wave(game.waves, 1, true)
@@ -375,7 +376,7 @@ func _capture(directory: String) -> void:
 	await _frames(39)
 	await _save(directory, "fan-ground-projectiles.png")
 	game.waves.start_siege(DisasterWaveManager.Mode.EARTHQUAKE, true)
-	game.waves.advance_wave(game.waves.intro_duration())
+
 	game.waves.building.pacing_enabled = false
 	BossPatterns.cluster(game.waves, 0, 0)
 	await _frames(86)
@@ -383,7 +384,7 @@ func _capture(directory: String) -> void:
 	await _frames(44)
 	await _save(directory, "bouncing-splinters.png")
 	game.waves.start_siege(DisasterWaveManager.Mode.EARTHQUAKE, true)
-	game.waves.advance_wave(game.waves.intro_duration())
+
 	game.waves.building.pacing_enabled = false
 	BossPatterns.room_objects(game.waves, 0)
 	await _frames(25)

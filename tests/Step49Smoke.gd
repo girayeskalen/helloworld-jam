@@ -6,7 +6,6 @@ var game: MainGame
 var checks: int = 0
 var failures: int = 0
 var launches: Array[HazardAttack] = []
-var fusions: int = 0
 
 const REMOVED_HUD: Array[String] = ["AFET KUŞATMASI", "DISASTER SIEGE", "AFETE HAZIRLIK / BÖLÜM 01", "KUŞATMA ALTINDA", "HAZIRLIK ALANI", "KAT 00", "A / D", "KAÇINIŞ  00", "TAKLA ENERJİSİ", "BİNA DAYANIKLILIĞI"]
 
@@ -15,6 +14,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	game = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
+	game.intro_enabled = false
 	(game.get_node("DisasterWaveManager") as DisasterWaveManager).autoplay = false
 	root.add_child(game)
 	if DisplayServer.get_name() != "headless":
@@ -22,7 +22,6 @@ func _run() -> void:
 		root.mouse_passthrough = true
 	await _frames(4)
 	game.waves.attack_launched.connect(func(a: HazardAttack) -> void: launches.append(a))
-	game.waves.fusion_burst.connect(func() -> void: fusions += 1)
 	await _hud()
 	_timing()
 	await _shortcuts()
@@ -50,7 +49,7 @@ func _final() -> void:
 	game.reset_game()
 	_quiet()
 	game.waves.start_siege(DisasterWaveManager.Mode.CATACLYSM, true)
-	game.waves.advance_wave(DisasterWaveManager.FINAL_INTRO_DURATION)
+
 	game.building.pacing_enabled = false
 	game.projectiles.clear()
 	game.telegraphs.clear()
@@ -80,7 +79,7 @@ func _hud() -> void:
 	await _rendered()
 	_check(not hud.drawn_texts.has("A / D"), "Releasing Tab/H hides the help again")
 	game.waves.start_next_wave()
-	game.waves.advance_wave(game.waves.intro_duration())
+
 	game.building.pacing_enabled = false
 	game.player.health = 85
 	game.loot.column_kits = 2
@@ -88,7 +87,7 @@ func _hud() -> void:
 	game.loot.activate_safety(game.building.rooms[5])
 	game.building.rooms[3].apply_damage(44)
 	await _rendered()
-	for text: String in ["85/100", "FIRTINA", "60s", "x2", "x1"]:
+	for text: String in ["85/100", "FIRTINA", "50s", "x2", "x1"]:
 		_check(hud.drawn_texts.has(text), "Siege HUD shows %s" % text)
 	_check(hud.drawn_texts.has("%%%d" % roundi(game.building.integrity)), "Building bar prints integrity as %%NN")
 	_check(hud.slot_count(0) == 2 and hud.slot_count(1) == 1 and hud.slot_count(2) == 1, "Slots count column kits, fixing kits and protected rooms")
@@ -102,30 +101,21 @@ func _hud() -> void:
 
 func _timing() -> void:
 	var w: DisasterWaveManager = game.waves
-	_check(w.siege_duration == 60.0 and w.build_duration == 7.0 and DisasterWaveManager.TOTAL_WAVES == 4 and DisasterWaveManager.Mode.size() == 4, "Four phases of 60 seconds, with seven-second construction")
+	_check(w.siege_duration == 50.0 and w.build_duration == 5.0 and DisasterWaveManager.TOTAL_WAVES == 4 and DisasterWaveManager.Mode.size() == 4, "Four phases of 50 seconds, with five-second construction")
 	game.reset_game()
 	_quiet()
-	var flashes: int = game.weather.flash_count
-	fusions = 0
-	w.start_siege(DisasterWaveManager.Mode.CATACLYSM, true)
-	_check(w.wave_number == 4 and w.state == DisasterWaveManager.State.WAVE_INTRO and is_equal_approx(w.transition_remaining, 2.8) and game.titan.visible and game.titan.fusion == 0.0, "Fourth phase opens a 2.8-second three-disaster fusion")
-	_check(not game.storm.visible and not game.earthquake.visible and not game.flood.visible, "Only the combined boss enters the final phase")
-	w.advance_wave(1.539)
-	_check(fusions == 0 and game.projectiles.active_count() == 0, "Energies are still converging at 1.099 s")
-	w.advance_wave(.002)
-	_check(fusions == 1 and game.weather.flash_count > flashes and game.game_camera.shake_strength() > 10.0, "At 55% the four energies collide: lightning flash and heavy shake")
-	w.advance_wave(1.258)
-	_check(w.state == DisasterWaveManager.State.WAVE_INTRO and is_equal_approx(w.siege_remaining, 60.0), "Fusion cannot end before 2.0 s nor spend fight time")
-	w.advance_wave(.001)
-	_check(w.state == DisasterWaveManager.State.SIEGE_PHASE and game.titan.fusion == 1.0 and fusions == 1, "Titan is formed exactly at 2.0 s; the collision fires once")
+	w.start_siege(DisasterWaveManager.Mode.CATACLYSM,true)
+	_check(w.wave_number == 4 and w.state == DisasterWaveManager.State.SIEGE_PHASE and w.siege_remaining == 50 and game.titan.visible,"Final boss begins fully formed with all 50 seconds available")
+	_check(not game.storm.visible and not game.earthquake.visible and not game.flood.visible,"Only the original combined boss is visible")
+	_check(not game.player.controls_locked and game.titan.position == game.titan._home,"The final phase has no cinematic movement or lock")
 	_check(w.boss_name() == "DEPREM • SEL • FIRTINA" and w.phase_label() == "AFET KUŞATMASI", "Exact plain final boss name and siege label")
-	w.advance_wave(44.999)
+	w.advance_wave(34.999)
 	_check(not w.nova, "No nova before the final 15 seconds")
 	w.advance_wave(.002)
 	_check(w.nova and w.phase_label() == "SON 15 SANİYE · KATAKLİZMA NOVA", "Nova begins in the last 15 seconds")
 	w.advance_wave(15.0)
-	_check(w.state == DisasterWaveManager.State.WAVE_OUTRO and not w.nova, "60 s ends the final fight and clears the overload")
-	w.advance_wave(DisasterWaveManager.OUTRO_DURATION)
+	_check(w.state == DisasterWaveManager.State.VICTORY and not w.nova, "50 s ends the final fight and clears the overload")
+
 	_check(w.victory and w.completed_waves == 4, "Fourth retreat is the campaign victory")
 
 # ------------------------------------------------------------ shortcuts ----
@@ -137,7 +127,7 @@ func _shortcuts() -> void:
 	game.player.set_physics_process(true)
 	game.player.controls_locked = false
 	await _tap(KEY_4)
-	_check(not w.debug_enabled and w.mode == DisasterWaveManager.Mode.CATACLYSM and w.wave_number == 4 and w.completed_waves == 3 and w.state == DisasterWaveManager.State.WAVE_INTRO, "Key 4 starts the final boss directly")
+	_check(not w.debug_enabled and w.mode == DisasterWaveManager.Mode.CATACLYSM and w.wave_number == 4 and w.completed_waves == 3 and w.state == DisasterWaveManager.State.SIEGE_PHASE, "Key 4 starts the final boss directly")
 	var keys: Array[int] = [KEY_1, KEY_2, KEY_3]
 	for mode: int in range(3):
 		await _tap(keys[mode])
@@ -358,8 +348,8 @@ func _art() -> void:
 	_check(t.slam_progress() >= 0.0 and t._particles.size() > particles, "Strike bursts lightning, lava and rock from both hands")
 	game.waves.finish_wave()
 	game.waves.advance_wave(.5)
-	_check(t.retreat > .4 and t.position.y > t._home.y and t.self_modulate.a < 1.0, "Retreat sinks the titan into its tide and fades it")
-	_check(t.front_layer.z_index < b.z_index and not t.is_charging(), "While sinking, the head drops behind the facade and no attack plate lingers")
+	_check(not t.visible and game.waves.victory,"Final completion removes the boss immediately")
+	_check(not t.is_charging(),"Completed combat leaves no active wind-up")
 	t.set_active(true)
 	_check(t.front_layer.z_index == DisasterBoss.FRONT_Z, "Re-activation restores the head layer above the roof")
 
@@ -408,7 +398,7 @@ func _final_fight() -> void:
 		if not a.is_armed() or a.warning_elapsed < required - .00001 or a.warning_elapsed > a.warning_duration + .017: bad += 1
 	w.autoplay = false
 	print("FINAL_FIGHT ticks=%d siege=%d launches=%d peak=%d supplies=%d integrity=%.1f" % [ticks, siege_ticks, launches.size(), peak, w.nova_supplies, game.building.integrity])
-	_check(w.victory and not w.failed and absi(siege_ticks - 3600) <= 2, "A real 60-second final fight runs to victory (%d siege ticks)" % siege_ticks)
+	_check(w.victory and not w.failed and absi(siege_ticks - 3000) <= 2, "A real 50-second final fight runs to victory (%d siege ticks)" % siege_ticks)
 	var all_combos: bool = true
 	for pattern: int in [HazardAttack.Pattern.STEAM_TSUNAMI, HazardAttack.Pattern.STEAM_BURST, HazardAttack.Pattern.FIRENADO, HazardAttack.Pattern.SEISMIC_TIDE, HazardAttack.Pattern.QUADRANT_SEAL, HazardAttack.Pattern.CATACLYSM_NOVA]:
 		all_combos = all_combos and patterns.has(pattern)
@@ -435,7 +425,7 @@ func _capture(directory: String) -> void:
 	await _save(directory, "01-hud-preparation.png")
 	var w: DisasterWaveManager = game.waves
 	w.start_next_wave()
-	w.advance_wave(w.intro_duration())
+
 	game.building.pacing_enabled = false
 	game.player.health = 85
 	game.loot.column_kits = 2
@@ -452,14 +442,8 @@ func _capture(directory: String) -> void:
 	_quiet()
 	w.start_siege(DisasterWaveManager.Mode.CATACLYSM, true)
 	game.titan.set_process(false)
-	for progress: float in [.2, .45, .58, .8]:
-		w.state = DisasterWaveManager.State.WAVE_INTRO
-		w.transition_remaining = DisasterWaveManager.FINAL_INTRO_DURATION * (1.0 - progress)
-		w.advance_wave(0.0)
-		game.titan.advance(.03)
-		await _save(directory, "04-fusion-%02d.png" % int(progress * 100))
 	game.titan.set_process(true)
-	w.advance_wave(DisasterWaveManager.FINAL_INTRO_DURATION)
+
 	game.building.pacing_enabled = false
 	await _frames(30)
 	await _save(directory, "05-titan-idle.png")
@@ -485,7 +469,6 @@ func _capture(directory: String) -> void:
 	w.autoplay = false
 	w.finish_wave()
 	w.advance_wave(.5)
-	game.mechanics.retreat_dust(.1)
 	await _save(directory, "08-titan-retreat.png")
 	w.advance_wave(.5)
 	await _save(directory, "09-victory.png")

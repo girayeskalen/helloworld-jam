@@ -184,3 +184,50 @@ Kullanıcının FPS/BGM/final zorluğu talebi doğrultusunda AI yardımıyla mev
 MusicScore artık çalışma karesinde canlı sentez yapmaz; açılışta özgün Re minör bas/davul/melodi/akor katmanlarından 22.050 Hz 16-bit mono AudioStreamWAV üretir. Ayrı Master/−5 dB/ALWAYS oynatıcı, örnek adedine göre ileri döngü ve mute'a saygılı watchdog eklendi. 120 BPM'de sekiz 4/4 ölçü 16 sn olduğundan, çelişen 12,8 sn yerine bu müzikal uzunluk kullanıldı. Dış müzik, ses örneği, servis, asset veya bağımlılık indirilmedi; önbellekler mevcut prosedürel çizimlerin çalışma anındaki kopyalarıdır.
 
 Yalnız finalde cooldown×1,3, adet round(×0,7), hız×0,8, oyuncu/bina hasarı×0,7 ve uyarı+0,20 sn uygulandı. Bu mekanik katsayılar ölçülür; insanın algıladığı toplam zorluğun tam %30 değiştiği iddia edilmez. Step6Smoke ve PerformanceBench eklendi, eski test beklentileri güncellendi. Gerçek test/FPS/ses çıkışı ölçümleri ve sınırlar STATUS.md'dedir; insan kulakla dinleme veya bütün bilgisayarlarda FPS garantisi iddiası yoktur.
+
+
+## 17 Ekim 2026 — Adım 7 / tempo rampası, okunabilir koreografiler ve sıyrılma (Claude)
+
+Araç: **Anthropic Claude Code, Claude Opus 5.5** (`claude-opus-5-5`). Süreler (50/5 sn), tempo eğrisi (0,90× / 1,00→1,25× / 1,45×), beş fırtına ve dört deprem deseninin adları ve davranışları, renk kodları, 0,55 sn uyarı + 0,12 sn beyaz parlama ve 18–26 px sıyrılma ödülü kullanıcı tarafından tanımlandı. Uygulama, sayısal ayrıntılar ve testler AI yardımıyla yazıldı.
+
+| Kategori | Durum | Kapsam |
+| --- | --- | --- |
+| Kod | Kullanıldı | `DisasterWaveManager` (50/5 sn, `tempo_at`, tempo ile çarpılan saldırı saatleri, mermi hızı rampası, desen bazlı oda hasarı, sıyrılma sayacı), `BossPatterns` (5 fırtına + 4 deprem koreografisi), `DisasterBoss` (desen döngüleri, fırtına dalışı ve uzun/kompakt hortum formu, eşya fırlatmanın kaldırılması), `HazardAttack`/`TelegraphSystem` (sabit 0,55 sn, lazer/dolgu uyarıları, beyaz parlama), `HazardProjectile`/`ProjectilePool` (sıyrılma tespiti, 12 gövde dokusu), `Player.graze`, `ApartmentBuilding.set_combat_dim`, `SoundManager` doruk perdesi, yeni `tests/Step7Smoke.gd` ve eski testlerin yeni kurallara uyarlanması. |
+| Görsel | Kullanıldı (dolaylı) | Kontur/neon/beyaz çekirdekli küre-bıçak-kaya-diken mermi siluetleri, lazer çizgisi ve oda/kat dolgulu uyarılar, tavan kaya yağmuru, sıyrılma kıvılcım halkası, kompakt hortum çekirdeği ve dalış izleri prosedürel çizim kodudur. Resim üretim servisi veya harici görsel yok. |
+| Ses | Kullanıldı (dolaylı) | Yeni `graze` efekti mevcut SoundSynth tarif biçimiyle yazıldı (kısa yükselen ton + bant geçiren gürültü + çıtırtı). Doruğda BGM'nin oynatma hızı 1,05× olur; WAV yeniden üretilmez. Kulakla öznel dinleme yapılmadı. |
+| Metin | Kullanıldı | Desen etiketleri, “GÜVENLİ KAT” ve “SIYRILDI! +ENERJİ” yazıları, README/AGENTS/STATUS/CLAUDE_DEVIR ve bu beyan. |
+
+Hazır kaynak: yeni dosya, paket, asset veya eklenti alınmadı. Güvenli kat ruleti, sıyrılma enerjisi, tempo rampası, tavan kaya yağmuru ve diğer boss davranışları kurgusal oyun mekanikleridir; gerçek afet davranışı veya güvenlik tavsiyesi değildir.
+
+## 18 Ekim 2026 — Adım 8 (OpenAI Codex)
+
+Claude'un commit edilmemiş Adım 7 çalışması korunarak kullanıcı tasarımı uygulandı. OpenAI Codex/GPT ailesi, Godot GDScript kodu, özgün prosedürel piksel ikon/efekt çizimi, kısa Türkçe kart metinleri, testler ve çalışma belgelerinde kullanıldı. Tam model sürümüne dair ayrı kanıt olmadığı için sürüm adı uydurulmadı.
+
+- Kod: yalnız deprem fazına cooldown×1,10, hareketli yol hızı×0,90, ölçülü kaçış boşluğu×1,10; dokuz aktif mekanik; gerçek mermi/oyuncu çarpışması, yerel zaman alanı, iniş koruması, uzaktan onarım ve olay sesi bağlantıları.
+- Görsel: UpgradeIcon ve UpgradeOverlay, çanta/koruyucu kubbe, iki orbital, zaman kubbesi, zırhlı oda çerçevesi, dron/onarım ışınları, takla/iniş halkaları. Bunlar AI yardımıyla yazılmış prosedürel çizim kodudur; resim üretim servisi veya harici asset yoktur.
+- Metin: AFAD/USGS temelli kısa bilgi cümleleri; bağlantı/erişim kapsamı SOURCES.md'de. Kurgusal kalkanın adı Çök-Kapan-Tutun olarak yazıldı. L-demir/karbon manto için bina yıkımını kesin önleme iddiası kullanılmadı. Anlık onarım, şifa, mermi temizleme ve zaman bükme oyun kurgusudur.
+- Ses: yeni ses dosyası/beste/sentez tarifi eklenmedi; mevcut block/heal/repair/graze/dash/landing sesleri mevcut sınırlı SoundManager havuzuyla gerçek modül olaylarına bağlandı. Mevcut WAV BGM değişmedi.
+- Kontrol: motor içi otomatik davranış testleri ve native renderer PNG incelemesi. Gerçek sonuçlar STATUS.md'dedir; otomatik sürücü, insan eğlence/zorluk veya kulakla dinleme deneyi sayılmaz.
+
+Harici kod/asset/font/ses paketi ya da bağımlılık indirilmedi. Godot/MIT ve önceki kaynak bildirimleri korunur. Eski kartların değişen tasarımına ait testler yeni davranışlara uyarlandı; hareket, 16 oda, 4 faz, uyarı/havuz ve kit regresyonu korunur. Bu görevde commit/push yapılmadı.
+
+## 18 Ekim 2026 — Adım 9 (OpenAI Codex)
+
+Kullanıcının Giray Eskalen/ODTÜ diploma, TV uyarısı, kurtarma kıyafetini kuşanma, dört bossa özel yıkım ve güneşli zafer senaryosu AI yardımıyla GDScript olarak uygulandı. Araç: OpenAI Codex/GPT ailesi. Yeni CutsceneDirector, OpeningStoryArt, FinaleStoryArt, Step9Smoke; mevcut MainGame/faz/ses/loot kilit bağlantıları ve belgeler bu kapsamdadır. Önceden commit edilmemiş Adım 7–8 çalışması korunmuştur.
+
+- Görseller: özgün prosedürel salon, ahşap/altın diploma çerçevesi, dekoratif mühür/imza, TV, dolap kapakları, ev kıyafeti, mevcut kurtarma karakterinin animasyonu; hortum/şimşek, kaya yumrukları, tsunami köpükleri, dört parçalı kat çöküşü, parçacıklar, kalkan, güneş/ışın/ağaç/kuş/çiçek. Mevcut oda çiziminin tek kare kopyası yalnız çalışma belleğinde çöküş animasyonuna dönüşür. Resim üretim servisi, harici sprite veya resmî ODTÜ diploma/logo görseli kullanılmadı.
+- Ses: üç yeni özgün SoundSynth tarifi (alarm, kuşanma, Re majör umut melodisi); mevcut WAV BGM, bus/havuz/mute/seviye sistemi korunur. Hazır beste veya ses örneği alınmadı. Objektif PCM testleri insan kulakla dinleme sayılmaz.
+- Metin: diploma/isim/başlıklar kullanıcının isteğidir. Üç günlük haber ve Kategori 6 ulti kurgu olarak etiketlendi; gerçek tahmin veya yapı güvenliği garantisi değildir. USGS/NHC kontrol kapsamı SOURCES.md'dedir. Oyun bitişindeki sıfır hasar kalkanı yalnız sinematik bir oyun sonucudur.
+- Test: mevcut regresyon paketleri hikâyeyi açıkça kapatarak kendi mekaniklerini sınar; yeni Step9Smoke normal hikâyeli açılışı ve sonları ayrıca doğrular. Sonuç, native PNG ve ölçüm sınırları STATUS.md'dedir.
+
+Harici asset, font, ses dosyası, kod paketi veya yeni bağımlılık eklenmedi. Bu görevde commit/push yapılmadı.
+
+## 18 Ekim 2026 — video intro ve kesin sinematik temizliği (OpenAI Codex)
+
+Son kullanıcı isteğiyle önceki Adım 9'un diploma/salon/kuşanma/yıkılış/gündüz çizimleri, CutsceneDirector ve eski BossCinematic kaldırıldı. Boss giriş/çıkış fazları, fusion/retreat görsel yolları, I/V/K ön izlemeleri ve dört kullanılmayan sinematik ses tarifi silindi. Normal boss anatomisi/saldırı wind-up/vuruşları, 9 aktif mekanik, 2x W, oda/loot/uyarı/havuz, 50/5 sn ve özgün WAV BGM korunur.
+
+AI kullanımı: OpenAI Codex; IntroOverlay GDScript/TSCN, VideoStreamPlayer bağlantıları, minimalist Türkçe isim kartı/bülten/fade, faz/ses sadeleştirmesi, VideoIntroSmoke ve değişen sinematik beklentilerinin yeni testleri, belgeler. Resim/video üretim servisi kullanılmadı. Gerçek hikâye videosu eklenmedi; gerçek OGV çözme ve bitiş deneyi için yalnız %TEMP% altında FFmpeg testsrc ile özgün test deseni üretildi. Test videosu ve FFmpeg aracı projeye/oyuna eklenmedi.
+
+Yeni hazır kaynak: **Press Start 2P Regular**, Copyright 2012 The Press Start 2P Project Authors (cody@zone38.net), SIL Open Font License 1.1; Google Fonts resmî deposundan orijinal TTF ve OFL.txt alındı. Font değiştirilmedi; gerçek Türkçe karakter desteği test edildi. Fontun isim/lisans dosyaları assets/fonts içinde tutulur ve dağıtımda korunmalıdır. Bağlantılar SOURCES.md'dedir. Dış müzik/kod/oyun sprite paketi alınmadı. WebM'in standart Godot4'te desteklenmediği açıkça belgelendi; ek çözücü yoksa güvenli metin girişi kullanılır.
+
+Nihai motor/test/görüntü sonuçları STATUS.md'nin en üstündedir. Bu görevde commit/push yapılmadı.

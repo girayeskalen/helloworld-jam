@@ -6,7 +6,6 @@ var _remaining: float = 0.0
 var _duration: float = 0.0
 var _intensity: float = 0.0
 var _elapsed: float = 0.0
-var cinematic_offset: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	make_current()
@@ -35,9 +34,9 @@ func _process(delta: float) -> void:
 	if Input.is_action_just_pressed("test_shake"):
 		apply_shake(17.0, 0.65)
 	if _remaining <= 0.0:
-		offset = cinematic_offset
+		offset = Vector2.ZERO
 		return
 	_remaining = maxf(0.0, _remaining - delta)
 	_elapsed += delta
 	var decay: float = pow(_remaining / _duration, 2.0)
-	offset = cinematic_offset + Vector2(sin(_elapsed * 93.0), cos(_elapsed * 117.0)) * _intensity * decay
+	offset = Vector2(sin(_elapsed * 93.0), cos(_elapsed * 117.0)) * _intensity * decay

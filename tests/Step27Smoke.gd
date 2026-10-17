@@ -14,6 +14,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	game = (load("res://scenes/MainGame.tscn") as PackedScene).instantiate() as MainGame
+	game.intro_enabled = false
 	(game.get_node("DisasterWaveManager") as DisasterWaveManager).autoplay = false
 	root.add_child(game)
 	await _frames(4)
@@ -116,7 +117,7 @@ func _run() -> void:
 		tiles = tiles and room.wall_texture == found["tileset"]
 	_check(p.custom_sprite == found["player"] and game.storm.boss_sprite == found["boss_storm"] and game.earthquake.boss_sprite == found["boss_quake"] and tiles, "Dropped sprites replace the procedural player, bosses and room walls")
 	w.start_siege(DisasterWaveManager.Mode.CATACLYSM, true)
-	w.advance_wave(w.intro_duration())
+
 	w.building.pacing_enabled = false
 	# Direct sprite drawing fixture; campaign itself never starts a double phase.
 	game.storm.set_active(true)
@@ -314,16 +315,16 @@ func _run() -> void:
 	probe.attack.source = 1
 	var quake_glow: Color = probe.glow_color()
 	probe.attack = null
-	_check(storm_glow.b > storm_glow.r and quake_glow.r > quake_glow.b and HazardProjectile.CORE.r > 0.9 and HazardProjectile.CORE.g < 0.4, "Electric-blue storm rim, ember quake rim, bright red core")
+	_check(storm_glow == Color("00f0ff") and quake_glow == Color("ff9500") and HazardProjectile.CORE == Color.WHITE and HazardProjectile.OUTLINE == Color("05070a"), "Step 7 bullets: storm cyan / quake amber neon, white core, near-black rim")
 	_check(HazardProjectile.TRAIL_LENGTH == 4, "Four-point motion trails bound projectile drawing cost")
 	_check(TelegraphSystem.STORM_WARNING.b > TelegraphSystem.STORM_WARNING.r and TelegraphSystem.QUAKE_WARNING.r > TelegraphSystem.QUAKE_WARNING.b, "Warnings use neon storm-blue and ember colours")
 	w.start_siege(DisasterWaveManager.Mode.STORM, true)
-	w.advance_wave(w.intro_duration())
+
 	w.building.pacing_enabled = false
 	p.current_floor = 1
-	game.storm.plan_pattern(w, 3, 1)
+	game.storm.plan_pattern(w, 1, 1)
 	await _frames(3)
-	_check(game.labels.drawn >= 2, "Corridor label and boss attack name are drawn in screen space (%d)" % game.labels.drawn)
+	_check(game.labels.drawn >= 2, "Safe-floor plate and boss attack name are drawn in screen space (%d)" % game.labels.drawn)
 	w.reset_cycle()
 	p.reset_player()
 	for argument: String in OS.get_cmdline_user_args():
@@ -370,7 +371,7 @@ func _capture(directory: String) -> void:
 	_key(KEY_D, false)
 	await _frames(30)
 	w.start_siege(DisasterWaveManager.Mode.CATACLYSM, true)
-	w.advance_wave(w.intro_duration())
+
 	w.building.pacing_enabled = false
 	await _frames(30)
 	w.storm_burst()

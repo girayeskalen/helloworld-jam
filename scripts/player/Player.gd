@@ -8,6 +8,8 @@ signal damaged(remaining_health: float)
 ## Audio/feedback hooks: a ground or top-floor air jump, and a landing (0..1 impact).
 signal jumped(air: bool)
 signal landed(impact: float)
+## Step 7 graze reward (dash energy) was granted.
+signal grazed(world_position: Vector2)
 
 @export var custom_sprite: Texture2D
 @export var sprite_size: Vector2 = Vector2(64, 88)
@@ -21,6 +23,10 @@ signal landed(impact: float)
 ## Base dash invulnerability stays 0.25 s, including the longer grapple dash.
 @export var dash_duration: float = 0.25
 @export var dash_cost: float = 32.0
+## Dash energy granted by one graze, and the minimum gap between two rewards.
+const GRAZE_ENERGY: float = 25.0
+const GRAZE_COOLDOWN: float = 0.12
+var _graze_cooldown: float = 0.0
 @export var dash_cooldown: float = 0.304
 @export var max_health: float = 100.0
 ## A ground jump stays inside the current room (apex ~115 px under a 200 px ceiling).
@@ -41,6 +47,8 @@ signal landed(impact: float)
 @export var beam_spread: float = 0.30
 
 var building: ApartmentBuilding
+var mechanics: SiegeMechanics
+var energy_regen_multiplier: float = 1.0
 var health: float = 100.0
 var controls_locked: bool = false
 var grapple_enabled: bool = false
@@ -60,7 +68,7 @@ var is_dashing: bool:
 		return dash_remaining > 0.0
 var invulnerable: bool:
 	get:
-		return is_dashing or hit_invulnerability > 0.0 or repair_shield > 0.0
+		return is_dashing or hit_invulnerability > 0.0 or repair_shield > 0.0 or (mechanics != null and mechanics.floor_guard)
 ## True during the short scripted phase through a floor slab (double jump up / S down).
 var is_shifting: bool = false
 var shift_direction: int = 0
@@ -136,6 +144,7 @@ func _physics_process(delta: float) -> void:
 	dashing_this_tick = is_dashing
 	_clock += delta
 	hit_invulnerability = maxf(0.0, hit_invulnerability - delta)
+	_graze_cooldown = maxf(0.0, _graze_cooldown - delta)
 	if hit_invulnerability < 0.00001:
 		hit_invulnerability = 0.0
 	self_modulate.a = 0.3 if hit_invulnerability > 0 and int(hit_invulnerability * 16) % 2 == 0 else 1.0
@@ -144,7 +153,7 @@ func _physics_process(delta: float) -> void:
 	_cooldown = maxf(0.0, _cooldown - delta)
 	_regen_delay = maxf(0.0, _regen_delay - delta)
 	if _regen_delay <= 0.0 and not is_dashing:
-		stamina = minf(100.0, stamina + 38.0 * delta)
+		stamina = minf(100.0, stamina + 38.0 * delta * energy_regen_multiplier)
 	_beam.queue_redraw()
 	if health <= 0:
 		velocity = Vector2.ZERO
@@ -470,12 +479,24 @@ func take_damage(amount: float) -> bool:
 		return false
 	health = maxf(0.0, health - amount)
 	hit_invulnerability = 1.0
+	# A lethal hit may be rescued before listeners evaluate defeat.
+	if mechanics != null: mechanics.on_player_hurt()
 	damaged.emit(health)
+	return true
+
+## Near miss reward: +25 dash energy at most once per GRAZE_COOLDOWN.
+func graze(point: Vector2) -> bool:
+	if health <= 0.0 or controls_locked or _graze_cooldown > 0.0 or hit_invulnerability > 0.0:
+		return false
+	_graze_cooldown = GRAZE_COOLDOWN
+	stamina = minf(100.0, stamina + GRAZE_ENERGY)
+	grazed.emit(point)
 	return true
 
 func reset_player() -> void:
 	if building == null:
 		return
+	_graze_cooldown = 0.0
 	_ghost_phasing = false
 	speed_boost = 0.0
 	current_floor = 0
