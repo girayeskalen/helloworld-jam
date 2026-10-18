@@ -183,16 +183,16 @@ func _tuning() -> void:
 
 func _bgm() -> void:
 	var sound: SoundManager = game.sound
-	var wav: AudioStreamWAV = sound.bgm_player.stream as AudioStreamWAV
+	var wav: AudioStreamWAV = sound.score.stems["pad_bass"] as AudioStreamWAV
 	_check(wav.data.size() == MusicScore.SAMPLE_COUNT*2 and wav.loop_end == MusicScore.SAMPLE_COUNT,"BGM owns an exact sample-frame loop and complete sixteen-bit payload")
 	var first: int = wav.get_instance_id()
 	var bytes: PackedByteArray = wav.data
 	for i: int in range(120): sound.advance(1.0/60.0)
-	_check(sound.bgm_player.stream.get_instance_id() == first and (sound.bgm_player.stream as AudioStreamWAV).data == bytes,"Ordinary frames never regenerate, refill or replace music PCM")
+	_check(sound.score.stems["pad_bass"].get_instance_id() == first and (sound.score.stems["pad_bass"] as AudioStreamWAV).data == bytes,"Ordinary frames never regenerate, refill or replace music PCM")
 	var bgm_nodes: int = 0
 	for child: Node in sound.get_children():
 		if child.name == "BGM": bgm_nodes += 1
-	_check(bgm_nodes == 1 and sound.bgm_player.bus == "Master" and sound.bgm_player.volume_db == -5,"Exactly one dedicated minus-five-dB Master BGM player exists")
+	_check(bgm_nodes == 1 and sound.bgm_player.bus == "Music" and sound.bgm_player.stream is AudioStreamSynchronized,"Exactly one synchronized BGM player exists on duckable Music")
 	sound.bgm_player.stop()
 	sound.advance(0)
 	_check(sound.bgm_player.playing and sound.bgm_restarts > 0,"Music watchdog recovers an accidental stop")

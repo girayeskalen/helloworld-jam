@@ -2,6 +2,10 @@
 
 Afete hazırlık ve farkındalık temalı Godot oyunu: **ne kadar hazırlanırsan o kadar hayatta kalırsın.** Fallout Shelter esinli 4 kat × 4 odalı apartman kesitinde her afetten önce kısa bir **Hazırlık** evresi vardır: dolapları duvara sabitle, gazı ve sigortaları kapat, kepenkleri indir, afet çantanı hazırla. Afet gelince doğru davranış kazandırır: depremde **Çök-Kapan-Tutun** (C), pencerelerden uzak dur, sarsıntıda merdivene koşma; selde yükseğe çık. Sıra **DEPREM → FIRTINA → SEL → AFET**; her afetten sonra kısa bir **karne** neyin işe yaradığını ve AFAD önerisine dayanan bir alışkanlığı gösterir. Hareket ve kaçış bullet-hell hızındadır (çift zıplama ile üst kat, S ile alt kat, sekiz yönlü takla).
 
+**18 Ekim — teslim düzeltmeleri (Adım 14):** Başarıyla biten ilk üç fazın çıkışında, karne/kart ekranı açılırken oyuncunun canı ve enerjisi tamamen dolar; bir yeşil parıltı ve iyileşme sesi gelir. Oda hasarı, güçlendirmeler, kitler, kartlar ve hazırlık görevleri taşınır. Zafer ve bölümden tekrar deneme akışı korunur. Ölümcül su isabetinde havuz temizlense de isabet kaydı güvenle tamamlanır.
+
+Görev bandında cümle büyütüldü, sayaç küçük ve görev renginde kaldı. Her fazda karakter yanındaki tek yön işareti görev/onarım/kolon kitine götürür; erişimde, sarsıntıda ve taklada çekilir. Hazırlıkta seçili hedef daha büyük ve halkalıdır; ilerleme yoksa en çok üç sessiz hatırlatma gelir. Onarım odalarının köşe braketleri, beyaz ünlem glifi ve mini harita nabzı mermilerden ayrılır. Savaşın kısa onarım satırı 4 sn sürer, en sık 15 sn'de bir açılır. Sinematik/kart/pause/sonuçta rehber gizlidir; dünya içine yeni yazı eklenmedi.
+
 **18 Ekim — bölüm seçimi ve tekrar deneme:** Ana menüde Başla/Ayarlar/Çıkış altında **Bölüm seç** bulunur: fare, oklar + Enter veya 1–4 ile **Deprem / Fırtına / Sel / Afet** başlatılır. Aynı sıra oyundaki kısayollarda da geçerlidir. Hazırlıkta alt ortada küçük bölüm satırı görünür; savaşta ve kart seçiminde gizlenir. Final bossunun adı **AFET**'tir; deprem, sel ve fırtınanın birleşik mekanikleri korunur.
 
 Yenilgi ekranında **R — Bölümü tekrar dene**: savaşın başındaki oda durumları, seçilmiş kartlar, kitler ve tamamlanmış hazırlık görevleri geri gelir. Oyuncu tam canla aynı bölümün Hazırlık evresine döner (ilk bölüm 15 sn, diğerleri 10 sn); yeniden kart seçilmez. Karneye bakıp eksik hazırlıkları tamamla, F ile veya süre bitince aynı bossa gir. İlk bölüm öğreticisi A D/W'yi yeniden zorlamaz. Yenilgi dışındaki R, zaferdeki R ve pause menüsündeki **Yeniden başla** tam yeni oyundur. Kontrol noktası yalnız bu oyun oturumunda tutulur.
@@ -39,6 +43,14 @@ Yenilgi ekranında **R — Bölümü tekrar dene**: savaşın başındaki oda du
 
 Codex ile devam için önce [kısa devir notunu](CODEX_DEVIR.md), Claude için [Claude devir notunu](CLAUDE_DEVIR.md) oku.
 
+## Teslim ZIP’lerini çalıştır
+
+`exports/AfetKusatmasi_Windows.zip` veya `exports/AfetKusatmasi_Linux.zip` dosyasını tamamen bir klasöre çıkar. Windows'ta `AfetKusatmasi.exe` dosyasına çift tıkla; kendi indirdiğin bu build için SmartScreen çıkarsa **Ek bilgi → Yine de çalıştır**. Linux'ta `chmod +x AfetKusatmasi.x86_64` ardından `./AfetKusatmasi.x86_64` çalıştır. Godot editörü gerekmez. Açılış testi sonuçları ve boyutlar STATUS'tadır; ZIP içindeki `OYNA_BENI.txt` aynı kısa rehberi içerir.
+
+Amaç: apartmanı afetlere hazırlayıp Deprem, Fırtına, Sel ve Afet kuşatmalarından sağ çıkmak. **A D** koş, **W** zıpla, **W W** üst kat, **S** alt kat, **SHIFT/Space** takla, **C** Çök-Kapan-Tutun, **E** kullan/onar, **F** başlat, **R** yeniden/bölümü tekrar dene, **1–4** bölüm seç, **ESC** duraklat, **M** ses. Windows build ayrıca ekip tarafından Windows'ta menü ve ilk savaşla sınanmalıdır.
+
+Export ön ayarları `export_presets.cfg` içindedir: Windows Desktop ve Linux, x86_64, gömülü PCK. Testler, araçlar, captures, exports, Markdown, varsa fragman ve ham kaynak dizinleri build dışında kalır; oyun sesleri/müzikleri ve ses manifest'i dahildir. Build/ZIP/captures Git'e alınmaz.
+
 ## Oyunu aç
 
 1. Standart **Godot 4.3 veya üstünü** aç. .NET sürümü gerekmez.
@@ -47,7 +59,7 @@ Codex ile devam için önce [kısa devir notunu](CODEX_DEVIR.md), Claude için [
 
 Windows'ta **`Oyunu-Ac.cmd` dosyasına çift tıklayarak** da çalıştırabilirsin. Başlatıcı önce `GODOT_BIN` ortam değişkenine, ardından masaüstü/Downloads içindeki standart Godot klasörlerine bakar. Bulamazsa Godot'tan `project.godot` dosyasını aç.
 
-Linux terminalinde proje klasöründen `godot --path .` ile oynat, `godot --editor --path .` ile editörü aç (Godot komutu PATH içinde olmalı). Bu oturumun test motoru `/tmp/siege-tools/Godot_v4.3-stable_linux.x86_64` altındadır.
+Linux terminalinde proje klasöründen `godot --path .` ile oynat, `godot --editor --path .` ile editörü aç (Godot komutu PATH içinde olmalı). Bu oturumda `/tmp/godot-current/Godot_v4.7.2-stable_linux.x86_64` ve `/tmp/godot43/godot` kullanıldı; geçici klasörler yeniden başlatmada silinebilir.
 
 Godot'un konsol sürümüyle terminalden:
 
@@ -94,17 +106,51 @@ Hazırlık görevi tamamlanınca nesnede ışınlar ve tik, görev satırında k
 
 İsabet ekran kenarını kızartır, can barını hafif sarsar ve kaybedilen canı kısa bir beyaz iz olarak gösterir; iyileşme yeşil parlar. Yalnız normal menülü girişte ölümcül olmayan isabete 0,06 saniyelik kısa vuruş donması eşlik eder; duraklatma, sıfırlama, faz sonu ve çıkış bunu temizler. Karne satırları sırayla kayarak, doğru/eksik işaretine uygun yumuşak sesle görünür. Dorukta, son 10 saniyede ve final Nova'da mevcut müziğe senkron ek katman açılır. Yeni oyun içi yazı veya yeni oynanış bonusu yoktur; süre/hasar/loot dengesi korunur.
 
-## Duraklatma ve ses (Adım 5)
+## Ses / Müzik ve duraklatma — Adım 12–13
 
-**ESC veya P** bütün oyunu durdurur (`get_tree().paused`): savaş sayacı, saldırılar, uyarılar, loot süresi ve oyuncu donar. Panel ve ses yöneticisi `PROCESS_MODE_ALWAYS` ile çalışmaya devam eder. Karartılmış ekranın ortasında "Duraklatıldı" ve kutusuz bir dikey liste vardır: **Devam**, **Yeniden başla**, **Ana menü**, **Ses açık/kapalı**, altında **-** / 10 dilimli ses göstergesi / **+**; en altta iki satırlık kısa tuş listesi. Hepsi fareyle ve klavyeyle (ok tuşları + Enter dahil) çalışır; seçili satırın solunda küçük bir kare durur. Kart ekranının üstünde de duraklatılabilir; devam edince kart seçimi olduğu gibi bekler. Oyun ekranında köşe ipucu yoktur; sessizdeyken sağ üstte yalnız çarpı işaretli hoparlör görünür. Ses ayarı bu oturum boyunca geçerlidir (diske yazılmaz).
+ESC/P oyunu durdurur; M ve -/+ bütün sesi Master üzerinden kontrol eder. Menü ayarları `user://siege-settings.cfg` içinde saklanır. Pause sırasında dünya efektleri durur, müzik ve ortam sürer; iki yatak alçak geçirenle yumuşar. Dönüşte filtre açılır.
 
-**Ses motoru (`scripts/audio/`):** Harici ses/müzik dosyası kullanılmaz. Mevcut `SoundRecipes`/`SoundSynth` 51 efekt/atmosfer tarifini arka plan iş parçacığında 22,05 kHz 16-bit PCM'e pişirir. Asıl BGM ayrı `MusicScore` ile açılışta bir kez üretilir; oyun sırasında örnek sentezi veya generator tamponu doldurma işi yoktur.
+**Gerçek kayıtlar + sentez yedeği:** Ovani Sound **Sound FX Starter Pack Vol. 1** kayıtlarından oyuna özel 48 türev kullanılır. SampleLibrary önce bu dosyalara bakar; eksik/yüklenemeyen anahtar için eski SoundRecipes/SoundSynth akışı çalar. Ham dosyalar dağıtılmaz, yalnız işlenmiş türevler yerel oyun içeriğine alınır. Türevler de [Ovani lisansına](https://ovanisound.com/policies/terms-of-service) tabidir; oyundan ayrı dağıtım veya yeniden lisanslama izni verilmez. Kırpma/mono/fade işlemi, public kaynak deposunda ayrı WAV dağıtma hakkını kendiliğinden sağlamaz. Public paylaşım öncesi sağlayıcının buna izin verdiği ayrıca doğrulanmalıdır. Kullanılan kaynak/işlem listesi [manifest](assets/audio/manifest.json), kapsam [SOURCES](SOURCES.md) ve [BEYAN](BEYAN.md) içindedir.
 
-- **Asıl oyun müziği:** Özgün Re minör dark synth/chiptune; ritmik D–F–G–A–Bb–A bası (0,32), kick/snare/hat (0,25), D–F–A–G–E–F–D üst melodi (0,22) ve loş akorlar. 120 BPM / 8 adet 4/4 ölçü = **16 saniye**; istekteki 12,8 sn bu tempo/ölçüyle uyuşmadığından müzikal döngü korundu. 22.050 Hz, 16-bit mono WAV, `LOOP_FORWARD`, `loop_end = örnek sayısı`. Ayrı `bgm_player`, Master, −5 dB, ALWAYS; dalga/menü/yeni oyun sesi kesmez. Beklenmedik durma watchdog ile toparlanır; M kasıtlı sessizi korur. Pause'ta BGM sürer, yalnız eski atmosfer kanalı filtrelenir. SFX miks kuralları korunur; kulakla öznel beğeni ayrıca değerlendirilmelidir.
-- **Boss giriş/çıkış sesleri:** FIRTINA için rüzgâr/gök gürültüsü, DEPREM için sismik uğultu ve iki yumruk darbesi, SEL için basınçlı su/köpük, final için üç afetin birleşme darbesi. Önceki oyuncu, onarım, loot, uyarı, darbe, arayüz ve duraklatma efektleri korunur.
-- **Saldırı:** Her boss hazırlığında kısa radar uyarı tınısı; fırlatmada element sesi (fırtına hava yarılması, deprem balyoz darbesi, sel basınçlı su, yangın ateş topu patlaması) ve yumuşak savrulma; çarpmada cam / ahşap / taş / metal / su / ateş sesi. Panjurlu odaya gelen fırtına/sel/yangın darbesi ve türbin engellemesi metalik **BLOKLANDI** sesi çalar.
-- **Oyuncu ve dünya:** Zıplama, 2x W yükselme süpürmesi, S inişi ve sert inişte tok ayak sesi, takla hava yarılması, DODGE! parlak çınlama, hasarda tok darbe + kısa kalp atışı, loot düşme/toplama (çantada ferahlatıcı akor, güvenlik kitinde tıslama), E onarımında çekiç-somun-hidrolik kilit + onay tınısı, kart ekranı açılış/seçim sesi, oda ve bina çöküşü, zafer akoru ve yenilgi.
-- **Miks kuralları:** Her çalmada 0,94–1,06 rastgele perde; aynı ses için 0,05–0,5 sn kısıtlama (mermi fırlatma 0,12 sn, çarpma türü başına 0,11 sn); mermi fırlatma/çarpma sesleri ana efektlerden (−9 dB) **8 dB daha kısık** (−17 dB). Music / SFX / UI bus'ları, Master'da sınırlayıcı; 18 efekt + 4 nabız + 4 arayüz sesi sabit havuzdur, savaşta yeni ses düğümü oluşmaz.
+- **Ortam:** Menü yağmur −18/interior −26; Hazırlık −16/−24; Fırtına yağmur −12/rüzgâr −14, dorukta dolu −16; Deprem yağmur −16/sarsıntı −24; Sel yağmur/su −14; Final rüzgâr/su/sarsıntı −18; sonuçta hepsi −30 dB. Geçiş 1,5 sn. Sel yatağı 1,5 kHz filtrelidir. Şimşekten .2–1.2 sn sonra, en az4sn aralıkla ve flaş gücüne bağlı gök gürültüsü duyulur.
+- **Uyarlanabilir beste:** MusicScore açılışta bir kez `pad_bass`, `drums`, `lead_arp`, `climax`, `tension` üretir. Her biri 120 BPM/8 ölçü/16 sn/22.050 Hz mono; tek AudioStreamSynchronized aynı örnek saati ve pitch'i paylaşır. Yeni kayıtlara ayrılan menü/final/zafer dışında, Hazırlıkta pad+tension; savaş0–10sn pad+drums,10sn'de arpej,28sn'de climax,son10sn tam climax. Depremde ritim, Fırtınada arpej, Selde pad öne çıkar. Değişimler iki saniyelik ölçü sınırında yumuşar; dorukta bütün stem'ler1,05 pitch'e çıkar. Yenilgi ölçüde söner ve mevcut yenilgi efekti gelir; karneye kısık pad döner. Yeni menü/final/zafer katmanı bu oynatıcıyı durdurmadan sessize alır; kayıt eksikse önceki kod müziği ve zafer efekti yedektir.
+- **Büyük anlar:** İsabette Music/Ambience −6 dB (.05/.15/.4 sn), devrilme/boss vuruşu −4, çöküş −10. Sarsıntıda −8 dB ve Music600Hz; davul/arpej çekilir, tension ve sarsıntı yatağı yükselir. Bitişte filtre .6sn'de açılır; davul sonraki vuruşta tek slam ile döner. SFX/UI duck'tan etkilenmez. Son4sn geri sayım, fazda ilk <%30 cana düşüşte uyarı; düşük canda tension ve hafif LP vardır.
+- **Miks:** Master limiter; Music/SFX/UI/Ambience bus'ları, SFX üzerinde room.3/wet.1 yankı. Dünya darbeleri/onarım ekran X'ine göre WorldLeft/Right üzerinden ±.5 pan alır; UI/müzik merkezde kalır. Cast −14 dB ve kısıtlamalı; sıradan mermi fırlatma/çarpma bunun8dB altında. Sabit18 SFX+4 eski ritim+4 UI havuzu ve history korunur; altı ortam, tek senkron kod müziği oynatıcısı ve beş kayıt için on sabit A/B oynatıcı açılışta oluşturulur.
+- **Başarı sesi:** Sıyrılma, kit toplama, görev ve doğru örtünmeye önceden pişmiş Re minör pentatonik nota eklenir. İki saniye içindeki olaylar bir derece yükselir; sessizlikte başa döner. İlk altı hazırlık görevi sırayla yükselir. Kayıt efektlerindeki0,94–1,06 perde çeşidi korunur; müzikal notalar doğru perdede çalar.
+
+
+**Kesintisiz kayıt katmanı:** `MusicDirector.gd`, mevcut AdaptiveMusic/SoundManager üzerine eklenir. Kod müziği yeniden yazılmaz, pentatonik geri bildirim ve ducking korunur. MusicDirector başındaki sabitler bütün yeni seviyeleri, perdeyi ve döngü noktalarını toplar.
+
+| Durum | Sürekli müzik (Music bus içi dB) |
+| --- | --- |
+| Ana menü | Yalnız Blackout −10; ilk açılışta 0 sn'den. Zemin/kod stem'leri sessiz. |
+| Başla / bölüm seçimi | Blackout 2,5 sn'de söner; aynı anda zemin −16 ve Sector −20 açılır. |
+| Hazırlık / karne / kart | Dark Place zemini + Sector + mevcut hazırlık/karne kod müziği. |
+| Boss girişi / normal savaş | Sector 1,5 sn'de −40'a; zemin + mevcut uyarlanabilir savaş stem'leri. |
+| Final girişi son 1 sn / AFET | Urgent −11 başlar; bütün kod stem'leri ve Sector sessiz. Yalnız zemin + Urgent. |
+| Nova (son 12 sn) | Urgent −8; zemin ve Urgent ortak 1,05 çarpanını alır. |
+| Sarsıntı | Zemin +4 dB kabarır; mevcut Music −8 dB / 600 Hz ve Ambience duck sürer, bitince zemin .6 sn'de döner. |
+| Yenilgi / bölümü tekrar dene | Zemin −30'a iner; tekrar denemede aynı konumdan −16'ya döner. Mevcut yenilgi efekti korunur. |
+| Zafer | Diğer müzik 1 sn'de söner, CC0 Victory bir kez çalar; ardından Blackout 42 sn'den −16'ya 4 sn fade-in yapar. |
+| Pause / ana menüye dönüş | Pause'ta müzik saati sürer, Music alçak geçirilir; menüye dönüş 2,5 sn ters geçiştir. |
+
+Kaynak saniyeleriyle A/B döngüler: **Dark Place 14–54,5 / 3 sn**, **Blackout 42–170 / 4 sn**, **Sector 2–54,5 / 3 sn**, **Urgent 1–56 / 2 sn**. Kazançlar `cos/sin` ile eşit güçlüdür. Yeni oynatıcı döngü başından geçiş sırasında ilerler; geçiş bitince bu baş kısmı yeniden oynatılmaz. Gerçek süre kaynak süresi / pitch'tir. Dark Place Do→Re için **1,122462 × ortak pitch**; Urgent ve Sector ortak pitch; Blackout/Victory 1,0 kullanır. Yerel kaynak saati Dummy sürücüde de ilerler; gerçek oyunda monoton duvar zamanı, hitstop/pause sırasında müzik saatini korur. Donanım saatiyle küçük farklar yumuşakça düzeltilir; geçiş eşiğini aşan bir karede yeni oynatıcı o karenin kaynak zamanı farkını da hesaba katar. Başlamış zemin tekrar deneme, faz ve kart değişiminde yeniden başlatılmaz; menü/zaferde yalnız sessize alınır. Dosya eksikse ilgili kayıt sessizce atlanır ve kod müziği kullanılabilir kalır.
+
+Krediler: **SkyleTheFrench** — [Blackout](https://opengameart.org/content/blackout), [Dark Place (loop)](https://opengameart.org/node/159643); **SRG774** — Sector/Urgent/Victory, [Dark Sci-Fi Audio Pack](https://opengameart.org/content/dark-sci-fi-audio-pack). Beşi de **CC0**, içerikleri değiştirilmedi; hash/byte kayıtları [SOURCES.md](SOURCES.md). Bunlar Ovani efektlerinden ayrı lisanslıdır.
+
+Ovani efekt üretimi Windows/Linux'ta Python standart kütüphanesiyle çalışır; numpy/ffmpeg/sox gerekmez. ZIP doğrudan okunur, `__MACOSX`/`.DS_Store` atlanır. Yol verilmezse xdg masaüstü, `~/Masaüstü`, `~/Desktop` aranır:
+
+```sh
+python tools/audio/build_sfx.py --zip /tam/yol/Sound_FX_Starter_Pack_Vol._1.zip
+godot --headless --path . --editor --quit
+godot --headless --fixed-fps 60 --path . --script res://tests/Step12Smoke.gd
+godot --headless --fixed-fps 60 --path . --script res://tests/Step13Smoke.gd
+# Gerçek masaüstü ve ses sürücüsü; headless/fixed-fps kullanma:
+godot --path . -- --audio-preview=/tmp/afet-audio-preview.wav
+godot --path . --script res://tests/Step12Smoke.gd -- --capture=/tmp/afet-audio-native
+```
+
+Tek atışlar−50dBFS kırpma, RMS penceresi, DC düzeltme,4ms/80ms fade ve−1dBFS tepeyle mono44,1kHz'dir (kısa sesin son fade'i süreye göre küçülür). Döngüler stereo32kHz,1sn eşit güçlü dikiş ve yaklaşık−24dBFS RMS'tir; yağmurun tekil yüksek darbeleri yumuşatılır. Toplam19,78MB. QOA importu ve döngü sınırları `.wav.import` dosyalarında kayıtlıdır; SampleLibrary bunları ayrıca zorlar. Önizleme gerçek Master çıkışını 75 sn kaydeder (10 sn menü, 12 sn Hazırlık, 2 sn test girişi, 40 sn deprem, 1 sn çıkış, 10 sn kart; yalnız önizlemede girişin ilk .5 sn'si atlanır); kulakla son kalite değerlendirmesi ekibe aittir.
 
 ## Oda hasarı, malzeme ve güçlendirme
 
@@ -308,6 +354,8 @@ tests/Step8Smoke.gd       Deprem katsayıları, 9 gerçek mekanik, 300 kart seç
 tests/MinimalUISmoke.gd   Yazısız HUD/dünya işaretleri, piksel yazı tipi, kısa menü/kart/sonuç yazıları ve native PNG
 tests/Step9Smoke.gd       Deprem önce kampanya, Hazırlık görevleri ve etkileri, sarsıntı/Çök-Kapan-Tutun, öğretici, karne, sesler ve native PNG
 tests/Step10Smoke.gd      Bölüm kontrol noktası, ölüm/çöküşten tekrar, 1–4 kampanya sırası, menü fare/klavye, Hazırlık satırı ve native PNG
+tests/Step13Smoke.gd      CC0 müzik kimliği, A/B döngüler, kesintisiz zemin, durum/perde/eksik dosya ve native mixer
+tests/Step14Smoke.gd      Faz sonu tam can, ölümcül su isabeti, görev/onarım rehberi ve native 1080p/720p
 tests/Step11Smoke.gd      Başarı efektleri/havuzlar, onarım/sarsıntı, hitstop temizliği, can izi/loot uçuşu, kademeli karne, ek müzik PCM'i ve native PNG
 tests/Step7Smoke.gd       40/10 sn, tempo rampası, 5 fırtına + 4 deprem koreografisi (geometri ve gerçek kaçış), 0,55 sn uyarı/flash, mermi paleti, mobilya karartması, sıyrılma, BGM doruğu, dört gerçek 40 sn savaş ve native PNG
 ```
@@ -344,7 +392,10 @@ Linux'ta tüm paketler (kurulumuna göre `godot` yerine motor dosyasını yaz):
 
 ```sh
 godot --headless --editor --path . --import --quit
-for suite in FrontEndSmoke Step8Smoke Step7Smoke Step1Smoke Step2Smoke Step25Smoke Step3Smoke Step27Smoke Step3LootSmoke CampaignSmoke Step45Smoke MarathonSmoke Step48Smoke Step49Smoke Step5Smoke Step55Smoke Step6Smoke Step2Soak; do
+for suite in Step1Smoke Step2Smoke; do
+  godot --headless --path . --script "res://tests/$suite.gd" || break
+done
+for suite in Step25Smoke Step3Smoke Step27Smoke Step3LootSmoke CampaignSmoke Step45Smoke MarathonSmoke Step48Smoke Step49Smoke Step5Smoke Step55Smoke Step6Smoke Step7Smoke Step8Smoke FrontEndSmoke MinimalUISmoke Step9Smoke Step10Smoke Step11Smoke Step12Smoke Step13Smoke Step14Smoke Step2Soak; do
   godot --headless --fixed-fps 60 --path . --script "res://tests/$suite.gd" || break
 done
 godot --path . --script res://tests/Step48Smoke.gd -- --capture=/tmp/siege48-captures

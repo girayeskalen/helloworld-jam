@@ -10,6 +10,7 @@ extends Node2D
 
 ## A tremor was announced (warning seconds); drives the rumble sound.
 signal warned(seconds: float)
+signal shaking_changed(active: bool)
 signal toppled(prop: BuildingProp)
 ## Debris moment: covered = the player was doing Çök-Kapan-Tutun.
 signal debris(covered: bool)
@@ -71,7 +72,9 @@ func busy() -> bool:
 
 ## Stop any live shake (phase end, defeat, reset); dust FX may finish fading.
 func cancel() -> void:
+	var was_active: bool = active()
 	active_left = 0.0
+	if was_active: shaking_changed.emit(false)
 	if game == null: return
 	game.telegraphs.tremor_warning_left = 0.0
 	game.player.shaking = false
@@ -109,6 +112,7 @@ func _on_tremor_ready() -> void:
 	var waves: DisasterWaveManager = game.waves
 	if waves.state != DisasterWaveManager.State.SIEGE_PHASE or waves.failed or not applies(waves.mode): return
 	active_left = DURATION
+	shaking_changed.emit(true)
 	elapsed = 0.0
 	_toppled_done = false
 	_debris_done = false
@@ -135,6 +139,7 @@ func _shake(delta: float) -> void:
 		active_left = 0.0
 		game.player.shaking = false
 		game.building.tremor = 0.0
+		shaking_changed.emit(false)
 
 func _topple_furniture() -> void:
 	var player: SiegePlayer = game.player

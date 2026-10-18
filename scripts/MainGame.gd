@@ -163,6 +163,11 @@ func _ready() -> void:
 		front_end.name = "FrontEnd"
 		add_child(front_end)
 		front_end.configure(self,menu_settings_path)
+	for argument: String in OS.get_cmdline_user_args():
+		if argument.begins_with("--audio-preview="):
+			var preview: AudioPreview = AudioPreview.new()
+			add_child(preview)
+			preview.configure(self, argument.trim_prefix("--audio-preview="))
 
 func set_frontend_active(active: bool) -> void:
 	# Freeze simulation and gameplay input without freezing rain, room lamps or BGM.

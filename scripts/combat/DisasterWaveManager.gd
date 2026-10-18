@@ -277,6 +277,14 @@ func _complete_outro() -> void:
 		state = State.VICTORY
 		player.controls_locked = true
 	else:
+		# Successful intermission restores only the rescuer; the building/run persist.
+		player.health = player.max_health
+		player.stamina = 100.0
+		player.hit_invulnerability = 0.0
+		player.self_modulate.a = 1.0
+		if upgrades != null:
+			upgrades.game.hud.phase_recovery()
+			upgrades.game.sound.play("heal")
 		_next_mode = campaign_mode(completed_waves)
 		state = State.BUILD_PREPARATION_PHASE
 		set_preparation(build_duration)

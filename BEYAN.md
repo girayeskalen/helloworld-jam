@@ -4,6 +4,48 @@
 
 Bu kayıt yalnızca aktif yeni proje içindir. Önceki ARTÇI beyanları Git geçmişindeki `2647179:BEYAN.md` ve `2647179:SOURCES.md` içinde korunur; proje değişimi önceki AI kullanımını yok sayma gerekçesi değildir. Son teslimde gerçek toplam kapsam gözden geçirilir.
 
+## Güncel ek kayıt — Adım 14 teslim düzeltmeleri (18 Ekim 2026)
+
+Tasarım kullanıcı üzerinden Claude tarafından sağlandı; uygulama ve doğrulama aracı **OpenAI Codex**. Önceki ses/müzik ve kaynak kayıtları korunur.
+
+| Kategori | AI kullanımı | Hazır kaynak kullanımı |
+| --- | --- | --- |
+| Görsel | Kullanıldı: GameHUD görev bandı/mini harita ve WorldLabels yön, hale, braket, ünlem gliflerinin prosedürel çizim kodu. | Yeni görsel/font kullanılmadı. |
+| Ses | Kullanıldı: mevcut iyileşme ve UI tık olaylarının bağlanması; yeni kayıt/sentez bestesi üretilmedi. | Önceki Ovani efektleri ve CC0 müzikler build'de korunur; yeni ses kaynağı yok. |
+| Kod | Kullanıldı: faz sonu iyileşme, ölümcül mermi referansı, TutorialGuide/Preparedness rehber durumu, pause çizim temizliği, Step14 ve eski beklenti güncellemeleri, export ön ayarları. | Godot 4.7.2 resmî Windows/Linux export şablonları ve mevcut Godot API'leri; yeni oyun bağımlılığı yok. |
+| Metin | Kullanıldı: README/AGENTS/STATUS/BEYAN ve OYNA_BENI teslim rehberi. Mevcut görev cümleleri korundu. | Godot'un resmî export belgelerinden teknik bilgi. |
+| Diğer | Kullanıldı: test/PNG incelemesi, paketleme ve açılış doğrulaması. | Python standart kütüphanesi, resmî Godot 4.3/4.7.2 geliştirme araçları. |
+
+Export teknik kaynakları: [Windows](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_windows.html), [Linux](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_linux.html). Gerçek test/build sonuçları STATUS'tadır; insan oynanış ve kulak değerlendirmesi otomatik kontrol diye sunulmaz. Commit/push yapılmadı.
+
+## Güncel ek kayıt — Adım 13 sürekli atmosfer müziği (18 Ekim 2026)
+
+Parça seçimi, seviyeler, döngü noktaları ve durum tasarımı kullanıcının aktardığı **Claude** kararlarıdır. Uygulama/test/belgeleme aracı **OpenAI Codex**. Hazır bestelerin üreticileri aşağıdadır; AI tarafından bestelenmiş gibi gösterilmez.
+
+| Kategori | AI kullanımı | Hazır kaynak kullanımı |
+| --- | --- | --- |
+| Görsel | Bu görevde kullanılmadı; mevcut sanat korundu. | Yeni kaynak kullanılmadı. |
+| Ses | Kullanıldı: mevcut ses sistemine bağlama, A/B geçiş, perde/seviye/miks ve önizleme kodu. Yeni hazır müziklerin ses içeriği AI ile üretilmedi/değiştirilmedi. | Kullanıldı: SkyleTheFrench — Blackout / Dark Place; SRG774 — Sector / Urgent / Victory (Dark Sci-Fi Audio Pack), beşi de CC0. Önceki Ovani sesleri korundu. |
+| Kod | Kullanıldı: `MusicDirector.gd`, SoundManager bağlantısı, AudioPreview genişletmesi, `Step13Smoke.gd` ve ilgili eski test uyarlamaları. | Kullanıldı: Godot'un yerleşik MP3/Vorbis, AudioStreamPlayer ve ses bus API'leri. Yeni bağımlılık yok. |
+| Metin | Kullanıldı: README/AGENTS/STATUS/SOURCES/BEYAN ve ses lisansı kapsam ayrımı. Yeni oyun içi metin yok. | Kullanıldı: OpenGameArt üretici/lisans bilgileri. |
+| Diğer | Kullanıldı: hash karşılaştırması, test tasarımı, mixer ölçümleri ve doğrulama belgeleri. | Kullanıldı: resmî Godot 4.3 / 4.7.2 ve Python standart kütüphanesi geliştirme araçları. |
+
+[Blackout](https://opengameart.org/content/blackout), [Dark Place](https://opengameart.org/node/159643), [Dark Sci-Fi Audio Pack](https://opengameart.org/content/dark-sci-fi-audio-pack) kaynaklarında CC0 doğrulandı. Dosyalar yalnız yeniden adlandırıldı; kaynak ve hedef SHA-256 değerleri aynı. Tam yollar/hash'ler ve gerçek kontroller STATUS/SOURCES içindedir. CC0 müzikler ile Ovani efektlerinin farklı lisansları korunur. İnsan kulağıyla dinleme/miks beğenisi ekibin yapacağı kontroldür; otomatik ölçüm bunun yerine geçmez. Commit/push yapılmadı.
+
+## Güncel ek kayıt — Adım 12 ses revizyonu (18 Ekim 2026)
+
+Tasarım, kullanıcının aktardığı Claude kararlarıdır. Uygulama aracı **OpenAI Codex**. Aşağıdaki eski "ses kullanılmadı/harici ses yok" kayıtları kendi tarihli adımlarını anlatır; bu ekle birlikte güncel toplam kapsam değişmiştir.
+
+| Kategori | AI kullanımı | Hazır kaynak kullanımı |
+| --- | --- | --- |
+| Görsel | Bu görevde kullanılmadı; mevcut AI destekli sanat korundu. | Kullanılmadı; yeni görsel/font yok. |
+| Ses | Kullanıldı: beş katmanlı özgün MusicScore bestesi, uyarı bipleri, pentatonik geri bildirim, kayıtların işlenmesi ve miks kodu AI desteğiyle yazıldı. | **Kullanıldı: Ovani Sound SFX Starter Pack Vol. 1 (royalty-free)**. Kullanıcının sağladığı gerçek kayıtlar;48 işlenmiş türev. Kayıtların asıl üreticisi Ovani'dir. |
+| Kod | Kullanıldı: `tools/audio/build_sfx.py`, `scripts/audio/`, NightWeather/Tremor sinyalleri, MainGame önizleme, menü ses bağlantıları, Step12 ve ses regresyonları. | Kullanıldı: mevcut Godot API'leri; üretimde Python standart kütüphanesi, yeni oyun bağımlılığı yok. |
+| Metin | Kullanıldı: README/AGENTS/STATUS/SOURCES/BEYAN teknik ve kaynak kayıtları. Yeni oyun içi metin yok. | Kullanıldı: Ovani lisans koşulları ve Godot resmî API belgelerinden teknik bilgi. |
+| Diğer | Kullanıldı: otomatik ölçümler, test tasarımı, gerçek renderer kayıt incelemesi. İnsan kulağıyla dinleme AI tarafından yapılmış gibi raporlanmaz. | Kullanıldı: resmî Godot4.3 ve4.7.2 doğrulama araçları. |
+
+Ovani [lisansı](https://ovanisound.com/policies/terms-of-service) ve kullanılan dosyalar [manifest](assets/audio/manifest.json)/[SOURCES](SOURCES.md) içindedir. Ham ZIP/WAV repo içinde yoktur. İşlenmiş sesler de aynı lisansa tabidir; ayrı public WAV dağıtımına izin verildiği varsayılmaz. AI eğitimi veya modele ses yüklemesi yapılmadı; Python betiği yerel sinyal işlemedir. Commit/push yapılmadı.
+
 ## AI kullanımı
 
 Araçlar: Adım 1–2.5 için **OpenAI Codex** (kesin model sürüm etiketi ayrıca doğrulanmadı); Adım 3, Adım 2.7 ve Adım 3-B için **Anthropic Claude Code, Claude Opus 5.5** (`claude-opus-5-5`). Kapsamlar aşağıda ayrı ayrı yazılıdır.

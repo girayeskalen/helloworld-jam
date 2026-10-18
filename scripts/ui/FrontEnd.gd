@@ -118,6 +118,7 @@ func show_settings() -> void:
 	game.sound.play("ui_open")
 
 func show_home() -> void:
+	if settings_open: game.sound.play("ui_back")
 	settings_open = false
 	home.visible = true
 	options.visible = false
@@ -134,7 +135,7 @@ func _launch(section: int) -> void:
 	if launching or not active: return
 	selected_section = section
 	launching = true
-	game.sound.play("ui_confirm")
+	game.sound.play("ui_start")
 	var tween: Tween = create_tween()
 	tween.tween_property(screen,"modulate:a",0.0,.22)
 	tween.tween_callback(_begin_run)

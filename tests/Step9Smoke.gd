@@ -471,7 +471,7 @@ func _polish() -> void:
 	tut.advance(STEP)
 	_check(tut.objective_text == "Hazırlık 0/6 · Gardırobu sabitle: devrilmesin" and tut.objective_color == Preparedness.COLORS[Preparedness.Task.SECURE], "Next to a task the line names it and why")
 	await _rendered()
-	_check(game.hud.drawn_texts.has(tut.objective_text), "The HUD draws the objective line at the top")
+	_check("".join(game.hud.drawn_texts).contains(tut.objective_text), "The HUD draws the objective line at the top")
 	await _save("objective-prep.png")
 	for task: Dictionary in prep.pending(): prep.complete(task)
 	tut.advance(STEP)

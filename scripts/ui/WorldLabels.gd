@@ -21,6 +21,9 @@ var tremor_edges: bool = false
 ## Rooms framed as needing repair this frame, and the guide chevron over a kit.
 var repair_frames: int = 0
 var loot_guides: int = 0
+var repair_brackets: int = 0
+var task_sizes: Array[float] = []
+var target_marker_size: float = 0.0
 ## When each room's repair alert first appeared (for the expanding ping).
 var _alert_since: Dictionary = {}
 const PING_TIME: float = 1.1
@@ -62,7 +65,10 @@ func _draw() -> void:
 	tremor_edges = false
 	repair_frames = 0
 	loot_guides = 0
-	if game == null:
+	repair_brackets = 0
+	task_sizes.clear()
+	target_marker_size = 0.0
+	if game == null or (game.tutorial != null and not game.tutorial.cues_visible()):
 		return
 	var clock: float = Time.get_ticks_msec() / 1000.0
 	_draw_tremor_edges(clock)
@@ -101,12 +107,14 @@ func _draw_repair_markers(clock: float) -> void:
 		if not _alert_since.has(room): _alert_since[room] = clock
 		var critical: bool = room.state() == RoomDiorama.RoomState.CRITICAL
 		var speed: float = 9.0 if critical else 5.0
-		var pulse: float = 0.6 + 0.4 * sin(clock * speed + room.room_kind)
+		var pulse: float = 0.8 + 0.2 * sin(clock * speed + room.room_kind)
 		var color: Color = UIStyle.DANGER if critical else UIStyle.ALERT
 		var frame: Rect2 = repair_frame(room)
 		draw_rect(frame, Color(color, 0.05 + 0.05 * pulse))
 		draw_rect(frame, Color(0.03, 0.04, 0.05, 0.5), false, 6.0)
-		draw_rect(frame, Color(color, 0.45 + 0.45 * pulse), false, 3.0)
+		draw_rect(frame, Color(color, 0.25 + 0.25 * (0.5 + 0.5 * sin(clock * speed))), false, 2.0)
+		_brackets(frame, 36.0, 5.0, Color(color, pulse), 9.0)
+		repair_brackets += 4
 		repair_frames += 1
 		var center: Vector2 = game.world_to_screen(room.global_position + Vector2(room.room_size.x * 0.22, 46)).round()
 		var breath: float = fmod(clock * 1.2 + room.room_kind * 0.37, 1.0)
@@ -115,7 +123,7 @@ func _draw_repair_markers(clock: float) -> void:
 		if age < PING_TIME:
 			var t: float = age / PING_TIME
 			draw_arc(center, 24.0 + t * 130.0, 0.0, TAU, 40, Color(color, (1.0 - t) * 0.85), 5.0)
-		_diamond(center, 16.0, Color(color, 0.75 + 0.25 * pulse))
+		_diamond(center, 20.0, Color(color, pulse))
 		repair_markers += 1
 		drawn += 1
 
@@ -133,6 +141,7 @@ func _draw_recoveries() -> void:
 
 ## Repair guidance: a bobbing amber chevron over the column kit to fetch.
 func _draw_loot_guide(clock: float) -> void:
+	if game.tremor.busy() or game.player.is_dashing or game.player.dashing_this_tick: return
 	if game.tutorial == null or game.tutorial.guide_loot < 0 or game.tutorial.guide_loot >= game.loot.items.size(): return
 	var item: Dictionary = game.loot.items[game.tutorial.guide_loot]
 	var tip: Vector2 = game.world_to_screen(game.loot.item_draw_position(item) + Vector2(0, -58)).round() + Vector2(0, roundf(sin(clock * 5.0) * 5.0))
@@ -146,17 +155,39 @@ func _draw_tasks(clock: float) -> void:
 	var prep: Preparedness = game.preparedness
 	if prep == null or not prep.available(): return
 	var reach: Dictionary = prep.in_reach()
+	var target: Dictionary = prep.objective_task()
 	var index: int = 0
 	for task: Dictionary in prep.pending():
 		index += 1
 		var color: Color = Preparedness.COLORS[int(task["kind"])]
 		var tip: Vector2 = game.world_to_screen(prep.marker(task)).round() + Vector2(0, roundf(sin(clock * 4.0 + index) * 4.0))
-		var size: float = 12.0 if task == reach else 9.0
-		var rim: float = size + 4.0
-		draw_colored_polygon(PackedVector2Array([tip + Vector2(-rim, -rim), tip + Vector2(rim, -rim), tip + Vector2(0, rim * 0.8)]), Color(0.03, 0.04, 0.05, 0.9))
-		draw_colored_polygon(PackedVector2Array([tip + Vector2(-size, -size), tip + Vector2(size, -size), tip + Vector2(0, size * 0.8)]), Color(color, 0.7 + 0.3 * sin(clock * 6.0 + index)))
+		var selected: bool = task == target
+		var size: float = 19.0 if task == reach else (17.0 if selected else 13.0)
+		var alpha: float = 1.0 if selected else .65
+		var breath: float = .5 + .5 * sin(clock * 5.0)
+		for layer: int in range(3):
+			draw_circle(tip, 24.0 - layer * 4.0, Color(color, (.10 + .12 * breath) / 3.0))
+		var rim: float = size + 5.0
+		draw_colored_polygon(PackedVector2Array([tip + Vector2(-rim, -rim), tip + Vector2(rim, -rim), tip + Vector2(0, rim * .8)]), Color(.03, .04, .05, .95))
+		draw_colored_polygon(PackedVector2Array([tip + Vector2(-size, -size), tip + Vector2(size, -size), tip + Vector2(0, size * .8)]), Color(color, alpha))
+		if selected:
+			target_marker_size = size
+			draw_arc(tip, 26.0 + 5.0 * breath, 0, TAU, 28, Color(color, .6 + .4 * breath), 2.0)
+			_brackets(Rect2(tip - Vector2(24,24), Vector2(48,48)), 14.0, 3.0, Color(color, .35 + .35 * breath))
+			if game.tutorial.reminder_left > 0:
+				var t: float = 1.0 - game.tutorial.reminder_left / .5
+				draw_arc(tip, 26.0 + 66.0 * t, 0, TAU, 36, Color(color, .7 * (1.0-t)), 3.0)
+		task_sizes.append(size)
 		task_markers += 1
 		drawn += 1
+
+func _brackets(frame: Rect2, length: float, thickness: float, color: Color, shadow: float = 0.0) -> void:
+	for corner: Vector2 in [Vector2.ZERO, Vector2.RIGHT, Vector2.ONE, Vector2.DOWN]:
+		var point: Vector2 = frame.position + frame.size * corner
+		var sign_xy: Vector2 = Vector2.ONE - 2.0 * corner
+		var line: PackedVector2Array = PackedVector2Array([point + Vector2(sign_xy.x * length,0), point, point + Vector2(0,sign_xy.y * length)])
+		if shadow > 0.0: draw_polyline(line, Color(.03,.04,.05,.95), shadow)
+		draw_polyline(line, color, thickness)
 
 ## The E key floats over the player only while E would actually do something.
 func _draw_action_key() -> void:
@@ -186,7 +217,7 @@ func _draw_hints(clock: float) -> void:
 	if tremor and not keys.has("C"): keys = PackedStringArray(["C"])
 	var anchor: Vector2 = game.world_to_screen(player.global_position + Vector2(0, -178)).round()
 	if not keys.is_empty():
-		var pulse: float = 0.75 + 0.25 * sin(clock * 10.0)
+		var pulse: float = 0.8 + 0.2 * sin(clock * 10.0)
 		var color: Color = Color(UIStyle.ALERT, pulse) if keys.has("C") else UIStyle.TEXT
 		var widths: Array[float] = []
 		var total: float = 0.0
@@ -198,16 +229,20 @@ func _draw_hints(clock: float) -> void:
 		for i: int in range(keys.size()):
 			_keycap(Vector2(roundf(x + widths[i] * 0.5), anchor.y), keys[i], color)
 			x += widths[i] + 8.0
-	if game.tutorial != null and game.tutorial.arrow != 0:
-		var side: float = float(game.tutorial.arrow)
-		var tip: Vector2 = game.world_to_screen(player.global_position + Vector2(side * 70.0, -40.0)).round() + Vector2(roundf(side * (2.0 + 4.0 * sin(clock * 7.0))), 0)
-		for k: int in range(2):
-			var point: Vector2 = tip + Vector2(side * k * 12.0, 0)
-			var chevron: PackedVector2Array = PackedVector2Array([point + Vector2(-side * 9, -11), point, point + Vector2(-side * 9, 11)])
-			draw_polyline(chevron, Color(0.03, 0.04, 0.05, 0.9), 7.0)
-			draw_polyline(chevron, UIStyle.TEXT, 3.0)
-		arrows_drawn += 1
-		drawn += 1
+	if game.tutorial == null or game.tremor.busy() or player.is_dashing or player.dashing_this_tick: return
+	var dir: Vector2 = Vector2(game.tutorial.guide_dir)
+	if dir == Vector2.ZERO or (dir.y != 0 and not keys.is_empty()): return
+	var fighting: bool = game.waves.state == DisasterWaveManager.State.SIEGE_PHASE
+	var offset: Vector2 = Vector2(dir.x * 70.0, -40.0) if dir.x != 0 else Vector2(0, -150.0 if dir.y < 0 else 16.0)
+	var tip: Vector2 = game.world_to_screen(player.global_position + offset).round() + dir * roundf(4.0 * sin(clock * TAU * 1.2))
+	var normal: Vector2 = Vector2(-dir.y, dir.x)
+	for k: int in range(1 if fighting else 2):
+		var point: Vector2 = tip + dir * k * 12.0
+		var chevron: PackedVector2Array = PackedVector2Array([point - dir * 9.0 - normal * 11.0, point, point - dir * 9.0 + normal * 11.0])
+		draw_polyline(chevron, Color(.03,.04,.05,.95), 7.0)
+		draw_polyline(chevron, Color(game.tutorial.guide_color, .75 if fighting else 1.0), 3.0)
+	arrows_drawn += 1
+	drawn += 1
 
 ## Tremor: an amber pulse along the screen edges (stronger while it shakes).
 func _draw_tremor_edges(clock: float) -> void:
@@ -242,7 +277,7 @@ func _diamond(center: Vector2, radius: float, color: Color) -> void:
 	var rim: float = radius + 4.0
 	draw_colored_polygon(PackedVector2Array([center + Vector2(0, -rim), center + Vector2(rim, 0), center + Vector2(0, rim), center + Vector2(-rim, 0)]), Color(0.03, 0.04, 0.05, 0.9))
 	draw_colored_polygon(PackedVector2Array([center + Vector2(0, -radius), center + Vector2(radius, 0), center + Vector2(0, radius), center + Vector2(-radius, 0)]), color)
-	var mark: Color = Color(0.08, 0.04, 0.03, 1.0)
+	var mark: Color = Color.WHITE
 	var unit: float = radius / 11.0
 	draw_rect(Rect2(center + Vector2(-1.5, -6) * unit, Vector2(3, 7) * unit), mark)
 	draw_rect(Rect2(center + Vector2(-1.5, 3) * unit, Vector2(3, 3) * unit), mark)

@@ -3,6 +3,8 @@ extends Node2D
 ## Animated night layer behind the building: slanted downpour, drifting ash/embers and
 ## occasional cold lightning. MainGame reads `flash` to light the rooms for a moment.
 
+signal lightning(strength: float)
+
 @export var view_size: Vector2 = Vector2(1920, 1080)
 @export var ground_y: float = 917.0
 @export_range(0,40) var rain_count: int = 40
@@ -61,6 +63,7 @@ func trigger_flash(strength: float = 1.0) -> void:
 	_flash_strength = clampf(strength, 0.0, 1.0)
 	flash = _flash_strength
 	flash_count += 1
+	lightning.emit(_flash_strength)
 	# A forked bolt from the cloud deck toward the horizon.
 	_bolt = PackedVector2Array()
 	# Strike in the open sky beside the building so the bolt is never hidden behind it.

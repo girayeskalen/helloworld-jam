@@ -1,5 +1,29 @@
 # AFET KUŞATMASI — kaynaklar
 
+## Adım 13 — Sürekli atmosfer müziği (18 Ekim 2026)
+
+Kullanıcının aktardığı Claude parça/döngü/seviye tasarımı uygulanır. Beş dosyanın içeriği değiştirilmeden, küçük harfli oyun adlarıyla `assets/audio/music/` altına kopyalandı. Kaynak sayfalarındaki üretici ve **CC0** lisans işaretleri kontrol edildi:
+
+- **Blackout** — **SkyleTheFrench**, [eser ve lisans](https://opengameart.org/content/blackout), [MP3](https://opengameart.org/sites/default/files/blackout_3mzut0qtwao.mp3).
+- **Dark Place (loop)** — **SkyleTheFrench**, [eser ve lisans](https://opengameart.org/node/159643), [OGG](https://opengameart.org/sites/default/files/dark_place.ogg).
+- **Sector / Urgent / Victory** — **SRG774**, **Dark Sci-Fi Audio Pack**, [eser ve lisans](https://opengameart.org/content/dark-sci-fi-audio-pack), [kaynak ZIP](https://opengameart.org/sites/default/files/ogg.zip). Yalnız bu üç parça kullanıldı; airy/pulse/title/transmission/hover alınmadı.
+- [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/): bu beş kayıt için geçerli; önceki Ovani kayıtlarının lisansını değiştirmez.
+
+Claude'un sağladığı değerler ve yerel dosyalar birebir eşleşti; yeniden indirme veya ses içeriğini dönüştürme gerekmedi:
+
+| Oyun dosyası | Bayt | SHA-256 |
+| --- | ---: | --- |
+| `menu_blackout.mp3` | 2879009 | `8fe1e07fa6edf38fa75ef9fd4a8e7ecee36dbdc6dbbc40638bdcdcca222a8180` |
+| `bed_dark_place.ogg` | 1758616 | `c78a433139ace4a050b5d4a1b9b94bcf1f04d059345c849c7c234a2fe0eda102` |
+| `prep_sector.ogg` | 817770 | `d5862627e6d0c424fc157eaffaa5421bae4f0bb177e7628d520bfb6a45aa9676` |
+| `final_urgent.ogg` | 828217 | `f8c36b37cac782f0d2b23b52b2c2736af3a748360b829212b415c07fc5d504e5` |
+| `victory_srg774.ogg` | 91504 | `9acde356c84b1d326a3e7b813e43e8849596a285796144f7fabed898f2c21007` |
+
+Teknik başvuru: [Godot 4.3 — sesle zaman eşleme](https://docs.godotengine.org/en/4.3/tutorials/audio/sync_with_audio.html), bloklu `get_playback_position` ve `AudioServer.get_time_since_last_mix` ölçümleri. Dummy için bağımsız saat, native için sınırlı kayma düzeltmesi kullanılır.
+
+Dosyalar toplam **6.375.116 bayt**. MP3'teki olası 0 dBFS üstü çözülmüş tepe, dosyayı yeniden kodlamadan −10 dB menü kazancı / en fazla −6 dB oynatıcı tavanı ve Master limiter ile yönetilir. Döngü importta kapalıdır; MusicDirector kaynak saniyelerinde A/B eşit güçlü geçiş uygular. Yeni müzikler, önceki işlenmiş Ovani efektlerinin 25 MB bütçesinden ayrı kullanıcı kapsamıdır.
+
+
 16 Ekim 2026. Teknik uygulamada Godot'un **4.3** belgeleri incelendi:
 
 - [CharacterBody2D](https://docs.godotengine.org/en/4.3/classes/class_characterbody2d.html): velocity, çarpışma ve `move_and_slide`.
@@ -8,7 +32,7 @@
 - [Godot lisansı](https://godotengine.org/license/): motorun MIT bildirimi ve dağıtım koşulları; dağıtımda motor sürümünün kendi lisansları ayrıca korunmalı.
 - [Godot 4.3 resmî sürümü](https://github.com/godotengine/godot-builds/releases/tag/4.3-stable): Windows x64 motoru, 4.3 uyumluluğunu gerçekten çalıştırarak doğrulamak için Temp klasörüne indirildi; ZIP'in SHA512 değeri aynı sürümün resmî `SHA512-SUMS.txt` kaydıyla eşleşti. Oyun asseti veya repo dosyası değildir.
 
-Hazır oyun/asset indirilmedi. AI katkısının kategorileri ve kapsamı [BEYAN.md](BEYAN.md) içindedir.
+İlk sürümde hazır oyun/asset kullanılmadı; Adım 12’de aşağıdaki Ovani hazır ses paketi eklendi. AI katkısının kategorileri ve kapsamı [BEYAN.md](BEYAN.md) içindedir.
 
 ## Adım 2 teknik başvuruları
 
@@ -173,3 +197,11 @@ Karne önerileri kısa, özgün Türkçe ifadelerdir; aşağıdaki resmî AFAD s
 | Afet çantası; "Afet çantanı hazır tut." | Önceki kayıtlardaki AFAD Gümüşhane/Şırnak çanta sayfaları. Çanta oyunda lobideki çıkış kapısının yanında durur. |
 
 Kurgusal öğeler (boss saldırıları, anlık iyileşme, takla, kartlar, sayısal hasar değerleri) gerçek afet davranışı veya bina güvenliği tahmini değildir. "Yaşam üçgeni" önerisi kullanılmaz.
+
+## Adım 12 — Ovani kayıtları ve uyarlanabilir ses (18 Ekim 2026)
+
+- **Ad/sağlayıcı:** Ovani Sound — Sound FX Starter Pack Vol. 1. Kullanıcının sağladığı ZIP; hazır ses, royalty-free oyun kullanımı. [Lisans/Terms of Service](https://ovanisound.com/policies/terms-of-service), 18 Ekim2026 tarihinde doğrudan incelendi: ticari/kişisel Attached Media kullanımı; ayrı ses dağıtımı/sublicense, soundboard ve AI eğitimi yasak. Kredi isteğe bağlıdır; kaynak sahipliği Ovani'de kalır.
+- **Kullanım:** [assets/audio/manifest.json](assets/audio/manifest.json) içindeki48 çıktı, tüm kaynak dosyaların tam ZIP içi adları, pencereleri, ölçümleri ve olay aliasları.6 ortam +42 tek atış/çeşit; yalnız oyunda kullanılan eşleme. [Üretim betiği](tools/audio/build_sfx.py) Python `zipfile/wave/array` kullanır; ham dosyalar dağıtılmaz, yalnız işlenmiş türevler yerel oyun içeriğine alınır.
+- **Dağıtım sınırı:** Lisans, içeriğin oyundan ayrılmış şekilde dağıtılmasını kısıtlar. Mono/kırpma/fade, public kaynak deposundaki bağımsız WAV'lar için otomatik yeniden dağıtım izni değildir. Türevler de Ovani lisansına tabidir; açık kaynak lisansı verilmez. Bu görev yereldir, commit/push yapılmadı; public kaynak paylaşımı için açık sağlayıcı izni ayrıca doğrulanmalıdır.
+- **Teknik:** [ResourceImporterWAV 4.3](https://docs.godotengine.org/en/4.3/classes/class_resourceimporterwav.html) QOA/loop, [AudioStreamSynchronized 4.3](https://docs.godotengine.org/en/4.3/classes/class_audiostreamsynchronized.html) ortak çalma saati; uygulama iki gerçek motorda sınandı. Motorlar resmî godot-builds GitHub sürümleri; güncel4.7.2 ZIP SHA512 doğrulandı, motor/ZIP repo dışında.
+- **Hazır kod/araç:** Python standart kütüphanesi (PSF, [lisans](https://docs.python.org/3/license.html)) yalnız yerel ses üretim aracı; yeni runtime bağımlılığı yok. Yeni müzik bestesi MusicScore ile proje içinde üretilmiştir; Ovani'ye ait bestelerin sahipliği iddia edilmez. Lisanslı kayıtlar modele yüklenmedi, AI eğitimi yapılmadı; yerel deterministik sinyal işleme uygulandı.

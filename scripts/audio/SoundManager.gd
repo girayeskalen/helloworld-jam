@@ -1,6 +1,6 @@
 class_name SoundManager
 extends Node
-## Procedural sound + dark music engine (no audio files). SoundRecipes are baked
+## Sample-first sound with procedural fallback. SoundRecipes are baked
 ## by SoundSynth on a worker thread; game events arrive through existing signals.
 ## Mix rules: soft envelopes everywhere, ±6 % pitch per play, per-key throttles,
 ## projectile launch/impact sounds 8 dB under the main effects, limiter on Master.
@@ -10,8 +10,9 @@ signal settings_changed
 const BUS_MUSIC: String = "Music"
 const BUS_SFX: String = "SFX"
 const BUS_UI: String = "UI"
+const BUS_AMBIENCE: String = "Ambience"
 ## Main-effect reference level; projectiles sit 8 dB under it.
-const SFX_REFERENCE_DB: float = -9.0
+const SFX_REFERENCE_DB: float = -14.0
 const PROJECTILE_OFFSET_DB: float = -8.0
 const PROJECTILE_DB: float = SFX_REFERENCE_DB + PROJECTILE_OFFSET_DB
 const PITCH_MIN: float = 0.94
@@ -23,6 +24,14 @@ const MAX_LEVEL: int = 10
 const PAUSE_CUTOFF: float = 650.0
 ## key: [volume_db, bus, throttle seconds].
 const MIX: Dictionary = {
+	"thunder": [-10.0, BUS_SFX, 4.0], "siren": [-18.0, BUS_SFX, 8.0],
+	"slam": [-10.0, BUS_SFX, .35], "boom": [-7.0, BUS_SFX, .5],
+	"whoosh_wind": [PROJECTILE_DB, BUS_SFX, .12],
+	"valve": [-12.0, BUS_SFX, .2], "breaker": [-12.0, BUS_SFX, .2],
+	"ui_hover": [-24.0, BUS_UI, .08], "ui_start": [-12.0, BUS_UI, .2], "ui_back": [-16.0, BUS_UI, .1],
+	"intro_riser": [-14.0, BUS_SFX, .3], "intro_hit": [-10.0, BUS_SFX, .3], "final_intro": [-12.0, BUS_SFX, .3],
+	"countdown": [-18.0, BUS_UI, 4.0], "health_low": [-16.0, BUS_UI, 2.0], "creak": [-24.0, BUS_SFX, 1.0],
+
 	"safe": [-12.0, BUS_SFX, .3], "karne_ok": [-12.0, BUS_UI, .05], "karne_miss": [-12.0, BUS_UI, .05],
 	"rain": [-17.0, BUS_MUSIC, 0.0], "drone": [-15.0, BUS_MUSIC, 0.0], "siege_pad": [-15.0, BUS_MUSIC, 0.0],
 	"kick": [-12.0, BUS_MUSIC, 0.05], "tick": [-24.0, BUS_MUSIC, 0.05], "clank": [-25.0, BUS_MUSIC, 0.05],
@@ -54,8 +63,35 @@ const CASTS: Array[String] = ["cast_storm", "cast_quake", "cast_flood", "cast_fi
 ## Mode order: storm, quake, double siege, flood, fire, final titan.
 const INTROS: Array = [["storm_in"], ["quake_in"], ["flood_in"], ["titan_in"]]
 const OUTROS: Array = [["storm_out"], ["quake_out"], ["flood_out"], ["titan_out"]]
+const FALLBACK: Dictionary = {
+	"thunder": "storm_in", "siren": "alarm", "slam": "cast_quake", "boom": "collapse_building",
+	"whoosh_wind": "whoosh", "valve": "safety", "breaker": "secure", "ui_hover": "tick",
+	"ui_start": "ui_confirm", "ui_back": "ui_resume", "intro_riser": "storm_in", "intro_hit": "quake_in",
+	"final_intro": "titan_in", "countdown": "alarm", "health_low": "heartbeat", "creak": "clank",
+	"amb_rain": "rain", "amb_wind": "rain", "amb_hail": "rain", "amb_water": "rain",
+	"amb_interior": "drone", "amb_quake": "siege_pad",
+}
+const PENTATONIC: Array[int] = [62, 65, 67, 69, 72, 74]
+var library: SampleLibrary
+var ambience: AmbienceDirector
+var combo_degree: int = 0
+var combo_note: int = 62
+var _combo_at: float = -10.0
+var _notes: Array[AudioStreamWAV] = []
+var _ducks: Array[Dictionary] = []
+var duck_db: float = 0.0
+var _shake_duck: float = 0.0
+var _shaking: bool = false
+var _music_cutoff: float = 20000.0
+var _creak_left: float = 7.0
+var _thunder_at: float = -10.0
+var _low_health_announced: bool = false
+var _first_siren: bool = false
+var _countdown_played: bool = false
 var bgm_player: AudioStreamPlayer
-var bgm_layer: AudioStreamPlayer
+var score: AdaptiveMusic
+var director: MusicDirector
+var _music_wall_usec: int = 0
 ## BGM playback rate during the fight climax (~+5% tempo).
 const CLIMAX_PITCH: float = 1.05
 var bgm_restarts: int = 0
@@ -88,38 +124,33 @@ var _room_states: Dictionary = {}
 var _was_victory: bool = false
 
 func _ready() -> void:
+	add_to_group("siege_audio")
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_rng.randomize()
 	_setup_buses()
 	_pools[BUS_SFX] = _make_pool(SFX_VOICES, BUS_SFX, Node.PROCESS_MODE_PAUSABLE)
 	_pools[BUS_MUSIC] = _make_pool(BEAT_VOICES, BUS_MUSIC, Node.PROCESS_MODE_PAUSABLE)
 	_pools[BUS_UI] = _make_pool(UI_VOICES, BUS_UI, Node.PROCESS_MODE_ALWAYS)
-	for key: String in SoundRecipes.LOOPS:
-		var player: AudioStreamPlayer = AudioStreamPlayer.new()
-		player.name = "Music_" + key
-		player.bus = BUS_MUSIC
-		player.volume_db = -60.0
-		player.process_mode = Node.PROCESS_MODE_ALWAYS
-		add_child(player)
-		music[key] = player
-		music_target[key] = -60.0
+	library = SampleLibrary.new()
+	ambience = AmbienceDirector.new()
+	ambience.configure(self)
+	music = ambience.players
+	music_target = ambience.target
+	for note: int in PENTATONIC:
+		var recipe: Dictionary = {"length": .32, "peak": .45, "lp": 2600.0, "layers": [{"type": "tone", "wave": "warm", "f0": 440.0*pow(2.0,(note-69)/12.0), "env": [.006,.08,.15,.14]}]}
+		_notes.append(SoundSynth.make_stream(SoundSynth.to_pcm16(SoundSynth.render(recipe, note)), false))
 	_apply_settings()
+	score = AdaptiveMusic.new()
 	bgm_player = AudioStreamPlayer.new()
 	bgm_player.name = "BGM"
-	bgm_player.bus = "Master"
-	bgm_player.volume_db = -5.0
+	bgm_player.bus = BUS_MUSIC
+	bgm_player.volume_db = MusicDirector.SILENT
 	bgm_player.process_mode = Node.PROCESS_MODE_ALWAYS
-	bgm_player.stream = MusicScore.make_stream()
+	bgm_player.stream = score.stream
 	add_child(bgm_player)
-	bgm_layer = AudioStreamPlayer.new()
-	bgm_layer.name = "BGM_Layer"
-	bgm_layer.bus = "Master"
-	bgm_layer.volume_db = -60.0
-	bgm_layer.process_mode = Node.PROCESS_MODE_ALWAYS
-	bgm_layer.stream = MusicScore.make_layer_stream()
-	add_child(bgm_layer)
 	bgm_player.play()
-	bgm_layer.play()
+	director = MusicDirector.new()
+	director.configure(self)
 	_recipes = SoundRecipes.all()
 	_thread = Thread.new()
 	_thread.start(_bake_worker.bind(_recipes))
@@ -141,6 +172,9 @@ func _exit_tree() -> void:
 		if child is AudioStreamPlayer:
 			child.stream = null
 	streams.clear()
+	_notes.clear()
+	if library != null: library.clear()
+	if director != null: director.release()
 
 func configure(owner_game: MainGame) -> void:
 	game = owner_game
@@ -149,7 +183,7 @@ func configure(owner_game: MainGame) -> void:
 	w.attack_launched.connect(_on_launch)
 	w.fusion_burst.connect(func() -> void: play("titan_fuse"))
 	w.intro_beat.connect(_on_intro_beat)
-	w.grazed.connect(func(_point: Vector2) -> void: play("graze"))
+	w.grazed.connect(func(point: Vector2) -> void: musical_feedback(); play_at("graze", point))
 	game.projectiles.projectile_impacted.connect(_on_impact)
 	game.projectiles.dodged.connect(func(_point: Vector2) -> void: play("dodge"))
 	game.player.dash_started.connect(func() -> void: play("dash"))
@@ -159,16 +193,18 @@ func configure(owner_game: MainGame) -> void:
 	game.player.damaged.connect(_on_hurt)
 	game.loot.collected.connect(_on_collect)
 	game.loot.landed.connect(func(_kind: int) -> void: play("loot_drop"))
-	game.loot.repaired.connect(func(_room: RoomDiorama) -> void: play("repair"))
+	game.loot.repaired.connect(func(room: RoomDiorama) -> void: play_at("repair", room.global_position))
 	game.upgrades.selection_changed.connect(_on_cards)
 	game.upgrades.upgrade_selected.connect(func(_id: int) -> void: play("ui_confirm"))
 	game.mechanics.activated.connect(_on_module_activated)
 	game.mechanics.blocked.connect(func(_point: Vector2) -> void: play("block"))
 	game.preparedness.task_done.connect(_on_task_done)
 	game.preparedness.bag_used.connect(func(_point: Vector2) -> void: play("heal"))
-	game.preparedness.window_shattered.connect(func(_point: Vector2) -> void: play("impact_glass", 8.0))
+	game.preparedness.window_shattered.connect(func(point: Vector2) -> void: play_at("impact_glass", point, 8.0))
 	game.tremor.warned.connect(func(_seconds: float) -> void: play("tremor"))
-	game.tremor.toppled.connect(func(_prop: BuildingProp) -> void: play("topple"))
+	game.tremor.toppled.connect(func(prop: BuildingProp) -> void: play_at("topple", prop.global_position))
+	game.tremor.shaking_changed.connect(_on_shaking)
+	game.weather.lightning.connect(_on_lightning)
 	game.tremor.debris.connect(_on_debris)
 	game.upgrade_overlay.karne_row_revealed.connect(_on_karne_row)
 	game.hud.karne_row_revealed.connect(_on_karne_row)
@@ -201,10 +237,8 @@ func _drain_baked() -> void:
 		var key: String = item[0]
 		var loop: bool = SoundRecipes.LOOPS.has(key)
 		streams[key] = SoundSynth.make_stream(item[1], loop)
-		if loop:
-			var player: AudioStreamPlayer = music[key]
-			player.stream = streams[key]
-			player.play()
+		for alias: String in FALLBACK:
+			if FALLBACK[alias] == key: streams[alias] = streams[key]
 
 ## Blocks until every sound exists (tests and the first-frame fallback).
 func bake_all_now() -> void:
@@ -213,23 +247,38 @@ func bake_all_now() -> void:
 	_drain_baked()
 
 func is_baked() -> bool:
-	return streams.size() == SoundRecipes.ORDER.size()
+	return streams.has_all(SoundRecipes.ORDER)
 
 # ---------------------------------------------------------------- buses ----
 
 func _setup_buses() -> void:
-	for bus_name: String in [BUS_MUSIC, BUS_SFX, BUS_UI]:
+	for bus_name: String in [BUS_MUSIC, BUS_SFX, BUS_UI, BUS_AMBIENCE, "WorldLeft", "WorldRight"]:
 		if AudioServer.get_bus_index(bus_name) == -1:
 			AudioServer.add_bus()
 			var index: int = AudioServer.bus_count - 1
 			AudioServer.set_bus_name(index, bus_name)
 			AudioServer.set_bus_send(index, "Master")
-	var music_bus: int = AudioServer.get_bus_index(BUS_MUSIC)
-	if AudioServer.get_bus_effect_count(music_bus) == 0:
-		var low_pass: AudioEffectLowPassFilter = AudioEffectLowPassFilter.new()
-		low_pass.cutoff_hz = PAUSE_CUTOFF
-		AudioServer.add_bus_effect(music_bus, low_pass)
-	AudioServer.set_bus_effect_enabled(music_bus, 0, false)
+	for bus_name: String in [BUS_MUSIC, BUS_AMBIENCE]:
+		var bus: int = AudioServer.get_bus_index(bus_name)
+		if AudioServer.get_bus_effect_count(bus) == 0:
+			var low_pass: AudioEffectLowPassFilter = AudioEffectLowPassFilter.new()
+			low_pass.cutoff_hz = 20000.0
+			AudioServer.add_bus_effect(bus, low_pass)
+		AudioServer.set_bus_effect_enabled(bus, 0, false)
+		AudioServer.set_bus_volume_db(bus, 0.0)
+	var sfx_bus: int = AudioServer.get_bus_index(BUS_SFX)
+	if AudioServer.get_bus_effect_count(sfx_bus) == 0:
+		var reverb: AudioEffectReverb = AudioEffectReverb.new()
+		reverb.room_size = .3
+		reverb.wet = .1
+		AudioServer.add_bus_effect(sfx_bus, reverb)
+	for side: String in ["WorldLeft", "WorldRight"]:
+		var bus: int = AudioServer.get_bus_index(side)
+		AudioServer.set_bus_send(bus, BUS_SFX)
+		if AudioServer.get_bus_effect_count(bus) == 0:
+			var pan: AudioEffectPanner = AudioEffectPanner.new()
+			pan.pan = -.5 if side == "WorldLeft" else .5
+			AudioServer.add_bus_effect(bus, pan)
 	if AudioServer.get_bus_effect_count(0) == 0:
 		# Safety ceiling for stacked events; the mix itself leaves ample headroom.
 		var limiter: AudioEffect = ClassDB.instantiate("AudioEffectHardLimiter") if ClassDB.class_exists("AudioEffectHardLimiter") else AudioEffectLimiter.new()
@@ -256,19 +305,25 @@ func voice_count() -> int:
 # ----------------------------------------------------------------- play ----
 
 ## Plays a one-shot unless its throttle window is still open. Returns true if played.
-func play(key: String, offset_db: float = 0.0) -> bool:
+func play(key: String, offset_db: float = 0.0, pan: float = 0.0) -> bool:
 	var spec: Array = MIX.get(key, [SFX_REFERENCE_DB, BUS_SFX, 0.05])
 	if clock - float(_last.get(key, -100.0)) < float(spec[2]) - 0.00001:
 		return false
-	if not streams.has(key):
-		return false
+	var stream: AudioStream = library.pick(key) if library.has(key) else streams.get(key)
+	if stream == null: return false
 	_last[key] = clock
 	var player: AudioStreamPlayer = _voice(spec[1])
-	player.stream = streams[key]
+	player.stream = stream
+	player.bus = str(spec[1])
+	if spec[1] == BUS_SFX and absf(pan) > .08:
+		player.bus = "WorldLeft" if pan < 0.0 else "WorldRight"
 	player.volume_db = float(spec[0]) + offset_db
 	player.pitch_scale = _rng.randf_range(PITCH_MIN, PITCH_MAX)
 	player.play()
-	history.append({"key": key, "time": clock, "volume_db": player.volume_db, "pitch": player.pitch_scale, "bus": spec[1]})
+	history.append({"key": key, "time": clock, "volume_db": player.volume_db, "pitch": player.pitch_scale, "bus": spec[1], "pan": -.5 if player.bus == "WorldLeft" else (.5 if player.bus == "WorldRight" else 0.0), "sample": library.has(key)})
+	if key == "hurt": duck(-6.0, .05, .15, .4)
+	elif key in ["topple", "slam"]: duck(-4.0, .04, .15, .4)
+	elif key in ["boom", "collapse_room", "collapse_building", "titan_fuse"]: duck(-10.0, .03, .4, .8)
 	if history.size() > 400: history.remove_at(0)
 	return true
 
@@ -320,6 +375,7 @@ func set_paused_view(value: bool) -> void:
 	var music_bus: int = AudioServer.get_bus_index(BUS_MUSIC)
 	AudioServer.set_bus_effect_enabled(music_bus, 0, value)
 	AudioServer.set_bus_volume_db(music_bus, -5.0 if value else 0.0)
+	_update_mix(0.0)
 	play("ui_pause" if value else "ui_resume")
 
 # ---------------------------------------------------------------- music ----
@@ -333,12 +389,13 @@ func advance(delta: float) -> void:
 	# unexpected stop without fighting explicit Master mute or tree pause.
 	if bgm_player != null and not bgm_player.playing and not muted:
 		bgm_player.play()
-		bgm_layer.play(bgm_player.get_playback_position())
+		score.transport = 0.0
+		score._last_mix_position = -1.0
 		bgm_restarts += 1
-	elif bgm_layer != null and bgm_player.playing and not bgm_layer.playing and not muted:
-		bgm_layer.play(bgm_player.get_playback_position())
 	if not is_baked(): _drain_baked()
 	var frozen: bool = get_tree() != null and get_tree().paused
+	if frozen:
+		for item: Dictionary in _pending: item["at"] += delta
 	if not frozen:
 		for i: int in range(_pending.size() - 1, -1, -1):
 			if clock >= float(_pending[i]["at"]):
@@ -346,6 +403,8 @@ func advance(delta: float) -> void:
 				_pending.remove_at(i)
 				play(item["key"], float(item["offset"]))
 	_update_music(delta, frozen)
+	_update_environment(delta, frozen)
+	_update_mix(delta)
 
 ## Calm, tense bed in preparation; a dark industrial pulse under every siege.
 func _update_music(delta: float, frozen: bool) -> void:
@@ -357,30 +416,40 @@ func _update_music(delta: float, frozen: bool) -> void:
 	# Step 7 climax (last 15 s): the score runs a touch faster; eased, never a jump.
 	if bgm_player != null and not frozen:
 		bgm_player.pitch_scale = move_toward(bgm_player.pitch_scale, CLIMAX_PITCH if w.is_climax() else 1.0, delta * 0.12)
-	if bgm_layer != null:
-		bgm_layer.pitch_scale = bgm_player.pitch_scale
-		var menu: bool = game.front_end != null and game.front_end.active
-		var layered: bool = siege and not menu and (w.is_climax() or w.siege_remaining <= 10.0 or w.nova)
-		bgm_layer.volume_db = move_toward(bgm_layer.volume_db, -10.0 if layered else -60.0, 62.5 * delta / maxf(.001, Engine.time_scale))
-	music_target["rain"] = -31.0
-	music_target["drone"] = -60.0
-	music_target["siege_pad"] = -60.0
-	for key: String in music:
-		var player: AudioStreamPlayer = music[key]
-		player.volume_db = move_toward(player.volume_db, float(music_target[key]), 24.0 * delta)
-	# The composed score contains its own sample-accurate drums. Legacy kick/tick
-	# recipes remain available as SFX; they must not double the music rhythm.
+	var music_delta: float = delta / maxf(.001, Engine.time_scale)
+	# A continuous recording follows wall time even during hitstop or a slow
+	# rendered frame. Explicit/manual advances (including Dummy tests) stay exact.
+	if DisplayServer.get_name() != "headless" and is_processing():
+		var now: int = Time.get_ticks_usec()
+		if _music_wall_usec > 0: music_delta = (now - _music_wall_usec) / 1000000.0
+		_music_wall_usec = now
+	else:
+		_music_wall_usec = 0
+	var recorded_event: String = director.advance(music_delta, game, bgm_player.pitch_scale, _shaking, DisplayServer.get_name() != "headless" and is_processing())
+	bgm_player.volume_db = director.stem_level.db
+	var sting: String = score.advance(music_delta, game, bgm_player, _shaking, frozen)
+	if sting != "" and not (sting == "victory" and director.has("victory")): play(sting)
+	if recorded_event != "":
+		history.append({"key": recorded_event, "time": clock, "volume_db": MusicDirector.VICTORY_DB, "pitch": 1.0, "bus": BUS_MUSIC, "pan": 0.0, "sample": true, "recording": "victory_srg774"})
+		if history.size() > 400: history.remove_at(0)
 
 # --------------------------------------------------------------- events ----
 
 func _on_phase() -> void:
 	var w: DisasterWaveManager = game.waves
-	if w.failed and not _was_failed:
-		play("collapse_building" if w.fail_reason == DisasterWaveManager.FailReason.BUILDING else "defeat")
-	if w.victory and not _was_victory:
-		play("victory")
+	if w.failed or w.victory or w.state in [DisasterWaveManager.State.PREPARATION_PHASE, DisasterWaveManager.State.BUILD_PREPARATION_PHASE, DisasterWaveManager.State.WAVE_INTRO]:
+		_pending.clear()
+	if w.failed and not _was_failed and w.fail_reason == DisasterWaveManager.FailReason.BUILDING:
+		play("collapse_building")
+		play("siren")
 	if w.state == DisasterWaveManager.State.WAVE_INTRO:
+		_countdown_played = false
+		_low_health_announced = false
 		for key: String in INTROS[w.mode]: play(key)
+		play_later("intro_hit", maxf(.1, w.intro_duration() - .2))
+		if not _first_siren:
+			_first_siren = true
+			play("siren")
 	elif w.state == DisasterWaveManager.State.WAVE_OUTRO and _last_state != DisasterWaveManager.State.WAVE_OUTRO:
 		for key: String in OUTROS[w.mode]: play(key)
 	_was_failed = w.failed
@@ -396,17 +465,19 @@ func _on_intro_beat(mode_id: int, beat: int) -> void:
 			for key: String in ["cast_storm","cast_quake","cast_flood"]: play(key,-6.0)
 
 func _on_launch(attack: HazardAttack) -> void:
-	play(CASTS[clampi(attack.source, 0, 3)])
+	play_at(CASTS[clampi(attack.source, 0, 3)], attack.origin)
+	if attack.source == 1: play_at("slam", attack.origin, -5.0)
 	if not attack.is_area(): play("whoosh")
 
 func _on_impact(attack: HazardAttack, point: Vector2) -> void:
 	if attack.is_area(): return
 	var room: RoomDiorama = game.building.room_at_point(attack.floor_index, point.x)
 	if attack.source in [0, 2, 3] and room != null and room.has_reinforcement(RoomDiorama.Reinforcement.SHUTTER):
-		play("block")
+		play_at("impact_metal", point)
+		play_at("block", point)
 		return
 	var key: String = impact_key(attack)
-	if key != "": play(key)
+	if key != "": play_at(key, point)
 
 static func impact_key(attack: HazardAttack) -> String:
 	match attack.kind:
@@ -419,12 +490,18 @@ static func impact_key(attack: HazardAttack) -> String:
 		HazardAttack.Kind.ROW_SWEEP: return "impact_stone" if attack.source == 1 else "whoosh"
 	return "whoosh"
 
-func _on_task_done(kind: int, _point: Vector2) -> void:
-	play(["secure", "secure", "safety", "safety", "pickup"][clampi(kind, 0, 4)])
+func _on_task_done(kind: int, point: Vector2) -> void:
+	var completed: int = 0
+	for task: Dictionary in game.preparedness.tasks:
+		if task["done"]: completed += 1
+	musical_feedback(clampi(completed - 1, 0, 5))
+	play_at(["secure", "impact_metal", "safety", "breaker", "pickup"][clampi(kind, 0, 4)], point)
 
 func _on_debris(covered: bool) -> void:
-	play("impact_stone", 3.0 if covered else 6.0)
-	if covered: play("safe")
+	play_at("impact_stone", game.player.global_position, 3.0 if covered else 6.0)
+	if covered:
+		musical_feedback()
+		play("safe")
 
 func _on_karne_row(ok: bool) -> void:
 	play("karne_ok" if ok else "karne_miss")
@@ -440,6 +517,7 @@ func _on_hurt(remaining: float) -> void:
 	if remaining > 0.0: play_later("heartbeat", 0.14)
 
 func _on_collect(kind: int) -> void:
+	musical_feedback()
 	match kind:
 		LootSystem.Kind.EMERGENCY_BAG: play("heal")
 		LootSystem.Kind.SAFETY_KIT: play("safety")
@@ -451,7 +529,8 @@ func _on_cards() -> void:
 func _on_room_state(room: RoomDiorama, state: int) -> void:
 	var previous: int = int(_room_states.get(room, RoomDiorama.RoomState.INTACT))
 	_room_states[room] = state
-	if state == RoomDiorama.RoomState.COLLAPSED: play("collapse_room")
+	if state == RoomDiorama.RoomState.COLLAPSED: play_at("collapse_room", room.global_position)
+	if state == RoomDiorama.RoomState.CRITICAL and previous != state: play_at("creak", room.global_position)
 	# A room newly needs repair (or got worse) during a fight: one alert ping.
 	elif state in [RoomDiorama.RoomState.DAMAGED, RoomDiorama.RoomState.CRITICAL] and state > previous and game.waves.state == DisasterWaveManager.State.SIEGE_PHASE:
 		play("alarm")
@@ -459,3 +538,88 @@ func _on_room_state(room: RoomDiorama, state: int) -> void:
 func _on_module_activated(id: int, _point: Vector2) -> void:
 	if id == SiegeUpgrades.Kind.AWARE_BAG: play("heal")
 	elif id == SiegeUpgrades.Kind.AUTO_DRONE: play("repair")
+
+
+func play_at(key: String, point: Vector2, offset: float = 0.0) -> bool:
+	var x: float = game.world_to_screen(point).x if game != null else 960.0
+	return play(key, offset, clampf((x - 960.0) / 1920.0, -.5, .5))
+
+func musical_feedback(task_degree: int = -1) -> void:
+	combo_degree = 0 if clock - _combo_at >= 2.0 else mini(combo_degree + 1, PENTATONIC.size()-1)
+	if task_degree >= 0: combo_degree = clampi(task_degree, 0, PENTATONIC.size()-1)
+	_combo_at = clock
+	combo_note = PENTATONIC[combo_degree]
+	var voice: AudioStreamPlayer = _voice(BUS_SFX)
+	voice.bus = BUS_SFX
+	voice.stream = _notes[combo_degree]
+	voice.volume_db = -17.0
+	voice.pitch_scale = 1.0
+	voice.play()
+
+## Overlaps take the strongest reduction, never multiply into a silent mix.
+func duck(db: float, attack: float, hold: float, release: float) -> void:
+	if _ducks.size() == 8: _ducks.remove_at(0)
+	_ducks.append({"db": minf(0.0, db), "attack": maxf(.001, attack), "hold": maxf(0.0, hold), "release": maxf(.001, release), "age": 0.0})
+
+func _update_mix(delta: float) -> void:
+	duck_db = 0.0
+	for i: int in range(_ducks.size()-1, -1, -1):
+		var d: Dictionary = _ducks[i]
+		d["age"] += delta
+		var age: float = d["age"]
+		var total: float = d["attack"] + d["hold"] + d["release"]
+		if age >= total:
+			_ducks.remove_at(i)
+			continue
+		var envelope: float = minf(1.0, age/d["attack"]) if age < d["attack"]+d["hold"] else (total-age)/d["release"]
+		duck_db = minf(duck_db, float(d["db"])*envelope)
+	_shake_duck = move_toward(_shake_duck, -8.0 if _shaking else 0.0, delta * (160.0 if _shaking else 8.0/.6))
+	duck_db = minf(duck_db, _shake_duck)
+	var music_bus: int = AudioServer.get_bus_index(BUS_MUSIC)
+	var amb_bus: int = AudioServer.get_bus_index(BUS_AMBIENCE)
+	AudioServer.set_bus_volume_db(music_bus, duck_db + (-5.0 if paused_view else 0.0))
+	AudioServer.set_bus_volume_db(amb_bus, duck_db)
+	var low: bool = game != null and game.player.health < game.player.max_health*.3
+	var cutoff: float = 600.0 if _shaking else (PAUSE_CUTOFF if paused_view else (2400.0 if low else 20000.0))
+	_music_cutoff = move_toward(_music_cutoff, cutoff, delta*19400.0/.6)
+	(AudioServer.get_bus_effect(music_bus, 0) as AudioEffectLowPassFilter).cutoff_hz = _music_cutoff
+	AudioServer.set_bus_effect_enabled(music_bus, 0, _music_cutoff < 19999.0 or paused_view)
+	(AudioServer.get_bus_effect(amb_bus, 0) as AudioEffectLowPassFilter).cutoff_hz = PAUSE_CUTOFF if paused_view else 20000.0
+	AudioServer.set_bus_effect_enabled(amb_bus, 0, paused_view)
+
+func _on_shaking(value: bool) -> void:
+	_shaking = value
+
+func _on_lightning(strength: float) -> void:
+	if clock - _thunder_at < 4.0 or strength <= .0: return
+	var delay: float = _rng.randf_range(.2, 1.2)
+	_thunder_at = clock + delay
+	play_later("thunder", delay, lerpf(-10.0, 0.0, strength))
+
+func _update_environment(delta: float, frozen: bool) -> void:
+	if game == null: return
+	var w: DisasterWaveManager = game.waves
+	var menu: bool = game.front_end != null and game.front_end.active
+	var siege: bool = w.state == DisasterWaveManager.State.SIEGE_PHASE and not w.failed and not w.victory and not menu
+	var state: String = "preparation"
+	if menu: state = "menu"
+	elif w.failed or w.victory: state = "result"
+	elif siege or w.state == DisasterWaveManager.State.WAVE_INTRO:
+		state = ["storm_climax" if w.is_climax() else "storm", "quake", "flood", "final"][w.mode]
+	ambience.set_state(state, _shaking)
+	ambience.advance(delta, library, streams)
+	if frozen: return
+	if siege:
+		if w.siege_remaining <= 4.0 and not _countdown_played:
+			_countdown_played = true
+			play("countdown")
+		if game.player.health < game.player.max_health*.3 and not _low_health_announced:
+			_low_health_announced = true
+			play("health_low")
+		if w.mode in [DisasterWaveManager.Mode.EARTHQUAKE, DisasterWaveManager.Mode.CATACLYSM]:
+			_creak_left -= delta
+			if _creak_left <= 0.0:
+				_creak_left = _rng.randf_range(6.0, 10.0)
+				play_at("creak", game.building.rooms[_rng.randi_range(0,15)].global_position)
+	elif w.state == DisasterWaveManager.State.PREPARATION_PHASE:
+		_first_siren = false

@@ -108,8 +108,9 @@ func _physics_process(delta: float) -> void:
 					if projectile.attack.source in [0,2,3] and room.has_reinforcement(RoomDiorama.Reinforcement.SHUTTER): factor = room.damage_factor(projectile.attack.source)
 					# Live mains electrify flood water; the tutorial fight is gentler.
 					factor *= mechanics.game.preparedness.hit_factor(projectile.attack) * mechanics.game.hazard_scale()
-				if player.take_damage(projectile.attack.damage*factor) and mechanics != null:
-					mechanics.game.preparedness.record_hit(projectile.attack)
+				var hit_attack: HazardAttack = projectile.attack
+				if player.take_damage(hit_attack.damage*factor) and mechanics != null:
+					mechanics.game.preparedness.record_hit(hit_attack)
 			# A death callback may have cleared the complete pool synchronously.
 			if not projectile.active:
 				continue

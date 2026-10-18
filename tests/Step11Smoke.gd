@@ -271,9 +271,9 @@ func _karne() -> void:
 func _music() -> void:
 	_battle()
 	var sound: SoundManager = game.sound
-	var wav: AudioStreamWAV = sound.bgm_layer.stream as AudioStreamWAV
+	var wav: AudioStreamWAV = sound.score.stems["climax"] as AudioStreamWAV
 	_check(wav != null and wav.mix_rate == 22050 and wav.format == AudioStreamWAV.FORMAT_16_BITS and not wav.stereo and wav.loop_end == MusicScore.SAMPLE_COUNT and wav.loop_mode == AudioStreamWAV.LOOP_FORWARD and is_equal_approx(wav.get_length(), 16), "Layer matches the base loop format, grid, length and sample-count seam")
-	_check(sound.bgm_layer.playing and sound.bgm_player.playing and sound.bgm_layer.bus == "Master" and sound.bgm_layer.process_mode == Node.PROCESS_MODE_ALWAYS, "Both music players stay alive on the Master bus")
+	_check(sound.bgm_player.playing and sound.bgm_player.bus == "Music" and sound.bgm_player.process_mode == Node.PROCESS_MODE_ALWAYS and sound.score.stream.stream_count == 5, "Five stems share the same always-processing Music player")
 	var samples: PackedFloat32Array = SoundSynth.from_pcm16(wav.data)
 	var peak: float = 0
 	var dc: float = 0
@@ -291,28 +291,29 @@ func _music() -> void:
 	var count: int = MusicScore.layer_bake_count
 	_check(count == 1 and MusicScore.make_layer_stream().data == wav.data and MusicScore.layer_bake_count == count, "Layer PCM is generated exactly once and shared on later requests")
 	for index: int in range(120): sound.advance(1.0 / 60.0)
-	_check(sound.bgm_layer.stream.get_instance_id() == id and MusicScore.layer_bake_count == count and sound.bgm_layer.volume_db == -60, "Warm-up frames neither regenerate nor expose the extra layer")
+	_check(sound.score.stems["climax"].get_instance_id() == id and MusicScore.layer_bake_count == count and float(sound.score.levels["climax"]) == -60, "Warm-up frames neither regenerate nor expose the extra layer")
 	game.waves.siege_remaining = 10
-	sound.advance(.4)
-	_check(is_equal_approx(sound.bgm_layer.volume_db, -35), "Layer opens linearly over roughly .8 seconds")
-	sound.advance(.4)
-	_check(sound.bgm_layer.volume_db == -10 and sound.bgm_layer.pitch_scale == sound.bgm_player.pitch_scale, "Climax/last ten seconds bring the synchronized layer to minus ten dB")
+	sound.score.transport = 1.9
+	sound.advance(.1)
+	_check(float(sound.score.levels["climax"]) > -60 and float(sound.score.levels["climax"]) < -8, "Layer begins a smooth fade at the next bar")
+	sound.advance(2.8)
+	_check(float(sound.score.levels["climax"]) == -8 and sound.score.stream == sound.bgm_player.stream, "Climax/last ten seconds bring the synchronized layer to minus eight dB")
 	game.waves.fail_siege()
-	sound.advance(.8)
-	_check(sound.bgm_layer.volume_db == -60 and sound.bgm_layer.playing, "Defeat fades the layer without stopping the clock")
+	sound.advance(2.8)
+	_check(float(sound.score.levels["climax"]) == -60 and sound.bgm_player.playing, "Defeat fades the layer without stopping the clock")
 	_battle(DisasterWaveManager.Mode.CATACLYSM)
 	game.waves.nova = true
-	sound.advance(.8)
-	_check(sound.bgm_layer.volume_db == -10, "Final nova also exposes the layer")
+	sound.advance(2.8)
+	_check(float(sound.score.levels["climax"]) == -8 and sound.bgm_player.volume_db == MusicDirector.SILENT and sound.director.tracks["final"].level.db == MusicDirector.NOVA_DB, "Final nova preserves the adaptive clock but exclusively exposes Urgent at minus eight dB")
 	sound.bgm_player.stop()
 	sound.advance(0)
-	_check(sound.bgm_layer.playing and absf(sound.bgm_layer.get_playback_position() - sound.bgm_player.get_playback_position()) < .05, "BGM watchdog restarts and realigns both players")
+	_check(sound.bgm_player.playing and sound.score.stream.stream_count == 5 and sound.score.transport == 0.0, "BGM watchdog restarts all synchronized stems together")
 	sound.toggle_mute()
-	_check(AudioServer.is_bus_mute(0) and sound.bgm_layer.bus == "Master", "Master mute affects both synchronized players")
+	_check(AudioServer.is_bus_mute(0) and sound.bgm_player.bus == "Music", "Master mute affects both synchronized players")
 	sound.toggle_mute()
 	game.reset_game()
-	sound.advance(.8)
-	_check(sound.bgm_layer.volume_db == -60 and MusicScore.layer_bake_count == count, "New game returns to the quiet layer without a rebake")
+	sound.advance(2.8)
+	_check(float(sound.score.levels["climax"]) == -60 and MusicScore.layer_bake_count == count, "New game returns to the quiet layer without a rebake")
 
 func _frames(count: int) -> void:
 	for tick: int in range(count): await physics_frame

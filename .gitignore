@@ -10,3 +10,7 @@ node_modules/
 dist/
 test-results/
 playwright-report/
+
+# Licensed source audio stays outside the repository.
+assets/audio/_source/
+*.zip

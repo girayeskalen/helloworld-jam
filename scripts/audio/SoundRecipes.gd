@@ -105,6 +105,8 @@ static func all() -> Dictionary:
 		]},
 		# Tremor warning + shake (1.0 s announce, 1.4 s shake): a deep swell, then thuds.
 		"tremor": {"length": 2.6, "peak": 0.85, "lp": 1400.0, "layers": [
+			{"type": "tone", "f0": 880.0, "dur": .12, "gain": .9, "env": [.005,.035,.35,.04]},
+			{"type": "tone", "f0": 1174.66, "start": .20, "dur": .12, "gain": .9, "env": [.005,.035,.35,.04]},
 			{"type": "tone", "f0": 34.0, "f1": 28.0, "am_rate": 9.0, "am_depth": 0.45, "lp": 180.0, "gain": 1.0, "env": [0.8, 0.4, 0.85, 0.7]},
 			{"type": "noise", "color": "brown", "f0": 120.0, "gain": 0.75, "am_rate": 6.0, "am_depth": 0.3, "env": [0.9, 0.4, 0.8, 0.7]},
 			{"type": "crackle", "rate": 55.0, "decay": 0.02, "f_lp": 1300.0, "start": 1.0, "dur": 1.3, "gain": 0.45, "env": [0.1, 0.5, 0.6, 0.4]},

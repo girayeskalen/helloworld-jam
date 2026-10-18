@@ -91,6 +91,9 @@ func set_open(value: bool) -> void:
 	if value: game.clear_hitstop()
 	visible = value
 	get_tree().paused = value
+	# Paused nodes stop processing; explicitly remove their cached guidance draw.
+	game.labels.queue_redraw()
+	game.hud.queue_redraw()
 	sound.set_paused_view(value)
 	_refresh()
 	if value: (buttons["resume"] as Button).grab_focus()

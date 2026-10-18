@@ -90,9 +90,9 @@ func _hud() -> void:
 	await _rendered()
 	_check(hud.drawn_texts.has("DEPREM") and hud.drawn_texts.has("2") and hud.drawn_texts.has("1"), "Siege HUD shows the boss name and plain kit counts (%s)" % ", ".join(hud.drawn_texts))
 	var words: bool = true
-	for text: String in hud.drawn_texts: words = words and (text == "DEPREM" or text.is_valid_int())
+	for text: String in hud.drawn_texts: words = words and (text == "DEPREM" or text.is_valid_int() or text == game.tutorial.objective_text)
 	_check(words, "No health, seconds or percentage numbers are printed during the siege")
-	_check(hud.room_color(game.building.rooms[3]) == UIStyle.ALERT and hud.room_color(game.building.rooms[0]) == GameHUD.ROOM_INTACT, "Building state reads from the room mini-map (damaged room turns amber)")
+	_check(hud.room_color(game.building.rooms[3]).r == UIStyle.ALERT.r and hud.room_color(game.building.rooms[3]).g >= UIStyle.ALERT.g and hud.room_color(game.building.rooms[0]) == GameHUD.ROOM_INTACT, "Building state reads from the room mini-map (damaged room turns amber)")
 	_check(hud.slot_count(0) == 2 and hud.slot_count(1) == 1 and hud.slot_count(2) == 1, "Slots count column kits, fixing kits and protected rooms")
 	var top_ok: bool = true
 	for rect: Rect2 in hud.drawn_rects:

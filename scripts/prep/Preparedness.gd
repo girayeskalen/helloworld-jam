@@ -173,14 +173,15 @@ func objective() -> String:
 		if task["done"]: done += 1
 	if total == 0: return ""
 	if done == total: return "Hazırsın"
-	var task: Dictionary = working
-	if task.is_empty(): task = in_reach()
-	if task.is_empty(): task = nearest_pending()
+	var task: Dictionary = objective_task()
 	return "Hazırlık %d/%d · %s" % [done, total, task_label(task)]
 
-func objective_color() -> Color:
+func objective_task() -> Dictionary:
 	var task: Dictionary = working if not working.is_empty() else in_reach()
-	if task.is_empty(): task = nearest_pending()
+	return nearest_pending() if task.is_empty() else task
+
+func objective_color() -> Color:
+	var task: Dictionary = objective_task()
 	return COLORS[int(task["kind"])] if not task.is_empty() else UIStyle.SAFE
 
 ## E during a preparation: start the short work animation on the task in reach.
@@ -304,6 +305,7 @@ func hit_factor(attack: HazardAttack) -> float:
 	return ELECTRIC_FACTOR if electrified(attack) else 1.0
 
 func record_hit(attack: HazardAttack) -> void:
+	if attack == null: return
 	if attack.kind in WATER_KINDS:
 		phase_stats["water_hits"] = int(phase_stats["water_hits"]) + 1
 		if electrified(attack): phase_stats["shocks"] = int(phase_stats["shocks"]) + 1

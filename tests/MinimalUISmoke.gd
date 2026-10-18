@@ -51,7 +51,7 @@ func _battle(mode: int) -> DisasterWaveManager:
 ## Every HUD string must be the boss name or a plain kit count.
 func _hud_words_ok(boss: String) -> bool:
 	for text: String in game.hud.drawn_texts:
-		if text != boss and not text.is_valid_int(): return false
+		if text != boss and not text.is_valid_int() and text != game.tutorial.objective_text: return false
 	return true
 
 func _preparation() -> void:
@@ -59,13 +59,13 @@ func _preparation() -> void:
 	await _rendered()
 	var hud: GameHUD = game.hud
 	var prep_words: bool = true
-	for text: String in hud.drawn_texts: prep_words = prep_words and (text == game.waves.boss_name() or text == game.tutorial.objective_text or text == " · " or GameHUD.SECTION_LABELS.has(text))
-	_check(prep_words and hud.drawn_texts.size() == 9 and game.tutorial.objective_text.begins_with("Hazırlık"), "Preparation HUD shows the coming boss, section shortcuts and one objective line (%s)" % ", ".join(hud.drawn_texts))
+	for text: String in hud.drawn_texts: prep_words = prep_words and (text == game.waves.boss_name() or (text != "" and game.tutorial.objective_text.contains(text)) or text == " · " or GameHUD.SECTION_LABELS.has(text))
+	_check(prep_words and hud.drawn_texts.size() == 10 and game.tutorial.objective_text.begins_with("Hazırlık"), "Preparation HUD shows the coming boss, section shortcuts and one objective line (%s)" % ", ".join(hud.drawn_texts))
 	await _save("hud-preparation.png")
 	Input.action_press(&"controls_help")
 	await _rendered()
 	var rows: bool = hud.drawn_texts.has("SHIFT") and hud.drawn_texts.has("Takla")
-	for text: String in hud.drawn_texts: rows = rows and (text == game.tutorial.objective_text or (text.split(" ", false).size() <= 2 and PixelFont.supports(text)))
+	for text: String in hud.drawn_texts: rows = rows and ((text != "" and game.tutorial.objective_text.contains(text)) or (text.split(" ", false).size() <= 2 and PixelFont.supports(text)))
 	_check(rows, "Holding Tab/H shows a compact key list of one- or two-word actions")
 	await _save("hud-help.png")
 	Input.action_release(&"controls_help")
@@ -84,11 +84,11 @@ func _fight() -> void:
 	game.storm.plan_pattern(w, 0, game.player.current_floor)
 	game.telegraphs._physics_process(0.3)
 	await _rendered()
-	_check(_hud_words_ok("FIRTINA") and hud.drawn_texts.has("FIRTINA") and hud.drawn_texts.has("2") and hud.drawn_texts.has("1"), "Siege HUD words are only the boss name and kit counts (%s)" % ", ".join(hud.drawn_texts))
+	_check(_hud_words_ok("FIRTINA") and hud.drawn_texts.has("FIRTINA") and hud.drawn_texts.has("2") and hud.drawn_texts.has("1"), "Siege HUD retains only boss/kit counts plus the temporary repair objective (%s)" % ", ".join(hud.drawn_texts))
 	var noisy: bool = false
 	for text: String in hud.drawn_texts: noisy = noisy or text.contains("%") or text.contains("/") or text.contains("[") or text.ends_with("s")
 	_check(not noisy, "No percentages, x/y counters, seconds or bracketed key hints in the HUD")
-	_check(hud.room_color(b.rooms[0]) == GameHUD.ROOM_INTACT and hud.room_color(b.rooms[5]) == UIStyle.ALERT and hud.room_color(b.rooms[10]).r > 0.9, "Mini-map colours rooms by state: intact, damaged, critical")
+	_check(hud.room_color(b.rooms[0]) == GameHUD.ROOM_INTACT and hud.room_color(b.rooms[5]).r == UIStyle.ALERT.r and hud.room_color(b.rooms[5]).g >= UIStyle.ALERT.g and hud.room_color(b.rooms[10]).r > 0.9, "Mini-map colours rooms by state: intact, damaged, critical")
 	_check(game.labels.texts_drawn == 0 and game.labels.repair_markers == 2, "World cues: two repair diamonds and no words while hazards are telegraphed")
 	_check(hud.slot_rect(2).end.x < 220.0 and GameHUD.BOSS_BAR.get_center().x == 960.0 and GameHUD.BOSS_BAR.size.y <= 8.0, "Kit icons sit in the corner; the boss/time line is thin and centred")
 	await _save("hud-fight.png")

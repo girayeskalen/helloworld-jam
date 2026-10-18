@@ -16,7 +16,7 @@ func _run() -> void:
 	if DisplayServer.get_name() != "headless":
 		root.unfocusable = true
 		root.mouse_passthrough = true
-	_check(game.sound.bgm_player.playing and game.sound.bgm_player.stream is AudioStreamWAV and game.sound.streams.is_empty(),"Baked BGM is already playing before the first SFX finishes baking")
+	_check(game.sound.bgm_player.playing and game.sound.bgm_player.stream is AudioStreamSynchronized and game.sound.streams.is_empty(),"Baked BGM is already playing before the first SFX finishes baking")
 	for node: Node in [game.player,game.loot,game.mechanics]: node.set_physics_process(false)
 	await _frames(3)
 	await _phases()
@@ -91,7 +91,7 @@ func _phases() -> void:
 
 func _music() -> void:
 	var sound: SoundManager = game.sound
-	var wav: AudioStreamWAV = sound.bgm_player.stream as AudioStreamWAV
+	var wav: AudioStreamWAV = sound.score.stems["pad_bass"] as AudioStreamWAV
 	_check(wav != null and wav.format == AudioStreamWAV.FORMAT_16_BITS and not wav.stereo and wav.mix_rate == 22050,"Dedicated BGM uses baked 22.05 kHz 16-bit mono PCM")
 	_check(wav.loop_mode == AudioStreamWAV.LOOP_FORWARD and wav.loop_begin == 0 and wav.loop_end == wav.data.size()/2,"Music loops by sample frames, never byte length")
 	_check(MusicScore.BPM == 120 and MusicScore.BARS == 8 and is_equal_approx(wav.get_length(),16),"Eight 4/4 bars at 120 BPM form an exact 16-second score")
@@ -109,13 +109,13 @@ func _music() -> void:
 	print("BGM_PCM peak=%.4f rms=%.4f dc=%.6f max_jump=%.4f bake_ms=%.2f" % [peak,rms,dc/samples.size(),max_jump,MusicScore.bake_usec/1000.0])
 	_check(peak < .95 and rms > .10 and absf(dc/samples.size()) < .003,"Music PCM has audible energy, headroom and negligible DC")
 	_check(absf(samples[-1]-samples[0]) < .003,"Actual loop last-to-first sample is click free")
-	_check(sound.bgm_player.bus == "Master" and sound.bgm_player.volume_db == -5 and sound.bgm_player.process_mode == Node.PROCESS_MODE_ALWAYS,"BGM owns an always-processing Master player at -5 dB")
+	_check(sound.bgm_player.bus == "Music" and sound.bgm_player.stream is AudioStreamSynchronized and sound.bgm_player.process_mode == Node.PROCESS_MODE_ALWAYS,"BGM owns one always-processing synchronized player on duckable Music")
 	var stream_id: int = wav.get_instance_id()
 	for mode: int in range(4):
 		game.waves.start_siege(mode as DisasterWaveManager.Mode,true)
 		game.waves.advance_wave(game.waves.intro_duration())
 		sound.advance(.1)
-		_check(sound.bgm_player.playing and sound.bgm_player.stream.get_instance_id() == stream_id,"Phase %d preserves the same playing PCM loop" % (mode+1))
+		_check(sound.bgm_player.playing and sound.score.stems["pad_bass"].get_instance_id() == stream_id,"Phase %d preserves the same playing PCM loop" % (mode+1))
 	game.reset_game()
 	sound.bgm_player.stop()
 	sound.advance(0)

@@ -1,5 +1,184 @@
 # AFET KUŞATMASI — proje durumu
 
+## Git teslimi — Adım 12–14 (18 Ekim 2026)
+
+Kullanıcı ses, sürekli müzik ve jam teslim düzeltmelerinin birlikte commit edilip `feat/disaster-siege-step1` dalına gönderilmesini istedi. Aşağıdaki tarihli “commit/push yapılmadı” notları bu yeni istekten önceki görev sonuçlarıdır. Gönderim kapsamı kod, testler, belgeler, export ön ayarları, 48 işlenmiş ses, 5 CC0 müzik, 53 import ayarı ve ses üretim betiğidir. Ham kaynak ZIP/WAV, build ZIP'leri, ekran görüntüleri ve eski web projesinin yerel değişiklikleri kapsam dışındadır.
+
+Gönderim öncesi `origin` fetch edildi; dal başlangıçta `7321e95` ile eşitti. 84 kod/test dosyasının SHA-256 değeri son doğrulama kaydıyla aynı: Godot 4.3 ve 4.7.2'de ayrı ayrı 25 paket / 2.268 kontrol ve Step2Soak, sıfır başarısızlık. Kod değişmediği için testler yeniden çalıştırılmadı; `git diff --check` temiz. Windows çalıştırma ve insan kulağıyla miks değerlendirmesi için aşağıdaki sınırlar geçerlidir.
+
+## Güncel — Adım 14 jam teslimi (18 Ekim 2026, OpenAI Codex)
+
+Kullanıcının aktardığı Claude tasarımı A → B → C → testler → D sırasıyla uygulandı. Önceki commit edilmemiş ses/müzik ve diğer çalışmalar korundu; görev başı yedeği `/tmp/afet-step14/before.tar`. Dal `feat/disaster-siege-step1`, HEAD `7321e95`; stage/commit/push yok.
+
+### Değişiklikler
+
+- İlk üç başarılı fazın çıkışı tamamlanınca oyuncu `max_health` / 100 enerjiye döner; isabet koruması ve hasar kırmızısı temizlenir. Tek `heal_glow` / tek `heal` sesi. Oda HP/güçlendirme, kitler, kartlar, hazırlık görevleri taşınır. Zafer ve kontrol noktasından tekrar deneme korunur.
+- Ölümcül mermi hasarından önce attack referansı saklanır; eşzamanlı ölüm/havuz temizliğinden sonra su isabeti doğru sayılır. `record_hit(null)` güvenle döner.
+- Görev bandı: 36 px cümle, ayrı 24 px renkli sayaç; 1200 px üstünde 24'e iner. 56 px koyu bant, 12 px renk karesi ve 4 px vurgu. Faz/görev/öğretici/yeni onarımda .25 sn kayma ve kısa vurgu; UI tık -24 dB/en sık1.5sn. Yürüyerek hedef değişiminde yalnız .15 sn yumuşak geçiş. 6 sn ilerleme yoksa 5 sn aralıkla, fazda en çok3 sessiz halka/nabız.
+- Rehber her fazda tek karakter yanı yönü kullanır; hazırlıkta görevin renginde çift, savaşta .75 opak tek chevron. Kit varsa en düşük HP'li onarım odası, yoksa yerde kolon kiti; erişimde/E mümkünken, sarsıntı ve taklada gizlenir. Öğretici tuşları korunur; dikey tuş kapağı yön glifine önceliklidir. Savaş onarım satırı4sn/en sık15sn; yön devam eder. Sinematik/kart/pause/sonuçta rehber yok; pause sırasında durmuş çizim düğümleri ayrıca yenilenir.
+- Hazırlık işaretleri13/17/19px, seçili hedef halka/hale/braket; diğerleri .65 alfa. Onarım elması20px/koyu kontur/beyaz fontsuz ünlem, odada36px köşe braketleri ve sakin çerçeve; mini harita yavaş amber/kırmızı nabız. Yeni dünya yazısı veya oynanış hasarı/süre dengesi eklenmedi.
+
+### Doğrulama
+
+PATH üzerinde `godot`, `godot4`, `godot-4` bulunmadı; önceki görevden kalan repo dışı resmî motorlar kullanıldı:
+
+| Motor | Çalıştırılan dosya | Son sonuç |
+| --- | --- | --- |
+| 4.7.2.stable.official.ed1daf0bf | `/tmp/godot-current/Godot_v4.7.2-stable_linux.x86_64` | 25 paket / 2.268 sayaçlı kontrol + Step2Soak, 0 başarısız / SCRIPT ERROR / uyarı |
+| 4.3.stable.official.77dcf97d8 | `/tmp/godot43/godot` | 25 paket / 2.268 sayaçlı kontrol + Step2Soak, 0 başarısız / SCRIPT ERROR / uyarı |
+
+Her motorun başında import/parse; Step1/Step2 fixed-fps olmadan, diğer bütün Smoke'lar ve Soak `--fixed-fps 60`. Yeni Step14 **63/63**, Step6 performans **57/57**, Step12 ses **394/394**, Step13 müzik **99/99**. Eski test kapsamı kaldırılmadı; Step9/Step49/MinimalUI ayrı çizilen sayaç ve cümleye, kısa savaş onarım satırına ve nabızlı amber hücreye uyarlandı. Son testlerden sonra kod hash'leri değişmedi.
+
+**Native güncel motor: Step14 67/67**, 0 hata. Gerçek renderer'da [ikinci faz Hazırlık](captures/step14/phase2-preparation.png), [deprem onarımı](captures/step14/quake-repair.png), [fırtına onarımı](captures/step14/storm-repair.png) **1920×1080**, ayrıca [kayan pencere](captures/step14/window-1280.png) **1280×720** olarak incelendi. Görev cümlesi/sayaç ayrımı, karakter yanı yönü, hedef halkası ve koyu konturlu beyaz ünlem küçük pencerede de seçiliyor. Braketler oda içini kapatmıyor; onarım, deprem alan çizgilerinden elmas/ünlem/köşe biçimiyle, fırtına uyarılarından biçim ve renkle ayrılıyor. Bunun insan oyuncu fark etme süresi ölçümü olduğu iddia edilmez.
+
+İlk native 720p denemesinde Hyprland pencereyi 950×534'e döşedi; boyut testi bunu reddetti. Uygulama kodu değiştirilmeden test penceresi Hyprland'da floating yapıldı ve gerçek1280×720 kontrolü geçti. İlk test denemelerindeki geçersiz fixture/sabit eski UI beklentileri düzeltildi; son sonuçlar yukarıdadır. Kanıtlar `/tmp/afet-step14/final-current/`, `final43/`, `native-final.log`, `tested-code-hashes.json`, `summary.json`.
+
+### Build / ZIP
+
+Şablon arşivi ilk iş arka planda resmi `https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz` adresinden indirildi: `/tmp/afet-step14/templates.tpz` (**1.281.349.702 bayt**). Ev diskinde yaklaşık1,6GB boş alan olduğu için bütün platformlar yerine yalnız `linux_release.x86_64`, `windows_release_x86_64.exe`, `version.txt` kuruldu: `/home/asd/.local/share/godot/export_templates/4.7.2.stable/`. İlk geniş çıkarmanın oluşturduğu kullanılmayan/yarım dosyalar temizlendi; kaynak TPZ repo dışında kaldı.
+
+`export_presets.cfg`: Windows Desktop / Linux, x86_64, gömülü PCK, Windows product_name=AFET KUŞATMASI ve product/file_version=1.0.0, modify_resources=false. İki release export kodu0/hatasız. Kaynak projeyi paketleyen güncel motorla yeniden import temizdir.
+
+| Paket | Çalıştırılabilir dosya (tam yol) | EXE/ELF bayt | ZIP (tam yol) | ZIP bayt |
+| --- | --- | ---: | --- | ---: |
+| Windows | `/home/asd/Desktop/helloworld/helloworld-jam-godot/exports/build/windows/AfetKusatmasi.exe` | 120327424 | `/home/asd/Desktop/helloworld/helloworld-jam-godot/exports/AfetKusatmasi_Windows.zip` | 48568303 |
+| Linux | `/home/asd/Desktop/helloworld/helloworld-jam-godot/exports/build/linux/AfetKusatmasi.x86_64` | 84578352 | `/home/asd/Desktop/helloworld/helloworld-jam-godot/exports/AfetKusatmasi_Linux.zip` | 38990296 |
+
+ZIP'ler çalıştırılabilir dosya, UTF-8 `OYNA_BENI.txt` (amaç/açılış/kontroller/krediler) ve motorun kendi API'sinden alınmış `GODOT_LISANS.txt` içerir. Ayrı PCK/DLL gerektiren bir dosya üretilmedi. Linux çalıştırma biti ZIP'te korunur. Windows PE32+ x86-64, Linux ELF64 x86-64 biçimi doğrulandı. `packages.json` ZIP SHA-256 değerlerini saklar.
+
+**Paket içeriği:** Her iki gömülü PCK ayrı açıldı: **53/53 ses kaynağı** (48 işlenmiş efekt/ortam +5 CC0 müzik) yükleniyor, SampleLibrary **62 anahtar** açıyor; ses manifest'i dahil. Tests/tools/captures/exports/Markdown/fragman/ham kaynak dizinleri ve ham ZIP yok. Kaynak müziklerden yalnız önceki görevin oyunda kullanılan beş CC0 dosyası var. `.gitignore` zaten exports/captures/ZIP'leri dışlıyor; Git'e alınmadı.
+
+**Linux ZIP içinden:** `/tmp/afet-step14/zip-test-linux/` içine çıkarılıp `./AfetKusatmasi.x86_64 --headless --quit-after 600` çalıştırıldı: çıkış0, ERROR/SCRIPT ERROR yok. Aynı çıkarılmış dosya masaüstünde **23,97 sn** çalıştı; Enter→Başla, F→deprem; [menü](captures/step14/linux-zip-menu.png), [Hazırlık](captures/step14/linux-zip-preparation.png), [ilk savaş](captures/step14/linux-zip-battle.png) 1280×720 PNG'leri incelendi. İlk masaüstü yakalamada pencere odağı değiştiği için savaş resmi geçersizdi; yalnız test otomasyonu odağı doğrulayarak tekrarlandı, son PNG gerçek savaştır. Son kapanış0 ve oyun logu hatasız. Kullanıcı ayarlarına dokunmamak için test `XDG_DATA_HOME=/tmp/afet-step14/build-test-profile` kullandı.
+
+Ses kontrolü yalnız oyunun PulseAudio/PipeWire stream'inden yapıldı: **15,975 sn /44.100Hz/16bit/stereo**, RMS0,10138 /tepe0,59787; kayıt boş değil. Dosya `/tmp/afet-step14/linux-zip-audio.wav`; ölçüm `linux-zip-native.json`, loglar `linux-zip-native.log`, `linux-zip-headless.log`. Bu kontrol insan kulağıyla miks değerlendirmesi değildir.
+
+**Windows:** Wine yok. ZIP `/tmp/afet-step14/zip-test-windows/` içine açıldı, bütünlük/PE/PCK içerik kontrolü geçti; Windows çalıştırılabilir dosyası burada çalıştırılmadı. **Windows build bu makinede açılış testinden geçmedi; ekip bir Windows bilgisayarda çift tıklayıp menüyü ve ilk savaşı denemeli.** ZIP'i tamamen çıkartıp `AfetKusatmasi.exe` açılmalı; ilk Başla/F, hareket, ses, pause ve yeniden deneme kontrol edilmeli.
+
+
+### Teslim ve sınırlar
+
+Bu görevde commit adayı yeni dosyalar:
+
+- `export_presets.cfg`
+- `tests/Step14Smoke.gd`
+- `tests/Step14Smoke.gd.uid`
+
+Bu görevde değişen mevcut dosyalar:
+
+- `AGENTS.md`
+- `BEYAN.md`
+- `README.md`
+- `STATUS.md`
+- `scripts/combat/DisasterWaveManager.gd`
+- `scripts/combat/ProjectilePool.gd`
+- `scripts/prep/Preparedness.gd`
+- `scripts/prep/TutorialGuide.gd`
+- `scripts/ui/GameHUD.gd`
+- `scripts/ui/PauseMenu.gd`
+- `scripts/ui/WorldLabels.gd`
+- `tests/MinimalUISmoke.gd`
+- `tests/Step49Smoke.gd`
+- `tests/Step9Smoke.gd`
+
+Build/ZIP/captures ve `/tmp` kanıtları bu listeye dahil değildir. Önceki ses/müzik görevinin untracked dosyaları da korunur; yukarıdaki liste yalnız bu görevin farkıdır. `git diff --check` temiz, index boş; hiçbir önceki dosya silinmedi.
+
+İsteğe bağlı E uygulanmadı: bölüm seçimi mevcut doğrudan boss girişini korur; normal Başla ve yenilgide bölümden tekrar deneme Hazırlık'ı kullanır. Yeni özellik kapsamı buna genişletilmedi. İnsan kulağıyla miks ve insan oyuncuyla uzun denge testi yapılmadı. Önceki kaynak/lisans beyanları korunur; build hazırlanması jam sitesine yükleme anlamına gelmez. Commit/push yapılmadı.
+
+## Güncel — Adım 13 sürekli atmosfer müziği (18 Ekim 2026, OpenAI Codex)
+
+Kullanıcının aktardığı Claude tasarımı, önceki **commit edilmemiş Adım 12 ses çalışmasının üstüne** uygulandı. Dal `feat/disaster-siege-step1`, HEAD `7321e95`; eski yerel değişiklikler ve Adım 12 dosyaları korundu. **Stage/commit/push yapılmadı.** Görev başı çalışma ağacının repo dışı yedeği `/tmp/afet-music-validation/before.tar`; dosya silinmedi. Savaş, Hazırlık, hasar ve kart dengesi değişmedi.
+
+### Müzik ve kaynak doğrulaması
+
+- Masaüstü: `xdg-user-dir DESKTOP` → `/home/asd/Desktop`. Bulunanlar: `/home/asd/Desktop/blackout_3mzut0qtwao.mp3`, `/home/asd/Desktop/dark_place.ogg`, `/home/asd/Desktop/ogg.zip`.
+- ZIP'ten yalnız üç gereken dosya repo dışına çıkarıldı: `/tmp/afet-music/sector.ogg`, `/tmp/afet-music/urgent.ogg`, `/tmp/afet-music/victory.ogg`. ZIP ve kullanılmayan airy/pulse/title/transmission/hover parçaları repoya alınmadı.
+- **5/5 kaynak ve hedef SHA-256/byte değeri Claude'un listesiyle aynı**; yeniden indirme veya ses içeriğini işleme gerekmedi. Yalnız adlar değişti. Toplam **6.375.116 bayt**; önceki Ovani işlenmiş WAV bütçesinden ayrı CC0 müzik kapsamı. Dosyalar/sayımlar/hash'ler [SOURCES](SOURCES.md) ve `/tmp/afet-music-validation/asset-audit.json` içinde.
+- Godot'un ölçtüğü süreler: Blackout **189,405182 sn**, Dark Place **54,857143**, Sector/Urgent **56,894695**, Victory **5,877551**. Claude'un döngü noktaları dosyaların içinde. Tüm `.import` dosyalarında `loop=false`; kodda da kapalı tutulur.
+- Krediler/lisanslar resmî eser sayfalarıyla doğrulandı: **SkyleTheFrench** — [Blackout](https://opengameart.org/content/blackout) / [Dark Place](https://opengameart.org/node/159643); **SRG774** — [Dark Sci-Fi Audio Pack](https://opengameart.org/content/dark-sci-fi-audio-pack), **CC0**. `assets/audio/LICENSE.md` CC0 müzikleri ve önceki Ovani efektlerini ayırır; CC0, Ovani kayıtlarının ayrı public dağıtım hakkını değiştirmez.
+
+### Uygulama
+
+- `MusicDirector.gd` mevcut `SoundManager` / `AdaptiveMusic` / beş stem yapısını korur. Beş parça için on sabit ALWAYS Music oynatıcısı; kaynak zamanında A/B `cos/sin` geçiş. Seviyeler, döngü noktaları ve perdeler dosyanın başındaki sabitlerdedir. Normal karede yeni ses düğümü/tween/sentez üretilmez.
+- Zemin **14–54,5 /3 sn**, −16 dB, **1,122462 × ortak pitch**; koşu başlayınca çalar. Faz, kart, pause, ölüm ve gerçek checkpoint retry aynı çalma konumunu korur. Sarsıntıda +4; yenilgide −30; retry'da −16. Menü/zaferde durdurulmadan sessize alınır. Music bus üzerinden mevcut duck/LP/Master ayarları uygulanır.
+- Menü Blackout **0'dan ilk giriş**, **42–170 /4 sn** döngü, −10; kod stem'leri ve zemin sessiz. Başla/ana menü dönüşü 2,5 sn dB doğrusal geçiş. Sector **2–54,5 /3 sn /−20**; Hazırlık/karne, giriş ve savaşta −40. Final girişinin son 1 sn'sinde Urgent **1–56 /2 sn /−11**; Nova −8; bütün kod stem'leri sessiz. Normal savaşlarda eski kod müziği aynı kalır.
+- Zaferde 1 sn sönme→CC0 Victory bir kez→Blackout 42 sn'den −16'ya 4 sn açılır; eski victory efekti üstüne binmez. Dosya yoksa ilgili kayıt sessizce atlanır, menü/final kod müziği ve eski victory yedeği korunur. Re minör pentatonik geri bildirim değişmedi. Çıkış mevcut stop→mixer bekleme→stream referanslarını bırakma düzenindedir.
+- Dummy testlerinde bağımsız `advance(delta)` saati; native'de monoton duvar zamanı ve sınırlı donanım saati düzeltmesi. İlk native kontrol ~464 ms kaynak/decoder farkını yakaladı: yavaş kare geçiş eşiğini aşınca yeni oynatıcının başlangıcına bu fazlalık eklenmiyordu. Gelen ses artık karenin tüketilmiş kaynak zamanından başlar; ses çalarken zorunlu seek yapılmaz. Düzeltmeden sonra 4.3 ölçümü **~13 ms** fark; döngünün her çeyrek saniyesinde gerçek ses enerjisi var. 4.7.2 native ölçümü yaklaşık 17 ms fark verdi. Bu matematik/çıktı kontrolüdür, insan kulağıyla dikiş onayı değildir.
+
+### Gerçek doğrulama — Arch Linux
+
+`command -v godot godot4 godot-4` PATH üzerinde motor bulmadı. Önceki görevden kalan repo dışı resmî taşınabilir sürümler kullanıldı:
+
+| Motor | Çalıştırılan dosya | Son headless sonuç |
+| --- | --- | --- |
+| 4.3.stable.official.77dcf97d8 | `/tmp/godot43/godot` | 24 paket / 2.201 sayaçlı kontrol + Step2Soak, sıfır başarısızlık / SCRIPT ERROR / uyarı |
+| 4.7.2.stable.official.ed1daf0bf | `/tmp/godot-current/Godot_v4.7.2-stable_linux.x86_64` | 24 paket / 2.201 sayaçlı kontrol + Step2Soak, sıfır başarısızlık / SCRIPT ERROR / uyarı |
+
+- Her motorda önce import/parse; Step1/Step2 fixed-fps olmadan, diğerleri `--fixed-fps 60`. Önceki 23 paket / 2.102 sayaçlı kontrol korundu, **Step13 99** ekledi. Step2Soak ayrıca tam kampanyayı tamamladı. Step5 **78**, Step55 **77**, Step6 performans **57**, Step11 **91**, Step12 ses **394**; hiçbir regresyon kapsamı kaldırılmadı.
+- **Native iki motor: Step13 103/103**, hata/uyarı yok. Gerçek mixer çıkışından A/B döngü dikişi ve saat farkı doğrulandı. İki **1920×1080** PNG kaydedilip incelendi: `/tmp/afet-music-validation/native/music43-corrected/continuous-music.png` ve `native/music-current/continuous-music.png`. Hyprland / Compatibility / Intel UHD / Mesa 26.2.2; PulseAudio üzerinden PipeWire 1.6.8.
+- **75 sn dinleme önizlemesi:** [`/tmp/afet-music-validation/continuous-75s.wav`](/tmp/afet-music-validation/continuous-75s.wav). Güncel motor, gerçek masaüstü ses sürücüsü; headless/fixed-fps olmadan Master AudioEffectRecord. Gerçek çıktı **74,977 sn / 44.100 Hz / 16 bit / stereo / 13.226.028 bayt**, RMS **−18,31 dBFS**, tepe **−1,0002 dBFS**. Her bir saniyelik pencerede ses enerjisi var. Akış: 10 sn menü + 12 sn Hazırlık + 2 sn test girişi + 40 sn deprem + 1 sn çıkış + 10 sn kart. **4 sarsıntı / 4 doğru korunma**, zemin **yalnız bir kez başlatıldı ve bir kez döndü**, son durumda `failed=false`, `cards=true`.
+- İlk iki önizleme SIGTERM ile kesildi ve WAV tamamlanmadı; kullanıcı VS Code'un çöktüğünü ve sistemi yeniden başlattığını bildirdi. Devam koşusu `preview-resumed` normal çıkış kodu 0 ile tamamlandı. Bu not, önceki yarım kaydı tamamlanmış göstermez; dinleme bağlantısı yalnız başarılı son kayıttır.
+- Kanıtlar: `/tmp/afet-music-validation/final43-corrected/report.json`, `final-current/report.json` ve paket logları; `native/music43-corrected.json`, `native/music-current.json`, `native/preview-resumed.log`; `continuous-75s.json`, `summary.json`, `asset-audit.json`, `new-files.txt`. Kod hash'leri son testlerden sonra değişmedi. **En son 4.7.2 ile import tekrarlandı**, hata/uyarı yok; `git diff --check` temiz.
+- `git status` / dosya listesi denetimi: bu görev tam **14 yeni dosya** ekler (5 müzik + 5 import + 2 GDScript + 2 UID); kullanılmayan airy/pulse/title/transmission/hover, kaynak ZIP ve ham Ovani WAV eklenmedi. Önceki çalışma ağacındaki hiçbir dosya silinmedi; index boş ve HEAD `7321e95`. Eski web projesinin 22 yerel değişikliğine dokunulmadı.
+
+### Yeni dosyalar (bu görev; henüz commit edilmedi)
+
+- `assets/audio/music/menu_blackout.mp3`
+- `assets/audio/music/bed_dark_place.ogg`
+- `assets/audio/music/prep_sector.ogg`
+- `assets/audio/music/final_urgent.ogg`
+- `assets/audio/music/victory_srg774.ogg`
+- Yukarıdaki beş dosyanın **`.import`** eşleri.
+- `scripts/audio/MusicDirector.gd` ve `.gd.uid`.
+- `tests/Step13Smoke.gd` ve `.gd.uid`.
+
+SoundManager/AudioPreview bağlantıları, Step5/Step11 beklentileri, README/SOURCES/BEYAN/AGENTS ve ses lisansı belgesi güncellendi. Önceki ses görevinin izlenmeyen dosyaları da çalışma ağacında duruyor; bu liste yalnız yeni müzik görevinin eklerini gösterir.
+
+**Denenmeyenler:** insan kulağıyla miks/döngü beğenisi (ekip dinleyecek), Windows, export paketi ve başka ses donanımı. Otomatik mixer ölçümü insan dinlemesinin yerine geçmez. Commit/push yapılmadı.
+
+## Güncel — Adım 12 ses elden geçirmesi (18 Ekim 2026, OpenAI Codex)
+
+Kullanıcının aktardığı Claude ses tasarımı uygulandı. Başlangıçta temiz yerel dal `296ffd8` idi; fetch ve yalnız ileri sarma ile beklenen **`7321e95`** alındı. Dal **`feat/disaster-siege-step1`**, HEAD hâlâ7321e95. **Commit/push yapılmadı.** Eski web klasörünün22 yerel değişikliğine dokunulmadı. Oynanış/süre/hasar/loot/karne dengesi aynı; yeni sesler mevcut olaylara bağlandı.
+
+### Uygulama ve kaynak
+
+- ZIP: **`/home/asd/Desktop/Sound_FX_Starter_Pack_Vol._1.zip`** (`xdg-user-dir DESKTOP` → `/home/asd/Desktop`). Pakette159 yerine144 gerçek WAV var; gereken45 kaynak dosya bulundu. Kullanılan `UI & Menus/Quit Out.wav`48kHz olduğundan44,1kHz'e çevrilir. Kullanılmayan Dog Yap24bit; işlenmez. `__MACOSX`/`.DS_Store` atlanır, ZIP açılmaz/repoya kopyalanmaz.
+- Python **3.14.7**; numpy mevcut, fakat üretim betiği yalnız standart kütüphane (`wave`, `array`, `zipfile`) kullanır. Sistem paketi/venv/ffmpeg/sox bağımlılığı yok. Windows yolu argümanı desteklenir; Windows'ta bu görev yeniden çalıştırılmadı.
+- **48 WAV /19.782.462byte (19,78MB)**:6 stereo32kHz ortam,42 mono44,1kHz efekt/çeşit. Her dosyanın kaynağı/penceresi/süre/kanal/rate/tepe/RMS/DC/dikiş/hash'i [manifest](assets/audio/manifest.json) içindedir. Tek atış tepe−1,0002dBFS, en büyük mutlak DC2,51×10⁻⁷; döngüler−24,0003dBFS RMS, uç örnek farkı0. Yağmurun tekil yüksek darbeleri yumuşatıldı. Her48 WAV, ham dosya hash'lerinden farklı; repo içinde ham WAV veya ZIP yok.
+- SampleLibrary açılışta QOA kaynaklarını yükler, loop_mode/loop_end'i ayrıca zorlar. Örnek kapalı/eksikse tüm eski ve yeni anahtarlar pişmiş sentez yedeğiyle çalar. Eski tarifler silinmedi; tremor'a iki net kısa bip eklendi. ≤3,6kHz/final LP kuralı yalnız sentez için geçerlidir.
+- Music/SFX/UI/Ambience → Master limiter; SFX hafif oda yankısı. Yalnız Music/Ambience olayla kısılır: hit−6, topple/slam−4, çöküş−10; sarsıntı−8/600Hz ve güçlü quake yatağı, .6sn açılma. Altı ortam1,5sn geçiş yapar. Şimşek→.2–1.2sn gecikmeli/min4sn thunder; rastgele6–10sn creak ve kritik oda; son4sn countdown, fazda ilk düşük cana düşüşte health_low. Dünya sesleri ekran X'inden iki yan SFX bus'ına ±.5 pan; UI/müzik merkezde. Sabit ses havuzu/history/perde çeşidi korunur.
+- MusicScore **pad_bass/drums/lead_arp/climax/tension** stem'lerini bir kez üretir:120BPM/16sn/22.050Hz/mono. Tek AudioStreamSynchronized ortak saat/pitch/watchdog; ölçü başında yumuşak katman değişimi, boss seviyeleri, sarsıntıda ritmin çekilmesi ve sonraki vuruşta tek slam ile dönüş. Sonuçta ölçüde sönme→victory/defeat→kısık karne pad'i. Sıyrılma/kit/görev/doğru örtünmeye iki saniyelik Re minör pentatonik kombo; ilk altı hazırlık görevi sırayla yükselir. Normal karelerde sentez yok.
+
+### Gerçek doğrulama — Arch Linux
+
+`command -v godot godot4 godot-4` ve Flatpak listesinde kurulu motor bulunmadı. İki **repo dışı resmî taşınabilir motor** kullanıldı; ikisinin ZIP SHA512 değerleri resmî sürüm dosyalarıyla doğrulandı:
+
+| Motor | Çalıştırılan dosya | Headless sonuç |
+| --- | --- | --- |
+|4.3.stable.official.77dcf97d8|`/tmp/godot43/godot`|23 paket /2.102 sayaçlı kontrol + Step2Soak, sıfır başarısızlık/SCRIPT ERROR/uyarı|
+|4.7.2.stable.official.ed1daf0bf|`/tmp/godot-current/Godot_v4.7.2-stable_linux.x86_64`|23 paket /2.102 sayaçlı kontrol + Step2Soak, sıfır başarısızlık/SCRIPT ERROR/uyarı|
+
+- Her motorda önce import/parse. Step1/Step2 fixed-fps olmadan; kalanları60fixed-fps. Mevcut22paket/1.708kontrol korundu; yeni **Step12 394** ekler. Step2Soak ayrıca11 kampanya koşulunu tamamlar. Step5 **78**, Step55 **77**, Step6 **57**, Step11 **91**; eski ses/müzik beklentileri yeni bus/senkron/ölçü davranışına uyarlandı, kalite/olay/watchdog/pause kapsamı kaldırılmadı.
+- AşamaA önce iki motorda361/361 geçti, sonra müzik uygulandı. İlk yağmur RMS kontrolü−30,69dBFS'i yakaladı; tepe darbeleri yumuşatılıp−24dBFS'e getirildi. Pause filtresinin yumuşak açılması eski anlık beklentiye uyarlandı. Son koşular temizdir; ilk deneme logları da korunuyor.
+- **Native /PulseAudio üzerinden PipeWire1.6.8 /Compatibility /Intel UHD /Mesa26.2.2 /1920×1080**: yeni ses testi her iki motorda **401/401**. Gerçek sol dünya kaynağının stereo enerjisi L/R yaklaşık9:1; test yalnız pan özelliğini okumaz, gerçek mixer çıkışını yakalar. Beş stem tek seferde4.3'te1419,5ms,4.7.2'de1318,8ms; Step6 kontrolleri geçer, yeni FPS benchmark'ı iddia edilmez.
+- Güncel motorda **FrontEnd native37/37**: ses/mute/ayar kalıcılığı, klavye/fare,1280×720 tıklama, menü→Hazırlık→savaş→kart→pause/çıkış. **10 son PNG1920×1080** (iki motorda üç afet + güncel motorda dört menü/oyun karesi) kaydedilip incelendi. İlk ses testinin dondurulmuş HUD'u önceki boss adını tutuyordu; yalnız native testin redraw/atmosfer yenilemesi düzeltildi ve iki motorda tekrar doğrulandı. Üretim kodu değişmedi.
+- **40sn dinleme kaydı:** [`/tmp/afet-audio-validation/earthquake-40s.wav`](/tmp/afet-audio-validation/earthquake-40s.wav). Native, headless/fixed-fps olmadan gerçek Master AudioEffectRecord: **39,996sn /44.100Hz /16bit /stereo /7.055.404byte**; RMS−15,88dBFS, tepe−1,0002dBFS. Kayıt boş değil; her bir saniyelik parçada enerji var. Betikli deprem savaşı, gerçek sarsıntı ve örnek loot/onarım/isabet olayları içerir; insan oynanışı veya kulağıyla kalite onayı değildir.
+- Kanıtlar: `/tmp/afet-audio-validation/final43/`, `final-current/` (report.json + tüm paket logları); `native-final/` (iki motor güncel ses testi/6PNG), `native/menu/` (4PNG), `native/preview-current.log`, `earthquake-40s.json`, `asset-audit.json`, `engines.json`. Son import güncel4.7.2 ile yapıldı; `git diff --check` temiz.
+
+### Yeni dosyalar ve teslim sınırı
+
+Kayda alınmak üzere çalışma ağacında bırakılan yeni dosyalar (bu görevde stage/commit/push yok):
+
+- `assets/audio/ambience/*.wav`:6 döngü ve karşılık gelen6 **`.wav.import`**.
+- `assets/audio/sfx/*.wav`:42 efekt/çeşit ve karşılık gelen42 **`.wav.import`**. Tam48çıktı adı/source eşlemesi manifest içindedir; `.import` dosyaları QOA ve gerçek loop_end'i taşır.
+- `assets/audio/manifest.json`, `assets/audio/LICENSE.md`.
+- `tools/audio/build_sfx.py`.
+- `scripts/audio/SampleLibrary.gd`, `AmbienceDirector.gd`, `AdaptiveMusic.gd`, `AudioPreview.gd` ve bunların `.gd.uid` dosyaları.
+- `tests/Step12Smoke.gd` ve `.gd.uid`.
+
+README/SOURCES/BEYAN/AGENTS güncellendi; `.gitignore` ham kaynak dizinini ve ZIP'leri dışlar. **Lisans ayrımı:** [Ovani koşulları](https://ovanisound.com/policies/terms-of-service) oyunda kullanıma izin verir; oyundan ayrı ses dağıtımını kısıtlar. İşlenmiş WAV'ların public kaynak deposunda paylaşılmasının izinli olduğu varsayılmaz; bunun için sağlayıcı izni ayrıca doğrulanmalıdır. Türevler de Ovani lisansına tabidir, kodun açık lisansı seslere aktarılmaz. Bu görevde yayın yapılmadı.
+
+**Denenmeyenler:** insan kulağıyla dinleme/miks beğenisi (yalnız ekip yapacak), insan oyun dengesi, bu değişikliğin Windows çalıştırması, export/teslim paketi, başka ses donanımı ve yeni FPS benchmark'ı. Native kayıt ve otomatik ölçümler bunların yerine geçmez.
+
 ## Güncel — Başarı anları ve oyun hissi (18 Ekim 2026, OpenAI Codex)
 
 Kullanıcının aktardığı Claude kararları uygulandı; önceki kontrol noktası/bölüm seçimi ve commit edilmemiş hazırlık/cila çalışmaları korundu. **Commit/push yapılmadı.** Yeni oyun içi metin veya hasar/süre/loot/oda HP değişikliği yoktur; yalnız normal menülü girişte istenen kısa vuruş donması oynanış saatini etkiler.

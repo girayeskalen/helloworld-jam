@@ -58,6 +58,7 @@ var objective_pulse: float = 0.0
 var objective_pulse_duration: float = .5
 var health_shake: float = 0.0
 var heal_flash: float = 0.0
+var heal_glow_count: int = 0
 var _shown_health: float = 100.0
 var _last_health: float = 100.0
 var _health_hold: float = 0.0
@@ -102,7 +103,17 @@ func on_damage() -> void:
 	_health_hold = .12
 
 func heal_glow() -> void:
+	heal_glow_count += 1
 	heal_flash = .4
+
+func phase_recovery() -> void:
+	hit_flash = 0.0
+	health_shake = 0.0
+	vignette_alpha = 0.0
+	_health_hold = 0.0
+	_last_health = player.health
+	_shown_health = player.health
+	heal_glow()
 
 func _on_task_done(_kind: int, _point: Vector2) -> void:
 	objective_pulse_duration = .8 if game.preparedness.pending().is_empty() else .5
@@ -163,6 +174,7 @@ func advance_feel(delta: float) -> void:
 	queue_redraw()
 
 func _draw() -> void:
+	objective_band = Rect2()
 	drawn_texts.clear()
 	drawn_rects.clear()
 	mute_drawn = false
@@ -228,7 +240,7 @@ func room_color(room: RoomDiorama) -> Color:
 	match room.state():
 		RoomDiorama.RoomState.COLLAPSED: return ROOM_GONE
 		RoomDiorama.RoomState.CRITICAL: return UIStyle.DANGER.lerp(Color.WHITE, 0.25 * (0.5 + 0.5 * sin(_clock * 8.0)))
-		RoomDiorama.RoomState.DAMAGED: return UIStyle.ALERT
+		RoomDiorama.RoomState.DAMAGED: return UIStyle.ALERT.lerp(Color.WHITE, .18 * (.5 + .5 * sin(_clock * 5.0)))
 	return ROOM_INTACT
 
 # ----------------------------------------------------------- boss strip ----
@@ -339,20 +351,41 @@ func _slot_ready(index: int) -> bool:
 ## repair): a coloured tick, the line, and a soft dark band so it reads over the sky.
 const OBJECTIVE_Y: float = 66.0
 
+var objective_band: Rect2 = Rect2()
+var objective_font_size: int = UIStyle.MEDIUM
+
 func _draw_objective() -> void:
-	if game == null or game.tutorial == null or game.tutorial.objective_text == "": return
-	var message: String = game.tutorial.objective_text
-	var color: Color = game.tutorial.objective_color
-	var width: float = UIStyle.width(message, UIStyle.SMALL)
-	var band: Rect2 = Rect2(960.0 - width * 0.5 - 30.0, OBJECTIVE_Y - 30.0, width + 60.0, 40.0)
+	objective_band = Rect2()
+	if game == null or game.tutorial == null or not game.tutorial.cues_visible() or game.tutorial.objective_text == "": return
+	var guide: TutorialGuide = game.tutorial
+	var message: String = guide.objective_text
+	var prefix: String = ""
+	if message.contains(" · "):
+		prefix = message.get_slice(" · ", 0) + " · "
+		message = message.substr(prefix.length())
+	var color: Color = guide.objective_color
+	var prefix_width: float = UIStyle.width(prefix, UIStyle.SMALL)
+	objective_font_size = UIStyle.MEDIUM
+	if prefix_width + UIStyle.width(message, objective_font_size) > 1200.0: objective_font_size = UIStyle.SMALL
+	var width: float = prefix_width + UIStyle.width(message, objective_font_size)
+	var band: Rect2 = Rect2(960.0 - width * .5 - 36.0, 38.0, width + 72.0, 56.0)
+	var slide: float = -14.0 * (1.0 - smoothstep(0.0, .25, .8 - guide.entry_left)) if guide.entry_left > .55 else 0.0
+	band.position.y += slide
+	objective_band = band
 	var progress: float = 1.0 - objective_pulse / objective_pulse_duration
 	var pop: float = 1.0 + (.065 if objective_pulse_duration > .5 else .04) * sin(PI * progress) if objective_pulse > 0 else 1.0
-	draw_set_transform(band.get_center() * (1.0 - pop), 0, Vector2.ONE * pop)
-	draw_rect(band, Color(0.02, 0.03, 0.04, 0.62))
-	draw_rect(Rect2(band.position.x, band.end.y - 3.0, band.size.x, 3.0), UIStyle.SAFE if objective_pulse > 0 else Color(color, 0.8))
-	if objective_pulse > 0: Debrief.draw_mark(self, Vector2(band.position.x + 16, OBJECTIVE_Y - 10), true)
-	else: draw_rect(Rect2(band.position.x + 12.0, OBJECTIVE_Y - 15.0, 8.0, 8.0), color)
-	_text(Vector2(960.0 + 6.0, OBJECTIVE_Y), message, UIStyle.SMALL, UIStyle.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+	if guide.reminder_left > 0: pop = 1.0 + .04 * sin(PI * (1.0-guide.reminder_left/.5))
+	draw_set_transform(band.get_center() * (1.0-pop), 0, Vector2.ONE * pop)
+	draw_rect(band, Color(.02,.03,.04,.80))
+	var flash: float = pow(sin(PI * 2.0 * (1.0-guide.entry_left/.8)), 2.0) if guide.entry_left > 0 else 0.0
+	draw_rect(Rect2(band.position.x,band.end.y-4.0,band.size.x,4.0), (UIStyle.SAFE if objective_pulse > 0 else color).lerp(Color.WHITE, .5*flash))
+	draw_rect(Rect2(band.position + Vector2(12,22), Vector2(12,12)), color)
+	if objective_pulse > 0: Debrief.draw_mark(self, band.position + Vector2(16,12), true)
+	var start: float = 960.0-width*.5+6.0
+	var baseline: float = 76.0+slide
+	var alpha: float = .6 + .4 * guide.text_blend
+	if prefix != "": _text(Vector2(start,baseline), prefix, UIStyle.SMALL, Color(color,alpha))
+	_text(Vector2(start+prefix_width,baseline), message, objective_font_size, Color(UIStyle.TEXT,alpha))
 	draw_set_transform(Vector2.ZERO)
 
 ## Only when muted: a small crossed speaker in the top-right corner.

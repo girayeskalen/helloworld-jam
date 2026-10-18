@@ -151,6 +151,7 @@ func _pause_menu() -> void:
 	_check(sound.volume_level == level and sound.muted, "Mouse click on - and on the sound button work")
 	_click(menu.buttons["mute"])
 	_click(menu.buttons["resume"])
+	sound.advance(.6)
 	_check(not paused and not menu.visible and not sound.paused_view and not AudioServer.is_bus_effect_enabled(music_bus, 0), "Mouse click on DEVAM ET resumes and restores the music")
 	await _frames(10)
 	_check(w.siege_remaining < clock, "The fight continues after resuming")
@@ -322,7 +323,8 @@ func _events() -> void:
 	sound.advance(0.6)
 	w.finish_wave()
 	w.advance_wave(1.0)
-	_check(w.victory and _played_recently("victory"), "Victory plays the warm final chord")
+	for tick: int in range(180): sound.advance(1.0/60.0)
+	_check(w.victory and _played_recently("victory"), "Victory plays the CC0 recording after the one-second music fade")
 	var pitches: Dictionary = {}
 	var pitch_ok: bool = true
 	for entry: Dictionary in sound.history:
@@ -345,12 +347,12 @@ func _played_recently(key: String) -> bool:
 func _music() -> void:
 	var w: DisasterWaveManager = game.waves
 	var music_stream: AudioStream = sound.bgm_player.stream
-	_check(sound.bgm_player.playing and music_stream is AudioStreamWAV,"BGM starts immediately as a pre-baked PCM loop")
+	_check(sound.bgm_player.playing and music_stream is AudioStreamSynchronized,"BGM starts immediately as a pre-baked PCM loop")
 	game.reset_game()
 	_quiet()
 	sound.advance(.1)
 	_check(sound.bpm == MusicScore.BPM*.5 and sound.bgm_player.playing,"Preparation retains uninterrupted BGM")
-	_check((sound.music["rain"] as AudioStreamPlayer).playing and (sound.music["rain"] as AudioStreamPlayer).stream == sound.streams["rain"],"Quiet rain ambience remains underneath the dedicated BGM")
+	_check((sound.music["amb_rain"] as AudioStreamPlayer).playing and (sound.music["amb_rain"] as AudioStreamPlayer).stream != null,"Quiet rain ambience remains underneath the dedicated BGM")
 	_siege(DisasterWaveManager.Mode.STORM)
 	sound.advance(.1)
 	_check(sound.bpm == MusicScore.BPM and sound.bgm_player.stream == music_stream,"Siege reuses the same music without rebaking or restarting")
