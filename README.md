@@ -1,10 +1,14 @@
-# AFET KUŞATMASI / Disaster Siege
+# 4 GÜN
+
+*Dört gün, dört afet.* (Eski çalışma adı: AFET KUŞATMASI / Disaster Siege; 18 Ekim 2026'da ekip kararıyla **4 GÜN** oldu. Final bossun adı hâlâ **AFET**.)
 
 Afete hazırlık ve farkındalık temalı Godot oyunu: **ne kadar hazırlanırsan o kadar hayatta kalırsın.** Fallout Shelter esinli 4 kat × 4 odalı apartman kesitinde her afetten önce kısa bir **Hazırlık** evresi vardır: dolapları duvara sabitle, gazı ve sigortaları kapat, kepenkleri indir, afet çantanı hazırla. Afet gelince doğru davranış kazandırır: depremde **Çök-Kapan-Tutun** (C), pencerelerden uzak dur, sarsıntıda merdivene koşma; selde yükseğe çık. Sıra **DEPREM → FIRTINA → SEL → AFET**; her afetten sonra kısa bir **karne** neyin işe yaradığını ve AFAD önerisine dayanan bir alışkanlığı gösterir. Hareket ve kaçış bullet-hell hızındadır (çift zıplama ile üst kat, S ile alt kat, sekiz yönlü takla).
 
 **18 Ekim — teslim düzeltmeleri (Adım 14):** Başarıyla biten ilk üç fazın çıkışında, karne/kart ekranı açılırken oyuncunun canı ve enerjisi tamamen dolar; bir yeşil parıltı ve iyileşme sesi gelir. Oda hasarı, güçlendirmeler, kitler, kartlar ve hazırlık görevleri taşınır. Zafer ve bölümden tekrar deneme akışı korunur. Ölümcül su isabetinde havuz temizlense de isabet kaydı güvenle tamamlanır.
 
 Görev bandında cümle büyütüldü, sayaç küçük ve görev renginde kaldı. Her fazda karakter yanındaki tek yön işareti görev/onarım/kolon kitine götürür; erişimde, sarsıntıda ve taklada çekilir. Hazırlıkta seçili hedef daha büyük ve halkalıdır; ilerleme yoksa en çok üç sessiz hatırlatma gelir. Onarım odalarının köşe braketleri, beyaz ünlem glifi ve mini harita nabzı mermilerden ayrılır. Savaşın kısa onarım satırı 4 sn sürer, en sık 15 sn'de bir açılır. Sinematik/kart/pause/sonuçta rehber gizlidir; dünya içine yeni yazı eklenmedi.
+
+**18 Ekim — karne "neden önemli" ve fragman (Adım 15):** Karnede artık ✓ satırlar da nedenini söyler: "Gaz vanası kapalıydı — Gaz kaçağı ve yangın riski azalır.", "Çök-Kapan-Tutun 3/3 — Düşen eşyalardan başını korur.", "Eşyalar sabitti — Devrilme ve yaralanma riski azalır." gibi; ✗ satırlar eskisi gibi ne yapılması gerektiğini söyler. Her satır iki satırlıdır (olgu büyük, neden/öneri küçük) ve blok ortalanır; kart ekranında "Güçlendirme seç" ve kartlar karnenin altına kayar. Cümleler AFAD kaynaklıdır ve "risk azalır" dilindedir; gerçek güvenlik garantisi değildir ([SOURCES](SOURCES.md)). Jüri için 55,6 sn'lik tanıtım fragmanı tamamen oyun içi görüntüyle üretildi ([Fragman](#fragman-556-sn)).
 
 **18 Ekim — bölüm seçimi ve tekrar deneme:** Ana menüde Başla/Ayarlar/Çıkış altında **Bölüm seç** bulunur: fare, oklar + Enter veya 1–4 ile **Deprem / Fırtına / Sel / Afet** başlatılır. Aynı sıra oyundaki kısayollarda da geçerlidir. Hazırlıkta alt ortada küçük bölüm satırı görünür; savaşta ve kart seçiminde gizlenir. Final bossunun adı **AFET**'tir; deprem, sel ve fırtınanın birleşik mekanikleri korunur.
 
@@ -45,11 +49,28 @@ Codex ile devam için önce [kısa devir notunu](CODEX_DEVIR.md), Claude için [
 
 ## Teslim ZIP’lerini çalıştır
 
-`exports/AfetKusatmasi_Windows.zip` veya `exports/AfetKusatmasi_Linux.zip` dosyasını tamamen bir klasöre çıkar. Windows'ta `AfetKusatmasi.exe` dosyasına çift tıkla; kendi indirdiğin bu build için SmartScreen çıkarsa **Ek bilgi → Yine de çalıştır**. Linux'ta `chmod +x AfetKusatmasi.x86_64` ardından `./AfetKusatmasi.x86_64` çalıştır. Godot editörü gerekmez. Açılış testi sonuçları ve boyutlar STATUS'tadır; ZIP içindeki `OYNA_BENI.txt` aynı kısa rehberi içerir.
+`exports/4GUN_Windows.zip` veya `exports/4GUN_Linux.zip` dosyasını tamamen bir klasöre çıkar. Windows'ta `4GUN.exe` dosyasına çift tıkla; kendi indirdiğin bu build için SmartScreen çıkarsa **Ek bilgi → Yine de çalıştır**. Linux'ta `chmod +x 4GUN.x86_64` ardından `./4GUN.x86_64` çalıştır. Godot editörü gerekmez. Açılış testi sonuçları ve boyutlar STATUS'tadır; ZIP içindeki `OYNA_BENI.txt` aynı kısa rehberi içerir.
 
 Amaç: apartmanı afetlere hazırlayıp Deprem, Fırtına, Sel ve Afet kuşatmalarından sağ çıkmak. **A D** koş, **W** zıpla, **W W** üst kat, **S** alt kat, **SHIFT/Space** takla, **C** Çök-Kapan-Tutun, **E** kullan/onar, **F** başlat, **R** yeniden/bölümü tekrar dene, **1–4** bölüm seç, **ESC** duraklat, **M** ses. Windows build ayrıca ekip tarafından Windows'ta menü ve ilk savaşla sınanmalıdır.
 
+**Ses dosyaları ve repo:** Ovani Sound efektleri (48 işlenmiş WAV) public repoda tutulmaz; yalnız build'in içine gömülüdür. Repodan açılan proje bu seslerin yerine kendi prosedürel seslerini çalar. Sesleri geri eklemek için [assets/audio/LICENSE.md](assets/audio/LICENSE.md) adımlarını izleyin (`tools/audio/build_sfx.py`). CC0 müzikler ve fragman müziği (CC BY 4.0) repodadır.
+
+ZIP'leri yeniden üretmek için (kurulu export şablonlarıyla): `python tools/package/package.py --godot <Godot yolu>`; betik iki build'i export eder ve her ZIP'e `tools/package/OYNA_BENI.txt` ile motorun lisans metnini (`GODOT_LISANS.txt`) koyar.
+
 Export ön ayarları `export_presets.cfg` içindedir: Windows Desktop ve Linux, x86_64, gömülü PCK. Testler, araçlar, captures, exports, Markdown, varsa fragman ve ham kaynak dizinleri build dışında kalır; oyun sesleri/müzikleri ve ses manifest'i dahildir. Build/ZIP/captures Git'e alınmaz.
+
+## Fragman (55,6 sn)
+
+`exports/trailer/4GUN_Fragman.mp4` (1920×1080, 60 fps, H.264 + AAC, −14 LUFS), yükleme sınırına karşı `4GUN_Fragman_kucuk.mp4` ve kendi müziğini eklemek isteyenler için yalnız oyun sesli `4GUN_Fragman_muziksiz.mp4`; hepsi Git dışıdır. Müzik: Gregor Quendel — *Cinematic Epic Trailer (With SFX)* ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), düzenlendi; `tools/trailer/music/KAYNAK.md`). Kurgu, parçanın ölçülen vuruşlarına göre yapılır: açılış montajı doruk bölümüyle, büyük patlama "1. GÜN"e, ikinci bölüm "4. GÜN"e, en güçlü vuruş "Ve hepsi birden"e, final vuruşu zafer karnesine denk gelir. Çekimlerde oyunun ortam döngüleri ve gürültü benzeri tek seferlik sesler (bossların giriş/çıkış süpürmeleri `*_in`/`*_out`, birleşme patlaması, boss hazırlık `cast_*`, `whoosh`, `siren`, takla) susturulur; hızlı kesmelerde "kanal değiştirme" gibi tıslıyorlardı. Kalan oyun olay sesleri 7 kHz üstü kesilerek müziğin ~5 dB altına konur. Akış "dört gün" yapısındadır: dört afetin en yoğun anlarından açılış montajı → "4 gün. 4 afet." → "Hazırlık hayat kurtarır." → **1. gün** hazırlığı (eşyaları sabitle, gazı kapat, afet çantası) → DEPREM girişi → sabitlenmeyen kitaplık devrilirken Çök-Kapan-Tutun → doruk tempoda kaya yağmuru ve halkalar (yakın plan ağır çekim takla) → kit ile onarım → **karne** (✗ 1 eşya devrildi, ✓ Çök-Kapan-Tutun, ✓ gaz; her birinin nedeni) ve kart → **2. gün** kepenk + fırtına (makas, siklon, güvenli kat) → **3. gün** sigorta + sel (gelgit, basınç küreleri) → **4. gün** AFET doğuşu ve Nova → tamamı ✓ zafer karnesi → "4 GÜN" başlığı. Kesmelerin anahtar noktaları fragman müziğinin vuruşlarına oturur; aksiyon planlarında bosslar doruk temposundadır ve pilot mermileri dondurulmuş yollarından okuyup son anda taklayla kaçan, sürekli hareket eden bir oyuncu gibi oynar.
+
+Yeniden üretmek için (Godot'un Movie Maker'ı, ffmpeg ve numpy gerekir):
+
+```bash
+python tools/trailer/render.py --godot <Godot konsol/çalıştırılabilir yolu>          # ~6 dk, ~3 GB AVI: captures/trailer/raw
+python tools/trailer/assemble.py --ffmpeg <ffmpeg yolu> --raw captures/trailer/raw   # exports/trailer/*.mp4 + qa/contact.png
+```
+
+Plan süreleri ve preroll'lar `tools/trailer/shots.json`'dadır; tek plan için sonuna kimliğini yaz (`... S06`), `--debug` köşeye plan/kare damgası basar. Çekim, `scenes/Trailer.tscn` içindeki `TrailerDirector`'ın gerçek `MainGame` içinde planı kurup `TrailerPilot` ile gerçek girdi eylemleri (koş, W W, S, SHIFT, C, E) vermesiyle olur; aksiyon planlarında pilot `auto` modundadır (canlı mermilerin `HazardAttack.point_at` yolunu ve bekleyen alan uyarılarını okur, temastan hemen önce en açık yöne takla atar, alçak mermiyi zıplar, işaretli oda/kattan çıkar, boşta koşar, zıplar ve kat değiştirir; takla enerjisi fragmanda dolu tutulur); kurulum yalnız kesilip atılan preroll'dadır. Altyazılar `TrailerCaptions` ile oyunun PixelFont'uyla çizilir. Tek oyun kodu eki `SiegePlayer.trailer_guard`'dır (varsayılan kapalı; yalnız yönetmen açar). A2 ve X3'teki kısa ağır çekimler ve takip kamerası kurgu efektidir. `render.py` çekim sırasında geçici `override.cfg` ile pencereyi 1920×1080 yapar ve sonra siler. Fragman dosyaları build'e girmez.
 
 ## Oyunu aç
 

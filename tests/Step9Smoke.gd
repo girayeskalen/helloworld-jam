@@ -422,6 +422,14 @@ func _karne() -> void:
 	var facts: Array[String] = []
 	for row: Dictionary in rows: facts.append(row["fact"])
 	_check(rows.size() == 3 and rows[0]["ok"] and rows[1]["ok"] and rows[2]["ok"] and facts == ["Çök-Kapan-Tutun 3/3", "Eşyalar sabitti", "Gaz vanası kapalıydı"], "A well-prepared quake shows three ticks (%s)" % str(facts))
+	var reasons: Array[String] = []
+	for row: Dictionary in rows: reasons.append(row["tip"])
+	_check(reasons == [Debrief.WHY_COVER, Debrief.WHY_SECURED, Debrief.WHY_GAS], "Every kept habit says why it mattered (%s)" % str(reasons))
+	var all_supported: bool = true
+	for reason: String in [Debrief.WHY_COVER, Debrief.WHY_SECURED, Debrief.WHY_GAS, Debrief.WHY_SHUTTER, Debrief.WHY_POWER, Debrief.WHY_BAG]:
+		all_supported = all_supported and PixelFont.supports(reason) and reason.split(" ").size() <= 6
+	_check(all_supported, "All six karne reasons are short and drawable in the pixel font")
+	_check(Debrief.block_left(rows) > 96.0 and Debrief.block_left(rows) < 960.0, "The karne block is centred inside the title-safe area")
 	rows = Debrief.rows(game, DisasterWaveManager.Mode.FLOOD)
 	_check(rows[0]["fact"] == "Sigortalar açık kaldı" and rows[0]["tip"] == "Sel öncesi sigortaları kapat.", "Flood karne asks for the mains to be cut")
 	w.completed_waves = 1
@@ -435,6 +443,11 @@ func _karne() -> void:
 	await _rendered()
 	var overlay: UpgradeOverlay = game.upgrade_overlay
 	_check(overlay.visible and overlay.karne_rows.size() >= 1 and overlay.karne_texts.has("Karne") and overlay.karne_texts.has("Çök-Kapan-Tutun 1/3"), "The card screen opens with the karne above the cards")
+	var karne_clear: bool = not overlay.karne_rects.is_empty()
+	for rect: Rect2 in overlay.karne_rects:
+		karne_clear = karne_clear and rect.position.x >= 0.0 and rect.end.x <= 1920.0 and rect.end.y < UpgradeOverlay.PICK_LABEL_Y
+	for card: Button in overlay.cards: karne_clear = karne_clear and card.position.y >= UpgradeOverlay.PICK_LABEL_Y + 40.0 and card.position.y + card.size.y < 1080.0
+	_check(karne_clear, "Two-line karne, the pick label and the cards never overlap on the card screen")
 	await _save("karne-cards.png")
 	game.upgrades.choose(0)
 	w.start_next_wave()
@@ -443,6 +456,14 @@ func _karne() -> void:
 	await _rendered()
 	var texts: PackedStringArray = game.hud.drawn_texts
 	_check(texts.size() >= 3 and texts[0] == "Bina çöktü" and texts[-1] == "R  Bölümü tekrar dene", "Defeat: title, karne lines, one hint (%s)" % ", ".join(texts))
+	var outcome_rects: Array[Rect2] = []
+	for rect: Rect2 in game.hud.drawn_rects:
+		if rect.position.y > 200.0 and rect.end.y < 820.0: outcome_rects.append(rect)
+	var outcome_clear: bool = outcome_rects.size() >= 3
+	for i: int in range(outcome_rects.size()):
+		for j: int in range(i + 1, outcome_rects.size()):
+			outcome_clear = outcome_clear and not outcome_rects[i].grow(-1.0).intersects(outcome_rects[j].grow(-1.0))
+	_check(outcome_clear, "Outcome title, karne lines and hint do not overlap (%d texts)" % outcome_rects.size())
 	await _save("karne-defeat.png")
 	game.reset_game()
 	game.waves.victory = true

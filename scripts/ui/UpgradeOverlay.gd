@@ -10,14 +10,17 @@ var cards: Array[Button] = []
 ## Karne of the disaster just survived (Debrief rows) and the strings drawn for it.
 var karne_rows: Array[Dictionary] = []
 var karne_texts: PackedStringArray = PackedStringArray()
+var karne_rects: Array[Rect2] = []
 var karne_reveal: KarneReveal = KarneReveal.new()
 var karne_revealed: int:
 	get: return karne_reveal.revealed
-const KARNE_TOP: float = 132.0
+const KARNE_TOP: float = 140.0
 const ACCENTS: Array[Color] = [Color("9cd39a"), Color("8ec3dc"), Color("c3a8dc")]
 const CARD_SIZE: Vector2 = Vector2(400, 420)
 const CARD_GAP: float = 40.0
-const CARD_TOP: float = 340.0
+const CARD_TOP: float = 452.0
+## "Güçlendirme seç" sits between the karne block and the cards.
+const PICK_LABEL_Y: float = 392.0
 
 func configure(system: SiegeUpgrades) -> void:
 	upgrades = system
@@ -42,7 +45,7 @@ func _refresh() -> void:
 	fade = 0.0
 	modulate.a = 0.0
 	karne_rows = Debrief.rows(upgrades.game, upgrades.game.waves.mode) if upgrades.game != null else []
-	UIStyle.label(self, "Güçlendirme seç", Rect2(0, 262, 1920, 40), UIStyle.MEDIUM, UIStyle.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	UIStyle.label(self, "Güçlendirme seç", Rect2(0, PICK_LABEL_Y, 1920, 40), UIStyle.MEDIUM, UIStyle.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 	for slot: int in range(upgrades.offers.size()):
 		var id: int = upgrades.offers[slot]
 		var data: Dictionary = SiegeUpgrades.CATALOG[id]
@@ -79,19 +82,21 @@ func _card_label(card: Control, text: String, rect: Rect2, font_size: int, color
 func _draw() -> void:
 	draw_rect(Rect2(0, 0, 1920, 1080), Color(0.02, 0.03, 0.04, 0.86))
 	karne_texts = PackedStringArray()
+	karne_rects.clear()
 	if karne_rows.is_empty(): return
-	_karne_text(Vector2(960, KARNE_TOP - 44), "Karne", UIStyle.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	_karne_text(Vector2(960, KARNE_TOP - 48), "Karne", UIStyle.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	var left: float = Debrief.block_left(karne_rows)
 	for i: int in range(karne_rows.size()):
 		var row: Dictionary = karne_rows[i]
-		var y: float = KARNE_TOP + i * GameHUD.KARNE_STEP
+		var y: float = KARNE_TOP + i * Debrief.STEP
 		var alpha: float = karne_reveal.progress(i)
 		var slide: float = -36.0 * (1.0 - alpha)
-		Debrief.draw_mark(self, Vector2(GameHUD.KARNE_LEFT + slide, y - 10), row["ok"], alpha)
-		_karne_text(Vector2(GameHUD.KARNE_LEFT + 24 + slide, y), row["fact"], Color(UIStyle.TEXT if row["ok"] else UIStyle.ALERT, alpha))
-		if String(row["tip"]) != "": _karne_text(Vector2(GameHUD.KARNE_TIP + slide, y), row["tip"], Color(UIStyle.MUTED, alpha))
+		Debrief.draw_mark(self, Vector2(left + 10 + slide, y - 13), row["ok"], alpha)
+		_karne_text(Vector2(left + Debrief.TEXT_INDENT + slide, y), row["fact"], Color(UIStyle.TEXT if row["ok"] else UIStyle.ALERT, alpha), HORIZONTAL_ALIGNMENT_LEFT, UIStyle.MEDIUM)
+		if String(row["tip"]) != "": _karne_text(Vector2(left + Debrief.TEXT_INDENT + slide, y + Debrief.SECOND_LINE), row["tip"], Debrief.second_color(row["ok"], alpha))
 
-func _karne_text(point: Vector2, message: String, color: Color, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> void:
-	UIStyle.text(self, point, message, UIStyle.SMALL, color, align)
+func _karne_text(point: Vector2, message: String, color: Color, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT, font_size: int = UIStyle.SMALL) -> void:
+	karne_rects.append(UIStyle.text(self, point, message, font_size, color, align))
 	karne_texts.append(message)
 
 func _process(delta: float) -> void:

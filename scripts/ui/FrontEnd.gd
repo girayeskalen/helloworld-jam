@@ -259,8 +259,8 @@ func _draw_board() -> void:
 		var x: float = 812+fmod(i*137,1010)
 		var y: float = fposmod(i*83+clock*(14+i%6*6),1150)-100
 		board.draw_line(Vector2(x,y),Vector2(x-3,y+25+i%5*12),Color("a0b9bd",.05),1)
-	UIStyle.text(board, Vector2(LEFT, 392), "AFET", UIStyle.TITLE, UIStyle.TEXT)
-	UIStyle.text(board, Vector2(LEFT, 484), "KUŞATMASI", UIStyle.TITLE, UIStyle.TEXT)
+	# Game title (18 Oct 2026: "4 GÜN" — four days, four disasters); 2x TITLE, crisp pixels.
+	UIStyle.text(board, Vector2(LEFT, 484), "4 GÜN", UIStyle.TITLE * 2, UIStyle.TEXT)
 	if settings_open:
 		UIStyle.text(board, Vector2(LEFT, 552), "Ayarlar", UIStyle.MEDIUM, UIStyle.MUTED)
 	else:

@@ -1,0 +1,43 @@
+4 GÜN — Civil Game Jam 2026
+===========================
+
+Amaç: Dört gün, dört afet. Apartmanı hazırla; Deprem, Fırtına, Sel ve AFET
+kuşatmalarından sağ çık. Her afetten önce Hazırlık evresinde görevleri yap
+(eşyaları sabitle, gazı kapat, afet çantası, kepenk, sigorta). Her afetten
+sonra karne neyi doğru yaptığını, neden önemli olduğunu ve neyi eksik
+bıraktığını söyler.
+
+Gereksinimler
+-------------
+Windows 10/11 64-bit (veya Linux x86_64), OpenGL 3.3 destekli ekran kartı,
+klavye. Ek yazılım veya kurulum gerekmez; internet bağlantısı gerekmez.
+
+Açılış
+------
+Windows: ZIP'i tamamen bir klasöre çıkar ve 4GUN.exe dosyasına çift
+         tıkla. SmartScreen uyarısı çıkarsa "Ek bilgi" -> "Yine de çalıştır".
+Linux:   chmod +x 4GUN.x86_64 && ./4GUN.x86_64
+
+Kontroller
+----------
+A D         koş
+W           zıpla
+W W         üst kata çık
+S           alt kata in
+SHIFT/Space takla (kısa dokunulmazlık)
+C           Çök-Kapan-Tutun (sarsıntıda basılı tut)
+E           kullan / onar
+F           afeti hemen başlat
+R           yeniden başla / bölümü tekrar dene
+1-4         bölüm seç (Deprem, Fırtına, Sel, Afet)
+Tab / H     tuş listesi
+ESC / P     duraklat
+M, - / +    ses kapat, ses seviyesi
+
+Not: Boss saldırıları, takla, güvenli kat ve kartlar oyun kurgusudur. Afet
+önerileri AFAD kaynaklıdır, ancak gerçek hayatta güvenlik garantisi değildir.
+
+Kaynak kod: https://github.com/girayeskalen/helloworld-jam (commit {COMMIT})
+
+Krediler: Müzik SkyleTheFrench ve SRG774 (CC0, OpenGameArt); ses efektleri
+Ovani Sound (lisanslı, işlenmiş); motor Godot Engine (MIT, GODOT_LISANS.txt).

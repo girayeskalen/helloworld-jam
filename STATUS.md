@@ -1,4 +1,44 @@
-# AFET KUŞATMASI — proje durumu
+# 4 GÜN (eski adı AFET KUŞATMASI) — proje durumu
+
+## Güncel — Adım 15: ad "4 GÜN", karne "neden önemli", 55,6 sn fragman, yeni ZIP'ler (18 Ekim 2026, Claude)
+
+Codex'in jetonu bittiği için tasarım, uygulama, çekim ve doğrulama bu adımda Claude (Claude Code, Windows 11) tarafından yapıldı. Başlangıç HEAD `49abadd` (arkadaşın push'u, fast-forward ile alındı). Commit/push yapılmadı.
+
+### Teslim temizliği (kitapçık v09 kontrolü)
+
+- **Kural 3.6 / Ovani:** 48 Ovani türevi WAV ve `.import` dosyaları public repodan çıkarıldı ve `.gitignore`'a eklendi; bunları ilk ekleyen `49abadd`, yazar/tarih korunarak WAV'sız `dc5427b` olarak yeniden yazıldı (kullanıcı onayı, `--force-with-lease`). Sesler yalnız build'in içine gömülüdür (Ovani'nin istediği biçim). Repodan açılan proje prosedürel seslere düşer; geri ekleme adımları `assets/audio/LICENSE.md`'de. Not: GitHub, referanssız eski commit'leri tam SHA ile bir süre daha açabilir; tamamen silinmesi gerekirse GitHub desteğinden istenmelidir.
+- **Kural 3.7:** ZIP'ler bu commit'ten `tools/package/package.py` ile üretilir; `OYNA_BENI.txt` kaynak commit'ini ve sistem gereksinimlerini yazar, `GODOT_LISANS.txt` Godot'nun üçüncü taraf bildirimlerini içerir.
+- **Repo:** `main` dalı oyunun son sürümüne ileri sarılır (fast-forward); repo bağlantısı doğrudan oyunu gösterir.
+
+### Değişiklikler
+
+- **Ad:** Oyunun adı ekip kararıyla **4 GÜN** ("dört gün, dört afet"). Menü başlığı tek satır `4 GÜN` (144 px), pencere/proje adı, export ürün adı; build/ZIP dosyaları `4GUN.exe`, `4GUN.x86_64`, `4GUN_Windows.zip`, `4GUN_Linux.zip`. Final boss adı AFET ve dahili enum/etiketler değişmedi.
+- **Karne:** ✓ satırlar da "neden önemli" ikinci satırını taşır (`Debrief.WHY_*`, AFAD kaynaklı, "risk azalır" dili). Satırlar iki satırlık (olgu 36 px, neden/öneri 24 px), blok ortalı; kart ekranında etiket/kartlar karnenin altına kaydı, sonuç ekranında başlık 330 / karne 420. ✗ önerileri, sıra, en çok 3 satır ve KarneReveal zamanlaması aynı.
+- **Fragman:** `scenes/Trailer.tscn`, `scripts/trailer/` (yönetmen, pilot, altyazı), `tools/trailer/` (shots.json, render.py, assemble.py). Oyun koduna tek ek `SiegePlayer.trailer_guard` (varsayılan kapalı). `project.godot`'a editör ayarı `movie_writer/mjpeg_quality=0.95`, `.gitignore`'a `override.cfg`.
+- **Paketleme:** `tools/package/package.py` + `tools/package/OYNA_BENI.txt` ile ZIP'ler repodan yeniden üretilir.
+
+### Testler
+
+Windows 11 · Godot **4.7.2.stable.official.ed1daf0bf** ve **4.3.stable.official**: içe aktarma/parse temiz; her iki motorda **25 paket / 2.273 kontrol + Step2Soak, 0 başarısız, 0 SCRIPT ERROR** (Step1/Step2 fixed-fps olmadan, diğerleri `--fixed-fps 60`). Step9'a 5 karne kontrolü eklendi. Native Step9 101/101; [kart ekranı](captures/step15/karne-cards.png), [ana menü](captures/step15/menu-4gun.png) gerçek renderer'da incelendi.
+
+### Fragman
+
+- Dosyalar (Git dışı): `exports/trailer/4GUN_Fragman.mp4` (**103.554.912 B**), `exports/trailer/4GUN_Fragman_kucuk.mp4` (**44.610.585 B**); kopya `Desktop/4GUN_Fragman.mp4`.
+- ffprobe: **55,55 sn**, 1920×1080, 60 fps, 3.333 kare, H.264 High yuv420p (TV aralığı, BT.709), AAC LC 48 kHz stereo. ebur128: **−14,1 LUFS**, tepe −1,3 dBFS.
+- Kurgu (28 plan, 100 vuruş @108 BPM): dört afetten açılış montajı → "4 gün. 4 afet." → "Hazırlık hayat kurtarır." → 1. gün hazırlığı (sabitle/gaz/çanta) → DEPREM girişi → Çök-Kapan-Tutun dersi → doruk tempoda iki deprem aksiyonu (yakın takip + ağır çekim) → onarım → karne + kart → 2. gün kepenk + iki fırtına aksiyonu → 3. gün sigorta + iki sel aksiyonu → 4. gün AFET doğuşu + üç final/Nova aksiyonu → tamamı ✓ zafer karnesi → "4 GÜN". Aksiyon ~25 sn (önceki sürümde ~15 sn).
+- Aksiyon planlarında `TrailerPilot.auto`: canlı mermilerin dondurulmuş yollarını (`point_at`) ve bekleyen alan uyarılarını okur, temastan ~0,17 sn önce en açık yöne takla atar, alçak mermiyi zıplar, işaretli oda/kattan çıkar, güvenli kat ruletinde güvenli kata geçer; boşta sürekli koşar, zıplar, kat değiştirir. Takla enerjisi yalnız fragmanda dolu tutulur; `trailer_guard` güvenlik ağıdır.
+- QA: her planın kare tabloları ve son videonun 1 kare/sn kontak tablosu (`exports/trailer/qa/contact.png`) incelendi; ses saniye başı ölçüldü. Düzeltilenler: güvenli kat ruletinde pilotun yanlış kata inmesi, kart planının geç açılması, final sel planında oyuncunun suda kalması.
+- **Müzik revizyonu 2 (kullanıcı: ilk 2 sn'deki "kanal değiştirme" tıslaması ve daha kaliteli müzik):** tıslamanın kaynağı ölçüm ve çalan ses oynatıcılarının listesiyle bulundu: her aksiyon planı kuşatma başlatılarak kurulduğu için bossun −6 dB giriş süpürmesi (`quake_in`, `storm_in`…) her kesmenin altında yeniden başlıyordu; gürültü benzeri `cast_*` (düzlük 0,5–0,63), `whoosh`, takla sesi, finalde `titan_fuse` ve ortam döngüleri de katkı veriyordu. Çekimlerde `Ambience` bus ve bu tek seferlik sesler (throttle saati ileri alınarak, oyun koduna dokunmadan) susturuldu; kalan oyun sesi 7 kHz üstü kesildi. Müzik yatağı Gregor Quendel — Cinematic Epic Trailer (With SFX), CC BY 4.0, düzenlendi; ölçülen vuruşlara göre beş bölümlü kurgu (doruk açılış, sessiz yükseliş + riser, 18,0 sn patlama "1. GÜN"de, 50,15 "4. GÜN"de, 73,98 final vuruşu zaferde). Başlık kartında kredi. Ölçüm: aksiyon planlarında oyun sesinin 4 kHz üstü enerjisi −24…−27 dB'den −37…−58 dB'ye indi; fragman −14,0 LUFS, tepe −1,4 dBFS, müzik aksiyonda oyun sesinin ~5–15 dB üstünde.
+- **Miks revizyonu (kullanıcı: "arkada sürekli çalan müzik yok"):** müzik oyun seslerinin üstüne alındı (ölçüm: 55 sn'nin 51'inde müzik önde, aksiyonda tipik +3…+8 dB), kısma en çok 2 dB, karne altı filtre −3 dB, gün başlıklarına `intro_hit`. Ek dosya `exports/trailer/4GUN_Fragman_muziksiz.mp4` (yalnız oyun sesi, kendi müziğini eklemek için).
+- **Denenmeyen:** Ses miksi kulakla dinlenmedi (yalnız ölçüm); hareketli kamera piksel titremesi yalnız karelerden değerlendirildi.
+
+### Build / ZIP
+
+- Godot 4.7.2 resmî export şablonları (yalnız `windows_release_x86_64.exe`, `linux_release.x86_64`, `version.txt`) bu makinede `%APPDATA%\Godot\export_templates\4.7.2.stable\` altına kuruldu; build'ler `python tools/package/package.py --godot <4.7.2>` ile üretildi.
+- `exports/4GUN_Windows.zip` **49.888.058 B** (`4GUN.exe` 120.329.824 B) ve `exports/4GUN_Linux.zip` **39.915.392 B** (`4GUN.x86_64` 84.580.752 B); her ZIP'te `OYNA_BENI.txt` ve `GODOT_LISANS.txt`. Eski `AfetKusatmasi_*` ZIP'leri silindi.
+- **Windows açılış testi (bu makine):** ZIP ayrı klasöre açılıp içinden `4GUN.exe --headless --quit-after 600` → çıkış 0, hata yok. Pencereli açılış: başlık "4 GÜN", 1280×720 menü pencereden (PrintWindow) yakalandı ([PNG](captures/step15/windows-zip-menu.png)), logda hata yok. Oyun içi girişler denenmedi: ilk denemede gönderilen Enter/F tuşları öne gelemeyen oyun yerine kullanıcının tarayıcısına gitti (kullanıcıya bildirildi), sonra tuş gönderimi bırakıldı. **Ekip Başla → F ile ilk savaşı bir kez elle denemeli.**
+- Linux build bu makinede çalıştırılmadı; aynı proje ve şablon sürümüyle üretildi.
+
 
 ## Git teslimi — Adım 12–14 (18 Ekim 2026)
 

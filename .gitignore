@@ -14,3 +14,15 @@ playwright-report/
 # Licensed source audio stays outside the repository.
 assets/audio/_source/
 *.zip
+
+# Temporary window size for trailer renders (tools/trailer/render.py).
+override.cfg
+
+# Ovani Sound derivatives: embedded in the exported game only, never in the public
+# repository (Ovani asks to keep its audio out of repos; jam rule 3.6). Rebuild them
+# locally with tools/audio/build_sfx.py, see assets/audio/LICENSE.md.
+assets/audio/sfx/*.wav
+assets/audio/sfx/*.wav.import
+assets/audio/ambience/*.wav
+assets/audio/ambience/*.wav.import
+

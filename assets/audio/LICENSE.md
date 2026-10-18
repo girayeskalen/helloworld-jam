@@ -3,7 +3,9 @@
 Kaynak: **Sound FX Starter Pack Vol. 1**, Ovani Sound.
 [Lisans koşulları](https://ovanisound.com/policies/terms-of-service).
 
-`ambience/` ve `sfx/` dizinlerindeki WAV dosyaları oyunda kullanılan işlenmiş türevlerdir; ham Ovani paketini içermezler.
+`ambience/` ve `sfx/` dizinlerindeki WAV dosyaları oyunda kullanılan işlenmiş türevlerdir; ham Ovani paketini içermezler. **Bu dosyalar public repoda yoktur** (Ovani'nin repolardan uzak tutma isteği ve jam kuralı 3.6); yalnız dışa aktarılan oyunun içine gömülü olarak dağıtılır. Repodan açılan projede bu sesler yoksa oyun kendi prosedürel ses sentezine düşer ve çalışmaya devam eder.
+
+**Sesleri geri eklemek:** Ovani Sound'un *Sound FX Starter Pack Vol. 1* paketini [ovanisound.com](https://ovanisound.com) veya [Godot Asset Store](https://store.godotengine.org/asset/ovani-sound/sound-fx-starter-pack-vol/) üzerinden kendi hesabınızla edinin, ZIP'i repo dışında tutun ve proje kökünde `python tools/audio/build_sfx.py --zip <ZIP yolu>` çalıştırın; betik yalnız oyunun kullandığı 48 işlenmiş dosyayı `assets/audio/sfx|ambience/` altına yazar. Ardından Godot projeyi bir kez içe aktarır.
 Ses hakları Ovani Sound'a aittir. Projenin kod lisansı bu sesleri kapsamaz.
 Oyundan ayrı ses dağıtımı, soundboard ve AI eğitimi lisans kapsamında değildir.
 Public kaynak deposunda WAV paylaşımı için sağlayıcının açık izni ayrıca

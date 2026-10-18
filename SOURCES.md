@@ -205,3 +205,27 @@ Kurgusal öğeler (boss saldırıları, anlık iyileşme, takla, kartlar, sayıs
 - **Dağıtım sınırı:** Lisans, içeriğin oyundan ayrılmış şekilde dağıtılmasını kısıtlar. Mono/kırpma/fade, public kaynak deposundaki bağımsız WAV'lar için otomatik yeniden dağıtım izni değildir. Türevler de Ovani lisansına tabidir; açık kaynak lisansı verilmez. Bu görev yereldir, commit/push yapılmadı; public kaynak paylaşımı için açık sağlayıcı izni ayrıca doğrulanmalıdır.
 - **Teknik:** [ResourceImporterWAV 4.3](https://docs.godotengine.org/en/4.3/classes/class_resourceimporterwav.html) QOA/loop, [AudioStreamSynchronized 4.3](https://docs.godotengine.org/en/4.3/classes/class_audiostreamsynchronized.html) ortak çalma saati; uygulama iki gerçek motorda sınandı. Motorlar resmî godot-builds GitHub sürümleri; güncel4.7.2 ZIP SHA512 doğrulandı, motor/ZIP repo dışında.
 - **Hazır kod/araç:** Python standart kütüphanesi (PSF, [lisans](https://docs.python.org/3/license.html)) yalnız yerel ses üretim aracı; yeni runtime bağımlılığı yok. Yeni müzik bestesi MusicScore ile proje içinde üretilmiştir; Ovani'ye ait bestelerin sahipliği iddia edilmez. Lisanslı kayıtlar modele yüklenmedi, AI eğitimi yapılmadı; yerel deterministik sinyal işleme uygulandı.
+
+## 18 Ekim 2026 — Adım 15: karne "neden önemli" satırları ve fragman (Claude)
+
+Cümleler kısa, özgün Türkçe ifadelerdir; yukarıdaki karne bölümünde kayıtlı aynı AFAD sayfalarının kapsamıyla karşılaştırıldı ve "risk azalır" diliyle yazıldı. Gerçek hayatta güvenlik garantisi veya uygulama talimatı değildir.
+
+| ✓ satır / neden | Kaynak |
+| --- | --- |
+| Çök-Kapan-Tutun — "Düşen eşyalardan başını korur." | [AFAD — Deprem Anında Neler Yapmalısınız?](https://www.afad.gov.tr/deprem-aninda-neler-yapmalisiniz): çök, baş ve enseyi koru, tutun. |
+| Eşyalar sabitti — "Devrilme ve yaralanma riski azalır." | [AFAD Bursa — Afete Hazır Aile](https://bursa.afad.gov.tr/afete-hazir-aile): ağır eşyaların sabitlenmesi. |
+| Gaz vanası kapalıydı — "Gaz kaçağı ve yangın riski azalır." | [AFAD İstanbul — Deprem Sonrası İlk 6 Saat](https://istanbul.afad.gov.tr/deprem-sonrasi-ilk-6-saate-dikkat---basin-bulteni) ve AFAD Bursa deprem sayfası: gaz, su ve elektriği kapatma. |
+| Kepenkler — "Kırılan cam riski azalır." | [AFAD Antalya — Şiddetli Rüzgâr ve Fırtınadan Korunma](https://antalya.afad.gov.tr/siddetli-ruzgar-ve-firtinadan-korunma): panjur/kepenkleri kapatma; AFAD deprem sayfası: camlardan uzak durma. |
+| Sigortalar kapalıydı — "Suda elektrik çarpma riski azalır." | [AFAD — Sel Öncesi, Anı ve Sonrası Tedbirli Olun](https://www.afad.gov.tr/sel-oncesi-ani-ve-sonrasi-tedbirli-olun-guvende-kalin): sigortaları kapatma, ıslakken elektrikli cihazlara dokunmama. |
+| Afet çantası — "İlk 72 saatte ihtiyacın yanında olur." | [AFAD Gümüşhane — Afet ve acil durum çantası](https://gumushane.afad.gov.tr/afet-ve-acil-durum-cantasinda-neler-bulunmali): ilk 72 saat için hazırlık. |
+
+**Fragman (4 GÜN, 55,6 sn):** Görüntünün tamamı oyunun kendi gerçek zamanlı çizimidir (Godot Movie Maker); dış görüntü, stok video, logo veya yeni görsel asset yoktur. Müzik yatağı oyunda zaten bulunan CC0 parçalardır: `bed_dark_place.ogg` (SkyleTheFrench — Dark Place), `final_urgent.ogg` ve `victory_srg774.ogg` (SRG774 — Dark Sci-Fi Audio Pack); kurgu vurguları oyunda zaten bulunan işlenmiş Ovani efektleri `intro_riser_01.wav`, `boom_01.wav` ve `intro_hit_01.wav`'dır; geri kalan sesler çekimdeki oyun sesleridir. Başlık kartındaki kredi satırı bu kaynakları anar. Altyazılardaki tavsiye cümleleri (eşyaları sabitle, gazı kapat, afet çantanı hazırla, kepenkleri indir, selden önce sigortayı kapat, Çök · Kapan · Tutun) yukarıdaki AFAD kayıtlarına dayanır; "4 gün. 4 afet." ve gün başlıkları oyunun adına bağlı kurgu metnidir; boss, takla ve güvenli kat oyun kurgusudur. Birleştirmede geliştirme aracı olarak ffmpeg (BtbN Windows GPL build) ve numpy kullanıldı; bunlar dağıtılmaz.
+
+### Fragman müziği (18 Ekim 2026, kullanıcı geri bildirimi sonrası)
+
+| Kaynak | Lisans | Kullanım |
+| --- | --- | --- |
+| Gregor Quendel — "Cinematic Trailer Music – 12 – Cinematic Epic Trailer (With SFX)", [OpenGameArt: Cinematic Trailer Music – Collection](https://opengameart.org/content/cinematic-trailer-music-collection), www.gregorquendel.com | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | Yalnız fragmanda; bölümleri kesilip yeniden sıralandı, seviye/süzgeç değiştirildi ("düzenlendi"). Dosya `tools/trailer/music/` altında değiştirilmeden saklanır (SHA-256 `2c865a5831b26e75e47d1d27dea481a4918a3b9084405dfba81b7245e5c1ab31`). Kredi fragmanın başlık kartında. Oyunun build'ine girmez. |
+
+Bu sürümde fragmanın müzik yatağı artık bu parçadır (önceki `final_urgent` yerine); başlık kartının altında CC0 `bed_dark_place` alçak drone olarak kalır. Çekimlerde oyunun ortam döngüleri (yağmur/rüzgâr/su) susturuldu; yalnız olay sesleri kullanılır.
+

@@ -26,10 +26,9 @@ const HELP_ROWS: Array = [
 	["A D", "Koş"], ["W", "Zıpla"], ["W W", "Üst kat"], ["S", "Alt kat"], ["SHIFT", "Takla"],
 	["C", "Çök"], ["E", "Kullan"], ["F", "Başlat"], ["R", "Yeniden"], ["1-4", "Bölüm"], ["ESC", "Duraklat"],
 ]
-## Karne block: check/cross, the fact, then the habit tip in a second column.
-const KARNE_LEFT: float = 520.0
-const KARNE_TIP: float = 950.0
-const KARNE_STEP: float = 40.0
+## Outcome screen: title, then the karne block (Debrief geometry) and the R hint.
+const OUTCOME_TITLE_Y: float = 330.0
+const OUTCOME_KARNE_TOP: float = 420.0
 const ROOM_INTACT: Color = Color("5b8c84")
 const ROOM_GONE: Color = Color("141819")
 
@@ -413,24 +412,26 @@ func _draw_outcome() -> void:
 	var rows: Array[Dictionary] = Debrief.rows(game, waves.mode) if game != null else []
 	var title_alpha: float = clampf(outcome_reveal.clock / .25, 0, 1)
 	if waves.victory:
-		_text(Vector2(960, 440), "Hayatta kaldın", UIStyle.TITLE, Color(UIStyle.TEXT, title_alpha), HORIZONTAL_ALIGNMENT_CENTER, true)
+		_text(Vector2(960, OUTCOME_TITLE_Y), "Hayatta kaldın", UIStyle.TITLE, Color(UIStyle.TEXT, title_alpha), HORIZONTAL_ALIGNMENT_CENTER, true)
 	else:
 		var building_lost: bool = waves.fail_reason == DisasterWaveManager.FailReason.BUILDING
-		_text(Vector2(960, 440), "Bina çöktü" if building_lost else "Yaralandın", UIStyle.TITLE, Color(UIStyle.DANGER if building_lost else UIStyle.TEXT, title_alpha), HORIZONTAL_ALIGNMENT_CENTER, true)
-	draw_karne(rows, 520.0)
-	_text(Vector2(960, 540.0 + KARNE_STEP * rows.size() + 40.0), "R  Yeni oyun" if waves.victory else "R  Bölümü tekrar dene", UIStyle.SMALL, Color(UIStyle.MUTED, outcome_reveal.hint_progress(rows.size())), HORIZONTAL_ALIGNMENT_CENTER, true)
+		_text(Vector2(960, OUTCOME_TITLE_Y), "Bina çöktü" if building_lost else "Yaralandın", UIStyle.TITLE, Color(UIStyle.DANGER if building_lost else UIStyle.TEXT, title_alpha), HORIZONTAL_ALIGNMENT_CENTER, true)
+	draw_karne(rows, OUTCOME_KARNE_TOP)
+	_text(Vector2(960, OUTCOME_KARNE_TOP + Debrief.STEP * rows.size() + 30.0), "R  Yeni oyun" if waves.victory else "R  Bölümü tekrar dene", UIStyle.SMALL, Color(UIStyle.MUTED, outcome_reveal.hint_progress(rows.size())), HORIZONTAL_ALIGNMENT_CENTER, true)
 
-## Karne rows (see Debrief): mark, fact, tip. Shared layout with the card screen.
+## Karne rows (see Debrief): mark and fact, then the reason/tip one line below; the
+## block is centred. Shared geometry with the card screen.
 func draw_karne(rows: Array[Dictionary], top: float) -> void:
+	var left: float = Debrief.block_left(rows)
 	for i: int in range(rows.size()):
 		var row: Dictionary = rows[i]
-		var y: float = top + i * KARNE_STEP
+		var y: float = top + i * Debrief.STEP
 		var alpha: float = outcome_reveal.progress(i)
 		var slide: float = -36.0 * (1.0 - alpha)
-		Debrief.draw_mark(self, Vector2(KARNE_LEFT + slide, y - 10), row["ok"], alpha)
-		_text(Vector2(KARNE_LEFT + 24 + slide, y), row["fact"], UIStyle.SMALL, Color(UIStyle.TEXT if row["ok"] else UIStyle.ALERT, alpha), HORIZONTAL_ALIGNMENT_LEFT, true)
+		Debrief.draw_mark(self, Vector2(left + 10 + slide, y - 13), row["ok"], alpha)
+		_text(Vector2(left + Debrief.TEXT_INDENT + slide, y), row["fact"], UIStyle.MEDIUM, Color(UIStyle.TEXT if row["ok"] else UIStyle.ALERT, alpha), HORIZONTAL_ALIGNMENT_LEFT, true)
 		if String(row["tip"]) != "":
-			_text(Vector2(KARNE_TIP + slide, y), row["tip"], UIStyle.SMALL, Color(UIStyle.MUTED, alpha), HORIZONTAL_ALIGNMENT_LEFT, true)
+			_text(Vector2(left + Debrief.TEXT_INDENT + slide, y + Debrief.SECOND_LINE), row["tip"], UIStyle.SMALL, Debrief.second_color(row["ok"], alpha), HORIZONTAL_ALIGNMENT_LEFT, true)
 
 # -------------------------------------------------------------- helpers ----
 

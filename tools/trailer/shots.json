@@ -1,0 +1,231 @@
+{
+ "fps": 60,
+ "beat": 0.555556,
+ "total": 55.55,
+ "shots": [
+  {
+   "id": "H1",
+   "beat": 0,
+   "start": 0.0,
+   "frames": 67,
+   "length": 1.1167,
+   "preroll": 1.8
+  },
+  {
+   "id": "H2",
+   "beat": 2,
+   "start": 1.1111,
+   "frames": 66,
+   "length": 1.1,
+   "preroll": 1.8
+  },
+  {
+   "id": "H3",
+   "beat": 4,
+   "start": 2.2222,
+   "frames": 67,
+   "length": 1.1167,
+   "preroll": 1.8
+  },
+  {
+   "id": "H4",
+   "beat": 6,
+   "start": 3.3333,
+   "frames": 67,
+   "length": 1.1167,
+   "preroll": 1.8
+  },
+  {
+   "id": "T1",
+   "beat": 8,
+   "start": 4.4444,
+   "frames": 100,
+   "length": 1.6667,
+   "preroll": 0.6
+  },
+  {
+   "id": "T2",
+   "beat": 11,
+   "start": 6.1111,
+   "frames": 100,
+   "length": 1.6667,
+   "preroll": 1.0
+  },
+  {
+   "id": "P1",
+   "beat": 14,
+   "start": 7.7778,
+   "frames": 100,
+   "length": 1.6667,
+   "preroll": 0.6
+  },
+  {
+   "id": "P2",
+   "beat": 17,
+   "start": 9.4444,
+   "frames": 66,
+   "length": 1.1,
+   "preroll": 0.6
+  },
+  {
+   "id": "P3",
+   "beat": 19,
+   "start": 10.5556,
+   "frames": 67,
+   "length": 1.1167,
+   "preroll": 0.6
+  },
+  {
+   "id": "D1",
+   "beat": 21,
+   "start": 11.6667,
+   "frames": 100,
+   "length": 1.6667,
+   "preroll": 0.2
+  },
+  {
+   "id": "L1",
+   "beat": 24,
+   "start": 13.3333,
+   "frames": 167,
+   "length": 2.7833,
+   "preroll": 1.6
+  },
+  {
+   "id": "A1",
+   "beat": 29,
+   "start": 16.1111,
+   "frames": 133,
+   "length": 2.2167,
+   "preroll": 1.8
+  },
+  {
+   "id": "A2",
+   "beat": 33,
+   "start": 18.3333,
+   "frames": 167,
+   "length": 2.7833,
+   "preroll": 1.8
+  },
+  {
+   "id": "R1",
+   "beat": 38,
+   "start": 21.1111,
+   "frames": 133,
+   "length": 2.2167,
+   "preroll": 1.6
+  },
+  {
+   "id": "K1",
+   "beat": 42,
+   "start": 23.3333,
+   "frames": 200,
+   "length": 3.3333,
+   "preroll": 2.6
+  },
+  {
+   "id": "K2",
+   "beat": 48,
+   "start": 26.6667,
+   "frames": 67,
+   "length": 1.1167,
+   "preroll": 2.6
+  },
+  {
+   "id": "P4",
+   "beat": 50,
+   "start": 27.7778,
+   "frames": 100,
+   "length": 1.6667,
+   "preroll": 0.6
+  },
+  {
+   "id": "S1",
+   "beat": 53,
+   "start": 29.4444,
+   "frames": 133,
+   "length": 2.2167,
+   "preroll": 1.8
+  },
+  {
+   "id": "S2",
+   "beat": 57,
+   "start": 31.6667,
+   "frames": 133,
+   "length": 2.2167,
+   "preroll": 1.8
+  },
+  {
+   "id": "P5",
+   "beat": 61,
+   "start": 33.8889,
+   "frames": 100,
+   "length": 1.6667,
+   "preroll": 0.6
+  },
+  {
+   "id": "F1",
+   "beat": 64,
+   "start": 35.5556,
+   "frames": 134,
+   "length": 2.2333,
+   "preroll": 1.8
+  },
+  {
+   "id": "F2",
+   "beat": 68,
+   "start": 37.7778,
+   "frames": 100,
+   "length": 1.6667,
+   "preroll": 1.8
+  },
+  {
+   "id": "X1",
+   "beat": 71,
+   "start": 39.4444,
+   "frames": 100,
+   "length": 1.6667,
+   "preroll": 0.9
+  },
+  {
+   "id": "X2",
+   "beat": 74,
+   "start": 41.1111,
+   "frames": 133,
+   "length": 2.2167,
+   "preroll": 1.8
+  },
+  {
+   "id": "X3",
+   "beat": 78,
+   "start": 43.3333,
+   "frames": 133,
+   "length": 2.2167,
+   "preroll": 1.8
+  },
+  {
+   "id": "X4",
+   "beat": 82,
+   "start": 45.5556,
+   "frames": 100,
+   "length": 1.6667,
+   "preroll": 1.8
+  },
+  {
+   "id": "V1",
+   "beat": 85,
+   "start": 47.2222,
+   "frames": 234,
+   "length": 3.9,
+   "preroll": 2.4
+  },
+  {
+   "id": "TT",
+   "beat": 92,
+   "start": 51.1111,
+   "frames": 266,
+   "length": 4.4333,
+   "preroll": 1.0
+  }
+ ]
+}

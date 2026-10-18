@@ -55,6 +55,9 @@ var mechanics: SiegeMechanics
 var energy_regen_multiplier: float = 1.0
 var health: float = 100.0
 var controls_locked: bool = false
+## Trailer-only safety net (scenes/Trailer.tscn): hazards deal no damage while true;
+## grazes still count. The game itself never sets it.
+var trailer_guard: bool = false
 var grapple_enabled: bool = false
 var hazard_drag: float = 0.0
 var hazard_pull: float = 0.0
@@ -505,6 +508,7 @@ func _sync_floor() -> void:
 			floor_changed.emit(index)
 
 func take_damage(amount: float) -> bool:
+	if trailer_guard: return false
 	if controls_locked or amount <= 0.0 or invulnerable or dashing_this_tick or health <= 0.0:
 		return false
 	health = maxf(0.0, health - amount)

@@ -1,8 +1,20 @@
-# AFET KUŞATMASI — AI ve hazır kaynak kaydı
+# 4 GÜN (eski adı AFET KUŞATMASI) — AI ve hazır kaynak kaydı
 
 17 Ekim 2026 · Yeni Godot projesi / Adım 1 + Adım 2 + Adım 2.5 + Adım 3 + Adım 2.7 (görsel/atmosfer) + Adım 3-B (loot/oda hasarı).
 
 Bu kayıt yalnızca aktif yeni proje içindir. Önceki ARTÇI beyanları Git geçmişindeki `2647179:BEYAN.md` ve `2647179:SOURCES.md` içinde korunur; proje değişimi önceki AI kullanımını yok sayma gerekçesi değildir. Son teslimde gerçek toplam kapsam gözden geçirilir.
+
+## Güncel ek kayıt — Adım 15 karne ve fragman (18 Ekim 2026)
+
+Tasarım, uygulama, çekim ve doğrulama: **Claude (Anthropic, Claude Code)**; kullanıcı kararları ve onayı ekipte. Önceki kayıtlar korunur.
+
+| Kategori | AI kullanımı | Hazır kaynak kullanımı |
+| --- | --- | --- |
+| Görsel | Kullanıldı: karnenin iki satırlık düzeni, fragman altyazı/başlık kartı çizim kodu ve kamera kadrajları. Fragman görüntüsünün tamamı oyunun kendi prosedürel çizimidir; AI görüntü üretimi yok. | Yeni görsel/font yok. |
+| Ses | Kullanıldı: fragman müzik kurgusu ve miks betiği (bölüm kesimi, vuruş hizalama, seviye, loudness). AI ses/müzik üretimi yok. | **Fragman müziği: Gregor Quendel — Cinematic Epic Trailer (With SFX), CC BY 4.0, düzenlendi** (OpenGameArt); oyunda zaten bulunan CC0 drone ve işlenmiş Ovani efektleri (SOURCES). |
+| Kod | Kullanıldı: `Debrief` neden satırları, `GameHUD`/`UpgradeOverlay` karne düzeni, ad değişikliği (menü, proje, export), `SiegePlayer.trailer_guard`, `scripts/trailer/*` (otomatik oynayan fragman pilotu dahil), `tools/trailer/*`, `tools/package/*`, Step9 kontrolleri. | Godot Movie Maker; ffmpeg ve numpy yalnız geliştirme aracı. |
+| Metin | Kullanıldı: altı "neden önemli" cümlesi ve fragman altyazıları; AFAD kaynaklarıyla karşılaştırıldı. | AFAD sayfaları (SOURCES); metin kopyalanmadı. |
+| Diğer | Kullanıldı: plan kurgusu, kare/kontak tablosu incelemesi, ses seviyesi ölçümü, test koşuları. | — |
 
 ## Güncel ek kayıt — Adım 14 teslim düzeltmeleri (18 Ekim 2026)
 
