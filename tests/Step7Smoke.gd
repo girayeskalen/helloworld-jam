@@ -111,22 +111,22 @@ func _hits(attack: HazardAttack, lift: float) -> bool:
 
 func _ramp() -> void:
 	var w: DisasterWaveManager = game.waves
-	_check(w.siege_duration == 50.0 and w.build_duration == 4.0 and w.preparation_duration == 4.0 and DisasterWaveManager.TOTAL_WAVES == 4, "Four 50-second phases, 4-second construction, 4-second first preparation")
-	_check(is_equal_approx(DisasterWaveManager.tempo_at(0.0), .9) and is_equal_approx(DisasterWaveManager.tempo_at(13.9), .9), "0-15 s warm-up runs at 0.90x")
-	_check(is_equal_approx(DisasterWaveManager.tempo_at(15.0), 1.0) and is_equal_approx(DisasterWaveManager.tempo_at(25.0), 1.125) and absf(DisasterWaveManager.tempo_at(33.99) - 1.2374) < .002, "15-35 s rises linearly from 1.00x toward 1.25x")
-	_check(is_equal_approx(DisasterWaveManager.tempo_at(35.0), 1.45) and is_equal_approx(DisasterWaveManager.tempo_at(49.99), 1.45), "35-50 s climax holds 1.45x")
+	_check(w.siege_duration == 40.0 and w.build_duration == 10.0 and w.preparation_duration == 15.0 and DisasterWaveManager.TOTAL_WAVES == 4, "Four 40-second phases, 10-second Hazırlık, 15-second first Hazırlık")
+	_check(is_equal_approx(DisasterWaveManager.tempo_at(0.0), 1.0) and is_equal_approx(DisasterWaveManager.tempo_at(8.9), 1.0), "0-10 s opening runs at full 1.00x (no sluggish warm-up)")
+	_check(is_equal_approx(DisasterWaveManager.tempo_at(10.0), 1.0) and is_equal_approx(DisasterWaveManager.tempo_at(19.0), 1.125) and absf(DisasterWaveManager.tempo_at(26.99) - 1.2360) < .002, "10-28 s rises linearly from 1.00x toward 1.25x")
+	_check(is_equal_approx(DisasterWaveManager.tempo_at(28.0), 1.45) and is_equal_approx(DisasterWaveManager.tempo_at(39.99), 1.45), "28-40 s climax holds 1.45x")
 	var rising: bool = true
 	var smooth: bool = true
 	var previous: float = DisasterWaveManager.tempo_at(0.0)
-	for i: int in range(1, 3001):
+	for i: int in range(1, 2401):
 		var t: float = DisasterWaveManager.tempo_at(i * DT)
 		rising = rising and t >= previous - .000001
 		smooth = smooth and t - previous < .008
 		previous = t
 	_check(rising and smooth, "Tempo never drops and never jumps within one frame")
 	w = _battle(DisasterWaveManager.Mode.STORM)
-	_check(is_equal_approx(w.tempo(), .9) and is_equal_approx(w.bullet_tempo(), 1.0) and not w.is_climax(), "Fight start: 0.90x cadence and authored bullet speed")
-	w.siege_remaining = w.siege_duration - 40.0
+	_check(is_equal_approx(w.tempo(), 1.0) and is_equal_approx(w.bullet_tempo(), 1.0) and not w.is_climax(), "Fight start: 1.00x cadence and authored bullet speed")
+	w.siege_remaining = w.siege_duration - 30.0
 	_check(w.is_climax() and is_equal_approx(w.tempo(), 1.45) and is_equal_approx(w.bullet_tempo(), 1.225), "Climax: 1.45x cadence and bullets 1.225x faster")
 	var raw: HazardAttack = w._attack(HazardAttack.Kind.WIND_ORB, 1, Vector2(700, 800), Vector2(400, 0))
 	raw.lifetime = 2.0
@@ -137,7 +137,7 @@ func _ramp() -> void:
 	w.siege_remaining = w.siege_duration
 	w._storm_clock = 1.0
 	w.advance_wave(.1, .1)
-	_check(is_equal_approx(w._storm_clock, 1.0 - .1 * .9), "Warm-up attack clock runs at 0.90x")
+	_check(is_equal_approx(w._storm_clock, 1.0 - .1 * 1.0), "Opening attack clock runs at 1.00x")
 	w.siege_remaining = 10.0
 	w._storm_clock = 1.0
 	w.advance_wave(.1, .1)
@@ -487,8 +487,8 @@ func _graze() -> void:
 	_shot(Vector2(800, head - 22.0 - 15.0), Vector2(600, 0))
 	_simulate(.6)
 	_check(w.graze_count == 1 and is_equal_approx(p.stamina, 65.0) and p.health == p.max_health, "Graze: a 15 px near miss grants +25 dash energy once, without damage")
-	_check(game.feedback.grazes.size() == 1 and sound.plays("graze") == plays + 1, "Graze: spark ring, floating label and electric tick")
-	_check(WorldLabels.GRAZE_TEXT == "SIYRILDI! +ENERJİ", "Graze label reads SIYRILDI! +ENERJİ")
+	_check(game.feedback.grazes.size() == 1 and sound.plays("graze") == plays + 1, "Graze: spark ring and electric tick")
+	_check(not (load("res://scripts/ui/WorldLabels.gd") as Script).get_script_constant_map().has("GRAZE_TEXT"), "Graze feedback is a spark ring only; no floating SIYRILDI word")
 	_place(0, 1000.0)
 	_shot(Vector2(800, head - 22.0 - 30.0), Vector2(600, 0))
 	_simulate(.6)
@@ -593,7 +593,7 @@ func _fight(mode: int) -> void:
 		game.telegraphs._physics_process(DT)
 		game.projectiles._physics_process(DT)
 		ticks += 1
-	_check(not w.failed and w.state == DisasterWaveManager.State.WAVE_OUTRO and absi(ticks - 3000) <= 2, "%s: the real fight lasts exactly 50 s (%d ticks)" % [title, ticks])
+	_check(not w.failed and w.state == DisasterWaveManager.State.WAVE_OUTRO and absi(ticks - 2400) <= 2, "%s: the real fight lasts exactly 40 s (%d ticks)" % [title, ticks])
 	var early: Array[float] = []
 	var late: Array[float] = []
 	for cue: Dictionary in cues:

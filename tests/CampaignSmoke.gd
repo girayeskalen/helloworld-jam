@@ -46,18 +46,20 @@ func _loot_rules() -> void:
 	game.waves.start_next_wave()
 	game.waves.advance_wave(game.waves.intro_duration())
 	game.waves.building.pacing_enabled = false
+	# Isolate the scripted drop from the (now 4.6-5.4 s) automatic schedule.
+	loot._next_spawn = 999.0
 	loot.spawn(LootSystem.Kind.COLUMN_KIT, 8)
 	loot.advance(LootSystem.DROP_TIME)
 	_check(loot.items.size() == 1 and is_zero_approx(loot.items[0]["ground_age"]), "Lifetime begins on landing, not at the ceiling")
-	loot.advance(3.999)
-	_check(loot.items.size() == 1, "Loot still exists at grounded age 3.999 seconds")
+	loot.advance(5.999)
+	_check(loot.items.size() == 1, "Loot still exists at grounded age 5.999 seconds")
 	loot.advance(.001)
-	_check(loot.items.is_empty() and loot.expired_count == 1, "Loot expires exactly at grounded age 4.0 seconds")
+	_check(loot.items.is_empty() and loot.expired_count == 1, "Loot expires exactly at grounded age 6.0 seconds")
 	_check(loot.messages.back()["text"] == "MALZEME ENKAZDA KAYBOLDU", "Expiration uses the requested feedback text")
 	loot.spawn(LootSystem.Kind.COLUMN_KIT, 8)
 	var item: Dictionary = loot.items.back()
 	item["drop"] = 1.0
-	item["ground_age"] = 3.999
+	item["ground_age"] = 5.999
 	game.player.current_floor = 2
 	game.player.global_position = Vector2(item["position"]) + Vector2(0,26)
 	loot.advance(.001)
@@ -70,10 +72,10 @@ func _loot_rules() -> void:
 	_check(loot.items.size() == 1 and is_zero_approx(loot.items[0]["ground_age"]), "Intermission retains unexpired drops; modal freezes their remaining lifetime")
 	game.upgrades.offers.assign([0,1,2])
 	game.upgrades.choose(0)
-	loot.advance(3.99)
+	loot.advance(5.99)
 	_check(loot.items.size() == 1, "A late-wave drop gets its full lifetime during safe construction")
 	loot.advance(.01)
-	_check(loot.items.is_empty(), "Intermission drop still expires at the same four-second deadline")
+	_check(loot.items.is_empty(), "Intermission drop still expires at the same six-second deadline")
 	_fresh()
 	game.waves.start_next_wave()
 	game.waves.advance_wave(game.waves.intro_duration())
@@ -150,7 +152,7 @@ func _upgrades() -> void:
 		_fresh()
 		_check(up.apply_upgrade(id) and not up.apply_upgrade(id), "Upgrade %d applies once per run, no stacking duplicates" % id)
 	_fresh()
-	_check(game.player.dash_duration == .25 and game.loot.loot_lifetime == 4.0, "Reset preserves base iframe and four-second loot; active effects tested in Step45Smoke")
+	_check(game.player.dash_duration == .25 and game.loot.loot_lifetime == 6.0, "Reset preserves base iframe and six-second loot; active effects tested in Step45Smoke")
 
 func _campaign() -> void:
 	_fresh()
@@ -169,17 +171,17 @@ func _campaign() -> void:
 	w.advance_wave(90)
 	await _tap(KEY_D)
 	await _tap(KEY_F)
-	_check(w.preparation_remaining == 4 and up.pending and game.player.global_position == saved_position, "Card choice freezes timer and movement; F cannot bypass selection")
+	_check(w.preparation_remaining == w.build_duration and up.pending and game.player.global_position == saved_position, "Card choice freezes timer and movement; F cannot bypass selection")
 	var chosen: int = up.offers[0]
 	await _tap(KEY_1)
 	_check(up.has_upgrade(chosen) and not up.pending and w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE and w.wave_number == 1, "Key 1 chooses a card without launching the storm debug shortcut")
 	_check(game.loot.column_kits == 2 and game.building.rooms[0].hp >= 80, "Resources and room damage carry across the wave boundary")
-	w.advance_wave(3.9)
-	_check(w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE, "Construction remains available for the full 4 seconds")
+	w.advance_wave(w.build_duration - 0.1)
+	_check(w.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE, "Hazırlık remains available for the full 15 seconds")
 	w.advance_wave(.11)
 	w.advance_wave(w.intro_duration())
 	w.building.pacing_enabled = false
-	_check(w.wave_number == 2 and game.earthquake.visible and not game.storm.visible, "Build timer automatically starts earthquake wave two")
+	_check(w.wave_number == 2 and game.storm.visible and not game.earthquake.visible, "Build timer automatically starts the storm as wave two")
 	w.finish_wave()
 	w.advance_wave(2.5)
 	_check(up.pending and not up.offers.has(chosen), "Wave two offers another three cards excluding the purchased upgrade")

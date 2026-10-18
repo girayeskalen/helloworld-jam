@@ -122,6 +122,8 @@ func _hazards() -> void:
 	p.global_position = Vector2(w.building.center_x(),w.building.floor_y(0))
 	p.previous_position = p.global_position
 	p.hit_invulnerability = 0
+	# Base water damage with the mains cut (live mains x1.5 is covered by Step9Smoke).
+	game.preparedness.power_off = true
 	_check(live.crosses_player(p,live.global_position),"Flood overlaps the real grounded capsule")
 	game.projectiles._physics_process(.01)
 	_check(p.health == 84 and is_equal_approx(p.hazard_drag,.35),"Flood really damages and slows the grounded player")
@@ -227,9 +229,9 @@ func _controls_and_enrage() -> void:
 	_check(game.waves.mode == DisasterWaveManager.Mode.FLOOD,"Removed key 5 cannot launch a fire phase")
 	await _tap(KEY_4)
 	game.waves.advance_wave(game.waves.intro_duration())
-	game.waves.siege_remaining = 15.01
+	game.waves.siege_remaining = 12.01
 	game.waves.advance_wave(.02,.02)
-	_check(game.waves.nova and game.titan.enraged,"Final combined boss keeps its last-fifteen-second overload")
+	_check(game.waves.nova and game.titan.enraged,"Final combined boss keeps its last-twelve-second overload")
 	game._apply_atmosphere()
 	_check(game.weather.inferno == 0.0 and game.weather.storminess > 0.0,"Final atmosphere contains storm and water, with no inferno")
 	game.waves.finish_wave()

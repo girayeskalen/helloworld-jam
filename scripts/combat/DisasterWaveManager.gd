@@ -12,6 +12,10 @@ signal grazed(world_position: Vector2)
 enum State { PREPARATION_PHASE, SIEGE_PHASE, BUILD_PREPARATION_PHASE, VICTORY, WAVE_INTRO, WAVE_OUTRO }
 enum Mode { STORM, EARTHQUAKE, FLOOD, CATACLYSM }
 const TOTAL_WAVES: int = 4
+## Campaign order (18 Oct 2026, jam rubric): the earthquake comes first and teaches
+## Çök-Kapan-Tutun, then storm, flood and AFET. Mode values are unchanged;
+## physical keys 1-4 now follow this campaign order too.
+const CAMPAIGN: Array[Mode] = [Mode.EARTHQUAKE, Mode.STORM, Mode.FLOOD, Mode.CATACLYSM]
 enum FailReason { NONE, PLAYER, BUILDING }
 const BUILDING_FAIL_TEXT: String = "BİNA ÇÖKTÜ! ODALARI ZAMANINDA ONARAMADIN"
 ## Room HP removed when a hazard ends (impacts) inside a room. Heavy debris hurts most;
@@ -25,10 +29,13 @@ const ROOM_DAMAGE: Dictionary = {
 	HazardAttack.Kind.CONCRETE: 6.0, HazardAttack.Kind.CHANDELIER: 6.0, HazardAttack.Kind.WARDROBE: 6.0,
 	HazardAttack.Kind.ROW_SWEEP: 4.0,
 }
-@export var preparation_duration: float = 4.0
-@export var build_duration: float = 4.0
+## Hazırlık: time to do preparedness tasks before the first / every later disaster.
+## Finishing every task (or F) starts the disaster early. 18 Oct polish: shorter
+## preps and 40 s fights keep the run moving.
+@export var preparation_duration: float = 15.0
+@export var build_duration: float = 10.0
 @export var secondary_damage_rate: float = 0.15
-@export var siege_duration: float = 50.0
+@export var siege_duration: float = 40.0
 @export var autoplay: bool = true
 @export var storm_interval: float = 1.95
 @export var quake_interval: float = 2.8
@@ -44,12 +51,12 @@ const INTRO_DURATION: float = 2.5
 const FINAL_INTRO_DURATION: float = 2.8
 const FUSION_IMPACT: float = 0.55
 const OUTRO_DURATION: float = 1.0
-## Step 7 tempo ramp (seconds into the fight): a calm warm-up, a linear build and a
-## readable climax. Cadence scales with the full tempo; bullet travel only with half
-## of the excess above 1.0 so paths stay dodgeable.
-const WARMUP_END: float = 15.0
-const RAMP_END: float = 35.0
-const WARMUP_TEMPO: float = 0.9
+## Tempo ramp (seconds into the 40 s fight): an opening at full pace (the old 0.9x
+## warm-up felt sluggish), a linear build and a readable climax. Cadence scales with
+## the full tempo; bullet travel only with half of the excess above 1.0.
+const WARMUP_END: float = 10.0
+const RAMP_END: float = 28.0
+const WARMUP_TEMPO: float = 1.0
 const RAMP_TOP: float = 1.25
 const CLIMAX_TEMPO: float = 1.45
 ## Short eases at both seams so the cadence never jumps within one frame.
@@ -64,16 +71,22 @@ const PATTERN_ROOM_DAMAGE: Dictionary = {
 }
 ## Room HP per second while a ceiling collapse covers a room (~1.1 per crush).
 const ROCKFALL_ROOM_RATE: float = 3.0
-## The titan overloads (Kataklizma Nova) during the last 15 seconds of its fight.
-const NOVA_WINDOW: float = 15.0
+## The titan overloads (Kataklizma Nova) during the last 12 seconds of its fight.
+const NOVA_WINDOW: float = 12.0
 var transition_remaining: float = 0.0
 var debug_enabled: bool = false
 var state: State = State.PREPARATION_PHASE
 var fail_reason: FailReason = FailReason.NONE
 var mode: Mode = Mode.STORM
 var wave_number: int = 0
-var preparation_remaining: float = 4.0
-var siege_remaining: float = 50.0
+var preparation_remaining: float = 15.0
+## Length of the current preparation clock (HUD line), and a tutorial hold on it.
+var preparation_total: float = 15.0
+var prep_hold: bool = false
+var preparedness: Preparedness
+var tremor: TremorSystem
+var tutorial: TutorialGuide
+var siege_remaining: float = 40.0
 var boss_endurance: float = 100.0
 var failed: bool = false
 var victory: bool = false
@@ -138,6 +151,7 @@ func configure(home: ApartmentBuilding, actor: SiegePlayer, view: GameCamera, wa
 	reset_cycle()
 
 func reset_cycle() -> void:
+	if upgrades != null: upgrades.game.phase_checkpoint = null
 	_clear_attacks()
 	if upgrades != null: upgrades.reset()
 	if loot != null: loot.reset()
@@ -146,32 +160,44 @@ func reset_cycle() -> void:
 	transition_remaining = 0.0
 	player.controls_locked = false
 	state = State.PREPARATION_PHASE
-	_next_mode = Mode.STORM
-	mode = Mode.STORM
+	_next_mode = CAMPAIGN[0]
+	mode = CAMPAIGN[0]
 	wave_number = 0
 	completed_waves = 0
 	dodge_count = 0
 	graze_count = 0
 	failed = false
 	fail_reason = FailReason.NONE
-	preparation_remaining = preparation_duration
+	set_preparation(preparation_duration)
+	prep_hold = false
 	siege_remaining = siege_duration
 	boss_endurance = 100.0
 	building.restore_integrity()
+	if preparedness != null: preparedness.reset()
+	if tremor != null: tremor.reset_phase(-1)
+	if tutorial != null: tutorial.reset()
 	phase_changed.emit()
+
+static func campaign_mode(step: int) -> Mode:
+	return CAMPAIGN[clampi(step, 0, TOTAL_WAVES - 1)]
+
+func set_preparation(seconds: float) -> void:
+	preparation_remaining = seconds
+	preparation_total = seconds
 
 func start_next_wave() -> void:
 	if failed or victory or upgrade_pending or state not in [State.PREPARATION_PHASE, State.BUILD_PREPARATION_PHASE]:
 		return
-	start_siege(clampi(completed_waves, 0, TOTAL_WAVES - 1) as Mode)
+	start_siege(campaign_mode(completed_waves))
 
 func start_siege(requested_mode: Mode, test_shortcut: bool = false) -> void:
 	if int(requested_mode) < 0 or int(requested_mode) >= TOTAL_WAVES: return
 	if not test_shortcut and (upgrade_pending or failed or victory or state not in [State.PREPARATION_PHASE, State.BUILD_PREPARATION_PHASE]):
 		return
 	if not test_shortcut:
-		requested_mode = clampi(completed_waves, 0, TOTAL_WAVES - 1) as Mode
+		requested_mode = campaign_mode(completed_waves)
 	_clear_attacks()
+	prep_hold = false
 	if test_shortcut:
 		if upgrades != null: upgrades.reset()
 		if loot != null: loot.reset()
@@ -179,19 +205,23 @@ func start_siege(requested_mode: Mode, test_shortcut: bool = false) -> void:
 			room.max_hp = RoomDiorama.MAX_HP
 		player.reset_player()
 		building.restore_integrity()
+		if preparedness != null: preparedness.reset()
 		failed = false
 		fail_reason = FailReason.NONE
 	victory = false
 	player.controls_locked = true
-	wave_number = int(requested_mode) + 1
+	wave_number = CAMPAIGN.find(requested_mode) + 1
 	if test_shortcut: completed_waves = wave_number - 1
 	mode = requested_mode
+	if upgrades != null: upgrades.game.phase_checkpoint = PhaseCheckpoint.capture(upgrades.game)
 	state = State.WAVE_INTRO
 	transition_remaining = intro_duration()
 	siege_remaining = siege_duration
 	boss_endurance = 100.0
 	_storm_clock = 0.3
 	_quake_clock = 0.5
+	# Tutorial quake: the tremor drill comes first, bullets only after it.
+	if tutorial != null and tutorial.first_phase() and mode == Mode.EARTHQUAKE: _quake_clock = TutorialGuide.FIRST_PATTERN
 	_storm_pattern = 0
 	_quake_pattern = 0
 	storm.set_active(mode == Mode.STORM)
@@ -205,6 +235,8 @@ func start_siege(requested_mode: Mode, test_shortcut: bool = false) -> void:
 	_intro_beats = 0
 	_marathon_clock = 0.45
 	_marathon_pattern = 0
+	if tremor != null: tremor.reset_phase(mode)
+	if preparedness != null: preparedness.begin_phase()
 	if mode in [Mode.EARTHQUAKE, Mode.FLOOD]: camera.apply_shake(7.0, INTRO_DURATION)
 	if mode == Mode.CATACLYSM: camera.apply_shake(5.0, FINAL_INTRO_DURATION)
 	for boss: DisasterBoss in bosses():
@@ -213,6 +245,7 @@ func start_siege(requested_mode: Mode, test_shortcut: bool = false) -> void:
 	phase_changed.emit()
 
 func finish_wave() -> void:
+	if upgrades != null: upgrades.game.clear_hitstop()
 	if state != State.SIEGE_PHASE or failed or victory:
 		return
 	if player.health <= 0.0:
@@ -228,6 +261,7 @@ func finish_wave() -> void:
 	telegraphs.clear()
 	pool.dissolve_all()
 	player.clear_wind()
+	if tremor != null: tremor.cancel()
 	if upgrades != null: upgrades.game.mechanics.cancel_time_slow()
 	for prop: BuildingProp in building.props: prop.stop_shaking()
 	for boss: DisasterBoss in bosses():
@@ -243,9 +277,9 @@ func _complete_outro() -> void:
 		state = State.VICTORY
 		player.controls_locked = true
 	else:
-		_next_mode = completed_waves as Mode
+		_next_mode = campaign_mode(completed_waves)
 		state = State.BUILD_PREPARATION_PHASE
-		preparation_remaining = build_duration
+		set_preparation(build_duration)
 		if upgrades != null: upgrades.open_selection()
 	phase_changed.emit()
 
@@ -258,9 +292,9 @@ func test_upgrades() -> void:
 		return
 	_clear_attacks()
 	if loot != null: loot.clear_drops()
-	_next_mode = clampi(completed_waves, 0, TOTAL_WAVES - 1) as Mode
+	_next_mode = campaign_mode(completed_waves)
 	state = State.BUILD_PREPARATION_PHASE
-	preparation_remaining = build_duration
+	set_preparation(build_duration)
 	if upgrades != null: upgrades.open_selection()
 	phase_changed.emit()
 
@@ -314,6 +348,7 @@ func advance_wave(delta: float, simulation_delta: float = -1.0) -> void:
 				phase_changed.emit()
 		return
 	if state in [State.PREPARATION_PHASE, State.BUILD_PREPARATION_PHASE]:
+		if prep_hold: return
 		preparation_remaining = maxf(0.0, preparation_remaining - delta)
 		if preparation_remaining <= 0.000001:
 			start_next_wave()
@@ -330,9 +365,14 @@ func advance_wave(delta: float, simulation_delta: float = -1.0) -> void:
 		collapse_building()
 		return
 	var combat_delta: float = delta if simulation_delta < 0.0 else simulation_delta
+	# The nova is a phase state, decided before any tremor hold.
+	if mode == Mode.CATACLYSM and not nova and siege_remaining <= NOVA_WINDOW: _begin_nova()
+	# A tremor (warning + shake) holds the bullet patterns: the drill gets full focus.
+	if tremor != null and tremor.advance(combat_delta, self):
+		return
+	var pattern_delta: float = combat_delta * (tutorial.cadence() if tutorial != null else 1.0)
 	if mode == Mode.CATACLYSM:
-		if not nova and siege_remaining <= NOVA_WINDOW: _begin_nova()
-		_marathon_clock -= combat_delta * final_tempo()
+		_marathon_clock -= pattern_delta * final_tempo()
 		if _marathon_clock <= 0.0:
 			cataclysm_burst()
 			_marathon_clock += (nova_interval if nova else cataclysm_interval)*CataclysmPatterns.COOLDOWN_SCALE
@@ -343,23 +383,24 @@ func advance_wave(delta: float, simulation_delta: float = -1.0) -> void:
 				_drop_nova_supply()
 		return
 	if mode == Mode.FLOOD:
-		_marathon_clock -= combat_delta * tempo()
+		_marathon_clock -= pattern_delta * tempo()
 		if _marathon_clock <= 0.0:
 			marathon_burst()
 			_marathon_clock += flood_interval
 		return
 	if mode != Mode.EARTHQUAKE:
-		_storm_clock -= combat_delta * tempo()
+		_storm_clock -= pattern_delta * tempo()
 		if _storm_clock <= 0:
 			storm_burst()
 			_storm_clock += storm.next_delay if storm.next_delay > 0.0 else storm_interval
 	if mode != Mode.STORM:
-		_quake_clock -= combat_delta * tempo()
+		_quake_clock -= pattern_delta * tempo()
 		if _quake_clock <= 0:
 			quake_burst()
 			_quake_clock += earthquake.next_delay if earthquake.next_delay > 0.0 else quake_interval
 
 func fail_siege(reason: FailReason = FailReason.PLAYER) -> void:
+	if upgrades != null: upgrades.game.clear_hitstop()
 	if victory or failed:
 		return
 	failed = true
@@ -371,6 +412,7 @@ func fail_siege(reason: FailReason = FailReason.PLAYER) -> void:
 
 ## 4+ collapsed rooms (or 0% integrity): the apartment comes down and the siege is lost.
 func collapse_building() -> void:
+	if upgrades != null: upgrades.game.clear_hitstop()
 	if failed:
 		return
 	building.start_collapse()
@@ -390,7 +432,7 @@ func phase_label() -> String:
 	if upgrade_pending: return "AFET HAZIRLIK BÜLTENİ · 1 ÖNLEM SEÇ"
 	if state == State.BUILD_PREPARATION_PHASE: return "AFETE HAZIRLIK & GÜÇLENDİRME · F: HAZIRIM"
 	if enrage: return "SON 10 SANİYE · KOR TİTANI CİNNETİ +%25"
-	if nova: return "SON 15 SANİYE · KATAKLİZMA NOVA"
+	if nova: return "SON 12 SANİYE · KATAKLİZMA NOVA"
 	return "HAZIRLIK EVRESİ" if state == State.PREPARATION_PHASE else "AFET KUŞATMASI"
 
 func boss_name() -> String:
@@ -399,7 +441,7 @@ func boss_name() -> String:
 		Mode.STORM: return "FIRTINA"
 		Mode.EARTHQUAKE: return "DEPREM"
 		Mode.FLOOD: return "SEL"
-	return "DEPREM • SEL • FIRTINA"
+	return "AFET"
 
 func bosses() -> Array[DisasterBoss]:
 	return [storm, earthquake, flood, titan]
@@ -411,6 +453,8 @@ func cataclysm_burst() -> void:
 ## Final 15 seconds: faster combos, relocation and guaranteed survival supplies.
 func _begin_nova() -> void:
 	nova = true
+	# The last 15 s are the overload: any tremor in progress gives way to it.
+	if tremor != null: tremor.cancel()
 	titan.enraged = true
 	_marathon_clock = minf(_marathon_clock, 0.35)
 	_nova_supply_clock = nova_supply_interval
@@ -592,6 +636,8 @@ func _on_gust_ready(direction: float, strength: float, duration: float) -> void:
 	player.apply_wind(direction * strength, duration)
 	(titan if mode == Mode.CATACLYSM else storm).strike()
 	camera.apply_shake(5.0, 0.3)
+	# The gust bursts any unshuttered window right next to the player.
+	if preparedness != null: preparedness.shatter_near_player(upgrades.game.hazard_scale() if upgrades != null else 1.0)
 
 func _on_dodged(_point: Vector2) -> void:
 	dodge_count += 1
@@ -632,8 +678,10 @@ func is_climax() -> bool:
 	return state == State.SIEGE_PHASE and not failed and fight_elapsed() >= RAMP_END
 
 func _clear_attacks() -> void:
+	if upgrades != null: upgrades.game.clear_hitstop()
 	enrage = false
 	nova = false
+	if tremor != null: tremor.cancel()
 	if building != null: building.pacing_enabled = false
 	if upgrades != null and upgrades.game.mechanics != null: upgrades.game.mechanics.cancel_time_slow()
 	if telegraphs != null:

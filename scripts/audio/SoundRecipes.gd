@@ -7,18 +7,30 @@ extends RefCounted
 const ORDER: Array[String] = [
 	"rain", "drone", "siege_pad", "kick", "tick", "clank", "warn",
 	"ui_open", "ui_confirm", "ui_pause", "ui_resume", "ui_toggle",
-	"storm_in", "storm_out", "quake_in", "quake_out", "flood_in", "flood_out",
+	"storm_in", "storm_out", "quake_in", "quake_out", "tremor", "flood_in", "flood_out",
 	"fire_in", "fire_out", "titan_in", "titan_fuse", "titan_out",
 	"cast_storm", "cast_quake", "cast_flood", "cast_fire",
 	"whoosh", "impact_glass", "impact_wood", "impact_stone", "impact_metal", "impact_water", "impact_fire", "block",
 	"jump", "floor_up", "drop_land", "dash", "dodge", "graze", "hurt", "heartbeat",
-	"loot_drop", "pickup", "heal", "safety", "repair",
-	"collapse_room", "collapse_building", "victory", "defeat",
+	"loot_drop", "pickup", "heal", "safety", "repair", "secure", "cover", "alarm",
+	"collapse_room", "topple", "collapse_building", "victory", "defeat", "safe", "karne_ok", "karne_miss",
 ]
 const LOOPS: Array[String] = ["rain", "drone", "siege_pad"]
 
 static func all() -> Dictionary:
 	return {
+		"safe": {"length": .45, "peak": .5, "lp": 1800.0, "layers": [
+			{"type": "tone", "wave": "warm", "f0": 392.0, "dur": .28, "gain": .65, "env": [.008, .08, .25, .14]},
+			{"type": "tone", "wave": "bell", "f0": 587.0, "start": .13, "dur": .32, "gain": .5, "env": [.008, .1, .2, .16]},
+		]},
+		"karne_ok": {"length": .25, "peak": .45, "lp": 1800.0, "layers": [
+			{"type": "tone", "wave": "warm", "f0": 392.0, "f1": 523.25, "gain": .65, "env": [.006, .07, .12, .12]},
+			{"type": "tone", "wave": "bell", "f0": 659.25, "start": .05, "dur": .2, "gain": .2, "env": [.006, .06, .12, .1]},
+		]},
+		"karne_miss": {"length": .3, "peak": .45, "lp": 1100.0, "layers": [
+			{"type": "tone", "wave": "warm", "f0": 164.81, "f1": 130.81, "gain": .8, "env": [.008, .09, .16, .14]},
+			{"type": "noise", "color": "brown", "f0": 500.0, "dur": .1, "gain": .08, "env": [.008, .04, .0, .05]},
+		]},
 		# ------------------------------------------------ ambience / music ----
 		"rain": {"length": 6.4, "loop": true, "xfade": 0.6, "peak": 0.55, "lp": 3000.0, "layers": [
 			{"type": "noise", "color": "pink", "f0": 2000.0, "q": 0.9, "gain": 0.55, "am_rate": 0.31, "am_depth": 0.22, "env": [0.01, 0.1, 1.0, 0.01]},
@@ -90,6 +102,13 @@ static func all() -> Dictionary:
 			{"type": "thuds", "count": 9, "fa": 70.0, "fb": 130.0, "dur": 1.5, "gain": 0.8},
 			{"type": "noise", "color": "brown", "f0": 200.0, "f1": 90.0, "gain": 0.7, "env": [0.02, 1.2, 0.0, 0.5]},
 			{"type": "crackle", "rate": 70.0, "decay": 0.015, "f_lp": 1800.0, "dur": 1.3, "gain": 0.45, "env": [0.01, 0.8, 0.2, 0.4]},
+		]},
+		# Tremor warning + shake (1.0 s announce, 1.4 s shake): a deep swell, then thuds.
+		"tremor": {"length": 2.6, "peak": 0.85, "lp": 1400.0, "layers": [
+			{"type": "tone", "f0": 34.0, "f1": 28.0, "am_rate": 9.0, "am_depth": 0.45, "lp": 180.0, "gain": 1.0, "env": [0.8, 0.4, 0.85, 0.7]},
+			{"type": "noise", "color": "brown", "f0": 120.0, "gain": 0.75, "am_rate": 6.0, "am_depth": 0.3, "env": [0.9, 0.4, 0.8, 0.7]},
+			{"type": "crackle", "rate": 55.0, "decay": 0.02, "f_lp": 1300.0, "start": 1.0, "dur": 1.3, "gain": 0.45, "env": [0.1, 0.5, 0.6, 0.4]},
+			{"type": "thuds", "count": 5, "fa": 55.0, "fb": 100.0, "start": 1.0, "dur": 1.2, "gain": 0.55},
 		]},
 		"flood_in": {"length": 2.4, "peak": 0.85, "lp": 2400.0, "layers": [
 			{"type": "noise", "color": "pink", "f0": 300.0, "f1": 1600.0, "q": 0.7, "gain": 0.9, "am_rate": 0.7, "am_depth": 0.3, "env": [1.3, 0.4, 0.7, 0.6]},
@@ -247,6 +266,28 @@ static func all() -> Dictionary:
 			{"type": "tone", "wave": "warm", "f0": 523.25, "chord": [1.0, 1.26], "start": 0.84, "dur": 0.3, "lp": 2000.0, "gain": 0.5, "env": [0.01, 0.12, 0.4, 0.12]},
 		]},
 		# ----------------------------------------------------------- state ----
+		# Bolting an L-bracket: two ratchet clinks and a short metal tick.
+		"secure": {"length": 0.5, "peak": 0.6, "lp": 2600.0, "layers": [
+			{"type": "tone", "wave": "bell", "f0": 220.0, "lp": 2200.0, "gain": 0.6, "env": [0.003, 0.2, 0.0, 0.08]},
+			{"type": "tone", "wave": "bell", "f0": 262.0, "start": 0.16, "lp": 2200.0, "gain": 0.6, "env": [0.003, 0.22, 0.0, 0.1]},
+			{"type": "noise", "filter": "bp", "f0": 1400.0, "q": 0.7, "gain": 0.25, "dur": 0.06, "env": [0.002, 0.03, 0.0, 0.02]},
+		]},
+		# A room just got damaged: a short two-tone alert ping.
+		"alarm": {"length": 0.42, "peak": 0.55, "lp": 2400.0, "layers": [
+			{"type": "tone", "wave": "warm", "f0": 660.0, "dur": 0.16, "lp": 2000.0, "gain": 0.7, "env": [0.004, 0.1, 0.2, 0.05]},
+			{"type": "tone", "wave": "warm", "f0": 523.0, "start": 0.15, "dur": 0.22, "lp": 2000.0, "gain": 0.7, "env": [0.004, 0.14, 0.2, 0.08]},
+		]},
+		# Dropping into Çök-Kapan-Tutun: a soft cloth rustle and knee thump.
+		"cover": {"length": 0.22, "peak": 0.5, "lp": 1600.0, "layers": [
+			{"type": "noise", "color": "pink", "f0": 500.0, "q": 0.8, "gain": 0.6, "env": [0.01, 0.1, 0.0, 0.06]},
+			{"type": "tone", "f0": 90.0, "f1": 60.0, "glide": 0.08, "gain": 0.5, "env": [0.004, 0.1, 0.0, 0.05]},
+		]},
+		# A tall cabinet slams onto the floor.
+		"topple": {"length": 0.8, "peak": 0.8, "lp": 2000.0, "layers": [
+			{"type": "noise", "color": "brown", "f0": 300.0, "f1": 120.0, "gain": 0.8, "env": [0.005, 0.35, 0.0, 0.3]},
+			{"type": "tone", "f0": 70.0, "f1": 42.0, "glide": 0.2, "gain": 0.9, "env": [0.004, 0.3, 0.0, 0.15]},
+			{"type": "crackle", "rate": 90.0, "decay": 0.01, "f_lp": 1800.0, "dur": 0.4, "gain": 0.4, "env": [0.003, 0.25, 0.1, 0.1]},
+		]},
 		"collapse_room": {"length": 1.5, "peak": 0.82, "lp": 1600.0, "layers": [
 			{"type": "thuds", "count": 7, "fa": 60.0, "fb": 120.0, "dur": 1.1, "gain": 0.8},
 			{"type": "noise", "color": "brown", "f0": 260.0, "f1": 90.0, "gain": 0.7, "env": [0.02, 1.0, 0.1, 0.4]},

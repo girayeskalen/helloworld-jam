@@ -1,11 +1,11 @@
 class_name CombatFeedback
 extends Node2D
-## DODGE events in world space. The "DODGE!" word itself is drawn crisply by
-## WorldLabels; this node draws the sparkle rays on the pixel grid.
+## Word-free hit feedback in world space: a gold six-ray burst over the player
+## on DODGE and a turquoise/yellow spark ring at each graze.
 
 @export var custom_sprite: Texture2D
 var texts: Array[Dictionary] = []
-## Step 7 grazes: a turquoise/yellow spark ring at the near miss + a small label.
+## Step 7 grazes: a turquoise/yellow spark ring at the near miss.
 var grazes: Array[Dictionary] = []
 const GRAZE_LIFE: float = 0.55
 const GRAZE_TEAL: Color = Color("3ff6e6")

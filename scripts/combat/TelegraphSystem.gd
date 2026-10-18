@@ -4,6 +4,8 @@ extends Node2D
 signal attack_ready(attack: HazardAttack)
 ## A storm gust is not damage, but it is still announced before it pushes.
 signal gust_ready(direction: float, strength: float, duration: float)
+## A building-wide tremor (Çök-Kapan-Tutun drill) is announced like every hazard.
+signal tremor_ready
 
 const MIN_WARNING: float = 0.55
 const MAX_WARNING: float = 0.75
@@ -28,6 +30,10 @@ var gust_strength: float = 0.0
 var gust_duration: float = 0.0
 var gust_area: Rect2 = Rect2()
 var gust_floors: PackedFloat32Array = PackedFloat32Array()
+var tremor_warning_left: float = 0.0
+var tremor_warning_total: float = 1.2
+var tremor_area: Rect2 = Rect2()
+var tremor_ceilings: PackedFloat32Array = PackedFloat32Array()
 var _gust_clock: float = 0.0
 var _next_id: int = 1
 
@@ -44,6 +50,17 @@ func warn_gust(area: Rect2, floor_lines: PackedFloat32Array, direction: float, s
 	gust_warning_left = gust_warning_total
 	gust_active_left = 0.0
 	queue_redraw()
+
+## Tremors use the long floor/area minimum (1.0 s) plus any final/radar extension.
+func warn_tremor(area: Rect2, ceiling_lines: PackedFloat32Array, seconds: float = 1.2, extension: float = 0.0) -> void:
+	tremor_area = area
+	tremor_ceilings = ceiling_lines
+	tremor_warning_total = maxf(seconds, 1.0) + warning_bonus + extension
+	tremor_warning_left = tremor_warning_total
+	queue_redraw()
+
+func tremor_flashing() -> bool:
+	return tremor_warning_left > 0.0 and tremor_warning_left <= HazardAttack.FLASH_WINDOW + 0.000001
 
 func warn(attack: HazardAttack, seconds: float = 0.65) -> int:
 	# The trajectory cannot be retargeted after this copy is placed on screen.
@@ -70,6 +87,7 @@ func clear() -> void:
 	pending.clear()
 	gust_warning_left = 0.0
 	gust_active_left = 0.0
+	tremor_warning_left = 0.0
 	queue_redraw()
 
 func _physics_process(delta: float) -> void:
@@ -82,6 +100,11 @@ func _physics_process(delta: float) -> void:
 			gust_ready.emit(gust_direction, gust_strength, gust_duration)
 	elif gust_active_left > 0.0:
 		gust_active_left = maxf(0.0, gust_active_left - delta)
+	if tremor_warning_left > 0.0:
+		tremor_warning_left = maxf(0.0, tremor_warning_left - delta)
+		if tremor_warning_left <= 0.000001:
+			tremor_warning_left = 0.0
+			tremor_ready.emit()
 	# Iterate a copy: a phase change triggered by a callback can safely clear pending.
 	for attack: HazardAttack in pending.duplicate():
 		if not pending.has(attack):
@@ -110,6 +133,7 @@ static func is_flashing(attack: HazardAttack) -> bool:
 ## Text for these warnings is drawn crisply in screen space by WorldLabels.
 func _draw() -> void:
 	_draw_gust()
+	_draw_tremor()
 	for attack: HazardAttack in pending:
 		if attack.warning_delay > 0.0: continue
 		var progress: float = clampf(attack.warning_elapsed / attack.warning_duration, 0, 1)
@@ -150,6 +174,24 @@ func _draw() -> void:
 				# A tiny emitter mark where the volley is born (no rings, no icons).
 				var o: Vector2 = attack.origin
 				draw_colored_polygon(PackedVector2Array([o + Vector2(0, -7), o + Vector2(7, 0), o + Vector2(0, 7), o + Vector2(-7, 0)]), edge)
+
+## Tremor warning: the building outline pulses amber and plaster dust starts to sift
+## from every ceiling, denser as the shake approaches; the last 0.12 s flash white.
+func _draw_tremor() -> void:
+	if tremor_warning_left <= 0.0:
+		return
+	var progress: float = 1.0 - tremor_warning_left / tremor_warning_total
+	var flash: bool = tremor_flashing()
+	var edge: Color = FLASH if flash else QUAKE_WARNING
+	var pulse: float = 0.45 + 0.4 * absf(sin(_gust_clock * 9.0))
+	draw_rect(tremor_area, Color(FLASH, .14) if flash else Color(QUAKE_WARNING, .04 + progress * .06))
+	draw_rect(tremor_area.grow(4.0), Color(edge, pulse), false, 4.0)
+	for y: float in tremor_ceilings:
+		for i: int in range(18):
+			var x: float = tremor_area.position.x + 40.0 + i * (tremor_area.size.x - 80.0) / 17.0 + sin(i * 2.3) * 14.0
+			var fall: float = fmod(_gust_clock * (90.0 + i % 4 * 25.0) + i * 31.0, 70.0) * progress
+			var length: float = 6.0 + progress * 10.0
+			draw_line(Vector2(x, y + 4.0 + fall), Vector2(x, y + 4.0 + fall + length), Color(Color("d8c9a8"), 0.25 + 0.5 * progress), 2.0)
 
 func _draw_gust() -> void:
 	if gust_warning_left <= 0.0 and gust_active_left <= 0.0:

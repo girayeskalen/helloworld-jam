@@ -33,6 +33,9 @@ var _damage_credit: Dictionary = {}
 var _alert_age: Dictionary = {}
 var _visual_origin: Dictionary = {}
 var sway: Vector2 = Vector2.ZERO
+## 0..1 strength of a live tremor: painted rooms/props rock harder (collision never moves).
+var tremor: float = 0.0
+var _tremor_clock: float = 0.0
 var collapsed_building: bool = false
 var collapse_time: float = 0.0
 
@@ -43,7 +46,10 @@ func restore_integrity() -> void:
 	_alert_age.clear()
 	collapsed_building = false
 	collapse_time = 0.0
+	tremor = 0.0
 	for prop: BuildingProp in props:
+		prop.secured = false
+		prop.set_toppled(false, 1.0, true)
 		prop.tilt = 0.0
 		prop.condition = prop.authored_condition
 	for room: RoomDiorama in rooms:
@@ -131,6 +137,9 @@ func advance_wear(delta: float) -> void:
 ## Sway only painted children; static collision bodies and floor coordinates never move.
 func _process(delta: float) -> void:
 	var desired: Vector2 = Vector2(sin(wear_clock * 2.1) * 1.8 + sin(wear_clock * 31.0) * 0.45, sin(wear_clock * 23.0) * 0.55) if pacing_enabled else Vector2.ZERO
+	if tremor > 0.0:
+		_tremor_clock += delta
+		desired += Vector2(sin(_tremor_clock * 37.0) * 6.0 + sin(_tremor_clock * 11.0) * 3.0, sin(_tremor_clock * 29.0) * 2.5) * tremor
 	sway = sway.lerp(desired, minf(1.0, delta * 15.0))
 	for child: Node in get_children():
 		if child is RoomDiorama or child is BuildingProp or child is RoomLighting:

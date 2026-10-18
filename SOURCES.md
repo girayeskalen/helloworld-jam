@@ -146,3 +146,30 @@ Araç: OpenAI Codex; mevcut Claude Adım 7 kodu üzerinde GDScript, özgün kod 
 | Swept collision / iki segment arası yakınlık | [Godot 4.3 Geometry2D](https://docs.godotengine.org/en/4.3/classes/class_geometry2d.html). Resmî API sayfası açılarak get_closest_points_between_segments ve segment_intersects_segment işlevleri incelendi; kaynak kod kopyalanmadı. |
 
 Bu taramada `www.afad.gov.tr/afet-ve-acil-durum-cantasi-nasil-hazirlanmali` ve `www.usgs.gov/programs/earthquake-hazards/science/early-warning` doğrudan açılışları hata döndürdü; bu iki başarısız bağlantı doğrulanmış kaynak sayılmadı. Yukarıdaki resmî arama sonuçları ve açılabilen Godot sayfası kullanıldı.
+
+## 18 Ekim 2026 — Minimal arayüz (Claude)
+
+Kart yüzündeki kısa AFAD/USGS bilgi notları kullanıcı isteğiyle arayüzden kaldırıldı; yukarıdaki kaynak kayıtları tarihçe olarak durur ve `SiegeUpgrades.CATALOG` artık yalnız ad/etki/renk taşır. Çök-Kapan-Tutun kart adı AFAD kaynaklı davranış adıdır; kartın oyun içi kalkan etkisi kurgudur.
+
+| Konu | Başvuru |
+| --- | --- |
+| Çalışma anında bitmap yazı tipi | [Godot 4.3 FontFile](https://docs.godotengine.org/en/4.3/classes/class_fontfile.html) — `set_glyph_advance/offset/size/uv_rect/texture_idx`, `set_cache_ascent/descent`, `set_texture_image`, `fixed_size` ve `fixed_size_scale_mode` API'leri. Resmî API sayfası teknik başvuru olarak kullanıldı; glifler projeye özgüdür, kod kopyalanmadı. |
+
+Harici font, görsel veya ses dosyası eklenmedi.
+
+## 18 Ekim 2026 — Afete hazırlık güncellemesi: karne önerileri (Claude)
+
+Karne önerileri kısa, özgün Türkçe ifadelerdir; aşağıdaki resmî AFAD sayfalarının içeriğiyle karşılaştırıldı. Bu oturumda AFAD sayfaları WebFetch ile doğrudan açılamadı (HTTP 500); doğrulama, `afad.gov.tr` alan adıyla sınırlanmış web aramasının sonuç özetleri ve önceki kayıtlarla yapıldı. Kurumsal metinler kopyalanmadı.
+
+| Oyundaki öğe / öneri | Kaynak ve kapsam |
+| --- | --- |
+| C: Çök-Kapan-Tutun; "Sarsıntıda çök, başını koru, tutun." | [AFAD — Deprem Anında Neler Yapmalısınız?](https://www.afad.gov.tr/deprem-aninda-neler-yapmalisiniz): güvenli bir yere çökme, baş ve enseyi koruma, sabit bir yere tutunma, sarsıntı geçene kadar bekleme. |
+| Devrilen eşya; "Ağır eşyaları duvara sabitle." | [AFAD Bursa — Afete Hazır Aile](https://bursa.afad.gov.tr/afete-hazir-aile) (önceki kayıt) ve AFAD deprem sayfasında sabitlenmemiş eşyalardan uzak durma. |
+| Cam kırıkları; "Pencere ve camlardan uzak dur." | AFAD deprem sayfası arama özeti: "Cam, pencere, dışarıya bakan duvar ve kapılardan ... uzak durun." |
+| Sallantıda kat kilidi; "Merdivene ve asansöre koşma." | [AFAD Bursa — Deprem](https://bursa.afad.gov.tr/deprem): sarsıntı sırasında merdivenlere/çıkışlara koşmama, asansör kullanmama. |
+| Gaz vanası; "Vanaların yerini öğren, gazı kapat." | AFAD Bursa deprem sayfası ve [AFAD İstanbul — Deprem Sonrası İlk 6 Saat](https://istanbul.afad.gov.tr/deprem-sonrasi-ilk-6-saate-dikkat---basin-bulteni): sarsıntı sonrası gaz, su ve elektriği kapatma. Oyunda vana Hazırlık'ta kapatılır; bu bir oyun basitleştirmesidir. |
+| Kepenkler; "Fırtınada kepenk ve pencereleri kapat." | [AFAD Antalya — Şiddetli Rüzgâr ve Fırtınadan Korunma](https://antalya.afad.gov.tr/siddetli-ruzgar-ve-firtinadan-korunma): panjur/kepenklerin kapatılıp bağlanması, mümkünse içeride kalma. |
+| Sigortalar ve elektrikli su; "Sel öncesi sigortaları kapat.", "Sudan uzak dur, yükseğe çık." | [AFAD — Sel Öncesi, Anı ve Sonrası Tedbirli Olun](https://www.afad.gov.tr/sel-oncesi-ani-ve-sonrasi-tedbirli-olun-guvende-kalin): sigorta ve vanaları kapatma, ıslakken elektrikli cihazlara dokunmama, yüksek ve güvenli yerlere gitme. |
+| Afet çantası; "Afet çantanı hazır tut." | Önceki kayıtlardaki AFAD Gümüşhane/Şırnak çanta sayfaları. Çanta oyunda lobideki çıkış kapısının yanında durur. |
+
+Kurgusal öğeler (boss saldırıları, anlık iyileşme, takla, kartlar, sayısal hasar değerleri) gerçek afet davranışı veya bina güvenliği tahmini değildir. "Yaşam üçgeni" önerisi kullanılmaz.

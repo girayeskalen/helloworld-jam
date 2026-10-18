@@ -4,6 +4,7 @@ extends Node2D
 ## construction use the same eligibility predicates as the HUD and room markers.
 
 signal collected(kind: int)
+signal picked_up(kind: int, world_position: Vector2)
 signal repaired(room: RoomDiorama)
 signal manual_action(room: RoomDiorama)
 ## A dropped supply touched the floor (end of its 0.45 s fall).
@@ -15,13 +16,15 @@ enum RepairResult { REPAIRED, NO_MATERIAL, NOT_NEEDED, COLLAPSED, REINFORCED }
 const AURA: Array[Color] = [Color("ffbd54"), Color("59bbff"), Color("4ce99a"), Color("ff6745")]
 const DROP_TIME: float = 0.45
 
-@export var spawn_interval: Vector2 = Vector2(5.5, 6.5)
+## 18 Oct polish: 20% more drops (5.5-6.5 s -> 4.6-5.4 s) that stay 6 s, so the
+## player keeps running between dodging, collecting and repairing.
+@export var spawn_interval: Vector2 = Vector2(4.6, 5.4)
 @export var max_active: int = 3
 @export var repair_amount: float = 45.0
 ## One medical bag restores 25 health and the entire dash meter.
 @export var medkit_heal: float = 25.0
 @export var kind_weights: Array[float] = [0.44, 0.27, 0.17, 0.12]
-@export var loot_lifetime: float = 4.0
+@export var loot_lifetime: float = 6.0
 @export var pickup_radius: float = 36.0
 var repair_shield_duration: float = 0.0
 @export var random_seed: int = 9371
@@ -262,6 +265,7 @@ func _check_pickups() -> void:
 
 func collect(index: int) -> void:
 	var item: Dictionary = items[index]
+	var pickup_point: Vector2 = item_draw_position(item)
 	items.remove_at(index)
 	var kind: int = item["kind"]
 	var text: String
@@ -281,6 +285,7 @@ func collect(index: int) -> void:
 			activate_safety(building.rooms[int(item["room"])])
 			text = "+1 GÜVENLİK KİTİ (Gaz Keser & Alev Söndürür)"
 	_message(Vector2(item["position"])+Vector2(-80,-50),text,AURA[kind])
+	picked_up.emit(kind, pickup_point)
 	collected.emit(kind)
 
 func activate_safety(room: RoomDiorama) -> void:

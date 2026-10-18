@@ -23,7 +23,7 @@ func _run() -> void:
 	var waves: DisasterWaveManager = game.waves
 	var pool: ProjectilePool = game.projectiles
 	var player: SiegePlayer = game.player
-	_check(waves.state == DisasterWaveManager.State.PREPARATION_PHASE and waves.preparation_remaining == 4, "Starts with 4-second preparation")
+	_check(waves.state == DisasterWaveManager.State.PREPARATION_PHASE and waves.preparation_remaining == 15, "Starts with the 15-second Hazırlık")
 	_check(pool.entries.size() == 128 and pool.active_count() == 0, "128 inactive preallocated projectiles")
 	var first_pool_id: int = pool.entries[0].get_instance_id()
 	var unwarned: HazardAttack = HazardAttack.new()
@@ -33,8 +33,10 @@ func _run() -> void:
 	_key(KEY_F, false)
 	waves.advance_wave(waves.intro_duration())
 	waves.building.pacing_enabled = false
-	_check(waves.state == DisasterWaveManager.State.SIEGE_PHASE and waves.mode == DisasterWaveManager.Mode.STORM, "Physical F skips preparation and starts storm")
-	_check(game.storm.visible and not game.earthquake.visible, "Storm boss occupies left margin only")
+	# Tremors (Step 9) are covered by Step9Smoke; keep this collision/pool run uninterrupted.
+	game.tremor.next_left = 1.0e9
+	_check(waves.state == DisasterWaveManager.State.SIEGE_PHASE and waves.mode == DisasterWaveManager.Mode.EARTHQUAKE, "Physical F skips preparation and starts the earthquake (campaign opener)")
+	_check(game.earthquake.visible and not game.storm.visible, "Only the earthquake boss occupies its margin")
 	# Step 3 reordered the storm cycle; the fan primitive is exercised directly.
 	BossPatterns.fan(waves, 0, 0)
 	_check(game.telegraphs.pending.size() == 7, "Seven-shot fan is fully warned before any projectile")
@@ -92,7 +94,7 @@ func _run() -> void:
 	var dash_started: bool = player.try_dash(Vector2.RIGHT)
 	await _frames(7)
 	_check(player.health == 100 and waves.dodge_count == dodges_before + 1, "Crossing a projectile during dash gives DODGE without damage (started=%s hp=%.0f dx=%.1f dodges=%d)" % [dash_started, player.health, player.global_position.x - dash_start_x, waves.dodge_count - dodges_before])
-	_check(game.feedback.texts.size() > 0, "DODGE floating text is visible")
+	_check(game.feedback.texts.size() > 0, "DODGE sparkle burst is visible")
 	await _frames(3)
 	_check(waves.dodge_count == dodges_before + 1, "One projectile grants DODGE only once")
 	pool.clear()
@@ -115,7 +117,7 @@ func _run() -> void:
 		_key(key, true)
 		await _frames(2)
 		_key(key, false)
-		var expected: int = key - KEY_1
+		var expected: int = DisasterWaveManager.CAMPAIGN[key - KEY_1]
 		_check(waves.mode == expected and not waves.failed, "Boss shortcut %d changes mode" % (expected + 1))
 		_check(pool.active_count() == 0 and game.telegraphs.pending.is_empty(), "Mode switch cancels obsolete hazards")
 	_check(game.flood.visible and not game.storm.visible and not game.earthquake.visible, "Key 3 selects only the flood boss")
@@ -150,10 +152,10 @@ func _run() -> void:
 	_check(_minimum_warning >= 0.55 - 0.00001 and _maximum_warning <= 0.75 + 0.017, "Every launched pattern had a full 0.55–0.75 second warning")
 	waves.reset_cycle()
 	player.reset_player()
-	waves.advance_wave(3.9)
+	waves.advance_wave(14.9)
 	_check(waves.state == DisasterWaveManager.State.PREPARATION_PHASE, "Preparation does not end early")
 	waves.advance_wave(0.11)
-	_check(waves.mode == DisasterWaveManager.Mode.STORM and waves.siege_remaining == 50, "Automatic first wave is a 50-second storm")
+	_check(waves.mode == DisasterWaveManager.Mode.EARTHQUAKE and waves.siege_remaining == 40, "Automatic first wave is a 40-second earthquake")
 	waves.advance_wave(waves.intro_duration())
 	waves.advance_wave(50.0)
 	waves.advance_wave(2.5)
@@ -162,7 +164,7 @@ func _run() -> void:
 	game.upgrades.choose(0 if game.upgrades.selected.is_empty() else 1)
 	waves.advance_wave(15.0)
 	waves.advance_wave(waves.intro_duration())
-	_check(waves.mode == DisasterWaveManager.Mode.EARTHQUAKE and waves.wave_number == 2, "Second automatic wave is earthquake")
+	_check(waves.mode == DisasterWaveManager.Mode.STORM and waves.wave_number == 2, "Second automatic wave is the storm")
 	waves.debug_enabled = true
 	waves.damage_boss_endurance(100)
 	waves.advance_wave(2.5)

@@ -94,11 +94,8 @@ func _draw() -> void:
 	draw_rect(Rect2(0,0,1920,88*letterbox),Color("070a0f"))
 	draw_rect(Rect2(0,1080-88*letterbox,1920,88*letterbox),Color("070a0f"))
 	var reveal: float = minf(smoothstep(.2,.4,progress),1.0-smoothstep(.84,1.0,progress))
-	var font: Font = ThemeDB.fallback_font
 	var title: String = game.waves.boss_name()
-	var size: int = 52 if mode_id == DisasterWaveManager.Mode.CATACLYSM else 76
-	var width: float = font.get_string_size(title,HORIZONTAL_ALIGNMENT_LEFT,-1,size).x
-	var point: Vector2 = Vector2(960-width*.5,560)
-	draw_string_outline(font,point,title,HORIZONTAL_ALIGNMENT_LEFT,-1,size,12,Color("111518",reveal))
-	draw_string(font,point,title,HORIZONTAL_ALIGNMENT_LEFT,-1,size,Color("e5f5f1",reveal))
-	draw_line(Vector2(960-width*.5,581),Vector2(960+width*.5,581),Color("76cece",reveal*.8),3.0)
+	var size: int = UIStyle.TITLE
+	var width: float = UIStyle.width(title,size)
+	UIStyle.text(self,Vector2(960,560),title,size,Color(UIStyle.TEXT,reveal),HORIZONTAL_ALIGNMENT_CENTER)
+	draw_rect(Rect2(960-width*.5,580,width,3),Color(UIStyle.BOSS[clampi(mode_id,0,3)],reveal*.8))

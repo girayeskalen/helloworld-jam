@@ -1,31 +1,40 @@
 class_name GameHUD
 extends Node2D
-## Step 4.9 minimal HUD: no panels, titles or control tables. Pixel icons + thick
-## INK-outlined bars at the top-left, one thin boss/time strip at the top centre,
-## three equipment slots at the bottom-left. Holding Tab/H shows a small help card.
+signal karne_row_revealed(ok: bool)
+## Minimal HUD with no words during play. Top-left: segmented health, a thin dash
+## energy line and a 4x4 mini-map of the building's rooms. Bottom: one thin boss/time
+## line under the boss name in small type (preparation clock and section row between fights),
+## and three kit icons with counts. Holding Tab/H shows a compact key list;
+## victory/defeat show one title, the karne (up to three lines) and one hint.
 
-const INK: Color = Color("111518")
-const STATUS_X: float = 76.0
-## Thin boss/time strip under one line of boss name.
-const BOSS_BAR: Rect2 = Rect2(450, 1016, 1020, 22)
-const SLOT_SIZE: float = 60.0
-const SLOT_ORIGIN: Vector2 = Vector2(32, 976)
-const SLOT_STEP: float = 78.0
+const HEALTH_ORIGIN: Vector2 = Vector2(32, 30)
+const HEALTH_SEGMENTS: int = 10
+const SEGMENT: Vector2 = Vector2(20, 10)
+const SEGMENT_GAP: float = 3.0
+const ENERGY_BAR: Rect2 = Rect2(32, 46, 227, 4)
+## One cell per room: rows are floors (top = floor 3), columns are rooms.
+const MAP_ORIGIN: Vector2 = Vector2(32, 62)
+const MAP_CELL: Vector2 = Vector2(14, 9)
+const MAP_GAP: float = 2.0
+const BOSS_BAR: Rect2 = Rect2(610, 1040, 700, 6)
+const SLOT_SIZE: float = 44.0
+const SLOT_ORIGIN: Vector2 = Vector2(32, 1004)
+const SLOT_STEP: float = 54.0
 ## Column kit, fixing kit, safety kit (emergency bags heal instantly; no slot).
 const SLOT_KINDS: Array[int] = [LootSystem.Kind.COLUMN_KIT, LootSystem.Kind.BARRICADE_KIT, LootSystem.Kind.SAFETY_KIT]
-const SLOT_LABELS: Array[String] = ["KOLON", "SABİTLE", "GÜVENLİK"]
 const HELP_ROWS: Array = [
-	["A / D", "KOŞ"], ["W / ↑", "ZIPLA · HAVADA 2. W ÜST KAT"], ["S / ↓", "ALT KAT · HIZLI İNİŞ"],
-	["SHIFT / SPACE / SAĞ TIK", "8 YÖNLÜ TAKLA"], ["E", "ONAR / GÜÇLENDİR"], ["F", "HAZIRIM"],
-	["R", "SIFIRLA"], ["1 – 4", "BOSS SEÇ · 4 FİNAL"], ["ESC / P", "DURAKLAT"], ["M · - / +", "SES KAPAT · SEVİYE"],
-	["F9 + U", "KART TESTİ"],
+	["A D", "Koş"], ["W", "Zıpla"], ["W W", "Üst kat"], ["S", "Alt kat"], ["SHIFT", "Takla"],
+	["C", "Çök"], ["E", "Kullan"], ["F", "Başlat"], ["R", "Yeniden"], ["1-4", "Bölüm"], ["ESC", "Duraklat"],
 ]
-## 11x10 heart, 9x12 lightning and 11x12 shield; o = ink outline.
-const HEART: Array[String] = ["..ooo.ooo..", ".ohhrorrro.", "ohrrrrrrrro", "orrrrrrrrro", "orrrrrrrddo", ".orrrrrrdo.", "..orrrrdo..", "...orrdo...", "....odo....", ".....o....."]
-const BOLT: Array[String] = [".....ooo.", "....oyyo.", "...oyyo..", "..oyyo...", ".oyyyoooo", "oyyyyyyyo", "ooooyyyo.", "...oyyo..", "..oyyo...", "..oyo....", ".oyo.....", ".oo......"]
-const SHIELD: Array[String] = ["ooooooooooo", "ottttttttdo", "othttttttdo", "othtwwwtddo", "ottwtwtwddo", "ottwwwwwddo", ".otttttddo.", ".otttttddo.", "..ottttdo..", "...ottdo...", "....odo....", ".....o....."]
+## Karne block: check/cross, the fact, then the habit tip in a second column.
+const KARNE_LEFT: float = 520.0
+const KARNE_TIP: float = 950.0
+const KARNE_STEP: float = 40.0
+const ROOM_INTACT: Color = Color("5b8c84")
+const ROOM_GONE: Color = Color("141819")
 
 @export var custom_sprite: Texture2D
+var game: MainGame
 var player: SiegePlayer
 var building: ApartmentBuilding
 var waves: DisasterWaveManager
@@ -36,56 +45,191 @@ var show_help: bool = false
 ## Every string drawn in the last frame with its screen rect (tests read these).
 var drawn_texts: PackedStringArray = PackedStringArray()
 var drawn_rects: Array[Rect2] = []
+## True when the last frame showed the crossed speaker (muted).
+var mute_drawn: bool = false
 var _clock: float = 0.0
+## A kit count that just went up flashes its slot instead of a floating message.
+var _slot_counts: Array[int] = [0, 0, 0]
+var _slot_flash: Array[float] = [0.0, 0.0, 0.0]
+var _slot_bounce: Array[float] = [0.0, 0.0, 0.0]
+const FLIGHT_LIMIT: int = 6
+var flying_icons: Array[Dictionary] = []
+var objective_pulse: float = 0.0
+var objective_pulse_duration: float = .5
+var health_shake: float = 0.0
+var heal_flash: float = 0.0
+var _shown_health: float = 100.0
+var _last_health: float = 100.0
+var _health_hold: float = 0.0
+var vignette_alpha: float = 0.0
+var _outcome_key: int = 0
+var outcome_reveal: KarneReveal = KarneReveal.new()
+var karne_revealed: int:
+	get: return outcome_reveal.revealed
+
+func configure_feel() -> void:
+	game.preparedness.task_done.connect(_on_task_done)
+	loot.picked_up.connect(_on_picked_up)
+	game.preparedness.bag_used.connect(func(_point: Vector2) -> void: heal_glow())
+	game.mechanics.activated.connect(func(id: int, _point: Vector2) -> void:
+		if id == SiegeUpgrades.Kind.AWARE_BAG: heal_glow())
+	outcome_reveal.row_revealed.connect(func(ok: bool) -> void: karne_row_revealed.emit(ok))
+	reset_feel()
+
+func reset_feel() -> void:
+	hit_flash = 0.0
+	health_shake = 0.0
+	heal_flash = 0.0
+	_health_hold = 0.0
+	vignette_alpha = 0.0
+	_shown_health = player.health
+	_last_health = player.health
+	objective_pulse = 0.0
+	flying_icons.clear()
+	for index: int in range(3):
+		_slot_counts[index] = slot_count(index)
+		_slot_flash[index] = 0.0
+		_slot_bounce[index] = 0.0
+	_outcome_key = 0
+	outcome_reveal.reset()
+	queue_redraw()
+
+func on_damage() -> void:
+	hit_flash = .35
+	health_shake = .35
+	_shown_health = maxf(_shown_health, _last_health)
+	_last_health = player.health
+	_health_hold = .12
+
+func heal_glow() -> void:
+	heal_flash = .4
+
+func _on_task_done(_kind: int, _point: Vector2) -> void:
+	objective_pulse_duration = .8 if game.preparedness.pending().is_empty() else .5
+	objective_pulse = objective_pulse_duration
+
+func _on_picked_up(kind: int, point: Vector2) -> void:
+	var slot: int = SLOT_KINDS.find(kind)
+	var target: Vector2 = HEALTH_ORIGIN + Vector2(113.5, 5) if slot < 0 else slot_rect(slot).get_center()
+	if slot >= 0: _slot_counts[slot] = mini(slot_count(slot), _slot_counts[slot] + 1)
+	if flying_icons.size() >= FLIGHT_LIMIT: flying_icons.pop_front()
+	var start: Vector2 = game.world_to_screen(point)
+	flying_icons.append({"kind": kind, "slot": slot, "start": start, "target": target, "control": (start + target) * .5 + Vector2(0, -160), "age": 0.0})
+
+static func flight_position(data: Dictionary) -> Vector2:
+	var t: float = smoothstep(0.0, .5, float(data["age"]))
+	return Vector2(data["start"]) * (1-t) * (1-t) + Vector2(data["control"]) * 2 * t * (1-t) + Vector2(data["target"]) * t * t
 
 func _process(delta: float) -> void:
+	advance_feel(delta / maxf(.001, Engine.time_scale))
+
+func advance_feel(delta: float) -> void:
 	hit_flash = maxf(0.0, hit_flash - delta)
+	health_shake = maxf(0.0, health_shake - delta)
+	heal_flash = maxf(0.0, heal_flash - delta)
+	objective_pulse = maxf(0.0, objective_pulse - delta)
 	_clock += delta
+	if player.health > _last_health:
+		heal_glow()
+		_shown_health = player.health
+	elif player.health < _last_health:
+		_shown_health = maxf(_shown_health, _last_health)
+		_health_hold = .12
+	_last_health = player.health
+	var held: float = minf(delta, _health_hold)
+	_health_hold -= held
+	_shown_health = move_toward(_shown_health, player.health, 120.0 * (delta - held))
+	for i: int in range(SLOT_KINDS.size()):
+		var count: int = slot_count(i)
+		if count > _slot_counts[i]: _slot_flash[i] = 0.45
+		_slot_counts[i] = count
+		_slot_flash[i] = maxf(0.0, _slot_flash[i] - delta)
+		_slot_bounce[i] = maxf(0.0, _slot_bounce[i] - delta)
+	for index: int in range(flying_icons.size() - 1, -1, -1):
+		var data: Dictionary = flying_icons[index]
+		data["age"] = float(data["age"]) + delta
+		if float(data["age"]) + .000001 >= .5:
+			var slot: int = data["slot"]
+			if slot >= 0:
+				_slot_bounce[slot] = .28
+				_slot_flash[slot] = .45
+			else: heal_glow()
+			flying_icons.remove_at(index)
+	var key: int = (3 if waves.victory else (2 if waves.fail_reason == DisasterWaveManager.FailReason.BUILDING else 1)) if waves != null and (waves.failed or waves.victory) else 0
+	if key != _outcome_key:
+		_outcome_key = key
+		outcome_reveal.reset()
+	if key != 0: outcome_reveal.advance(delta, Debrief.rows(game, waves.mode))
 	queue_redraw()
 
 func _draw() -> void:
 	drawn_texts.clear()
 	drawn_rects.clear()
+	mute_drawn = false
 	if player == null or building == null:
 		return
 	if custom_sprite != null:
 		draw_texture_rect(custom_sprite, Rect2(0, 0, 1920, 1080), false)
-	if hit_flash > 0:
-		draw_rect(Rect2(0, 0, 1920, 1080), Color(0.85, 0.16, 0.10, hit_flash * 0.75))
+	_draw_hit_edges()
 	if waves != null and waves.state == DisasterWaveManager.State.WAVE_INTRO and not waves.failed:
-		return # Cinema owns the frame; no half-hidden health bar under letterbox.
-	_draw_status()
-	_draw_boss_strip()
-	_draw_slots()
-	_draw_corner_hints()
-	_draw_banner()
-	if show_help:
-		_draw_help()
+		return # The boss cinematic owns the frame.
+	if waves == null or not (waves.victory or waves.failed):
+		_draw_status()
+		_draw_map()
+		_draw_boss_strip()
+		_draw_slots()
+		_draw_flying_icons()
+		_draw_objective()
+		_draw_mute()
+		if show_help:
+			_draw_help()
 	_draw_outcome()
 
 # --------------------------------------------------------------- status ----
 
 func _draw_status() -> void:
 	var health: float = clampf(player.health / player.max_health, 0.0, 1.0)
-	_sprite(Vector2(32, 26), HEART, 3.0, {"o": INK, "r": Color("e2453a"), "h": Color("ffb3a1"), "d": Color("9c2730")})
-	var health_color: Color = Color("e2453a").lerp(Color("58d06a"), smoothstep(.2, .8, health))
-	_bar(Rect2(STATUS_X, 30, 250, 22), health, health_color)
-	_text(Vector2(STATUS_X + 125, 47), "%d/%d" % [ceili(player.health), int(player.max_health)], 16, CelArt.PAPER, HORIZONTAL_ALIGNMENT_CENTER)
+	var low: bool = health < 0.3
+	var color: Color = UIStyle.HEALTH.lightened(0.25 * (0.5 + 0.5 * sin(_clock * 9.0))) if low else UIStyle.HEALTH
+	if heal_flash > 0: color = color.lerp(UIStyle.SAFE, heal_flash / .4)
+	var shake: float = sin((.35 - health_shake) * 70.0) * 5.0 * health_shake / .35
+	draw_set_transform(Vector2(shake, 0))
+	for i: int in range(HEALTH_SEGMENTS):
+		var cell: Rect2 = Rect2(HEALTH_ORIGIN + Vector2(i * (SEGMENT.x + SEGMENT_GAP), 0), SEGMENT)
+		draw_rect(cell, UIStyle.TROUGH)
+		var fill: float = clampf(health * HEALTH_SEGMENTS - i, 0.0, 1.0)
+		var trail: float = clampf(_shown_health / player.max_health * HEALTH_SEGMENTS - i, 0, 1)
+		if trail > fill: draw_rect(Rect2(cell.position, Vector2(cell.size.x * trail, cell.size.y)), Color(UIStyle.TEXT, .65))
+		if fill > 0.0:
+			draw_rect(Rect2(cell.position, Vector2(cell.size.x * fill, cell.size.y)), color)
+			draw_rect(Rect2(cell.position, Vector2(cell.size.x * fill, 2)), color.lightened(0.3))
+	draw_set_transform(Vector2.ZERO)
 	var stamina: float = clampf(player.stamina / 100.0, 0.0, 1.0)
-	_sprite(Vector2(40, 62), BOLT, 2.0, {"o": INK, "y": Color("ffd84a").lerp(Color("7fd8ff"), 1.0 if stamina >= 1.0 else 0.0)})
-	_bar(Rect2(STATUS_X, 70, 190, 10), stamina, Color("ffd84a") if stamina < 1.0 else Color("7fd8ff"))
-	var integrity: float = clampf(building.integrity / building.max_integrity, 0.0, 1.0)
-	var tint: Color = Color("4fd6c4") if integrity > .5 else (Color("f0a93c") if integrity > .25 else Color("ff5a4a"))
-	_sprite(Vector2(32, 94), SHIELD, 3.0, {"o": INK, "t": tint, "h": tint.lightened(.45), "d": tint.darkened(.35), "w": Color("1d2a2c")})
-	_bar(Rect2(STATUS_X, 104, 220, 14), integrity, tint)
-	_text(Vector2(STATUS_X + 232, 119), "%%%d" % roundi(integrity * 100.0), 19, tint.lightened(.25))
-	var collapsed: int = building.collapsed_count()
-	if collapsed > 0:
-		# Collapsed rooms toward the four-room failure limit, as tiny rubble pips.
-		for i: int in range(building.collapse_limit):
-			var pip: Rect2 = Rect2(STATUS_X + 292 + i * 15, 106, 11, 11)
-			draw_rect(pip.grow(2), INK)
-			draw_rect(pip, Color("ff5a4a") if i < collapsed else Color("2c3434"))
+	draw_rect(ENERGY_BAR, UIStyle.TROUGH)
+	draw_rect(Rect2(ENERGY_BAR.position, Vector2(ENERGY_BAR.size.x * stamina, ENERGY_BAR.size.y)), UIStyle.ENERGY_FULL if stamina >= 1.0 else UIStyle.ENERGY)
+
+## The building as 16 tiny rooms: teal = intact, amber = damaged, red = critical
+## (pulsing), dark = collapsed. A light frame marks the player's room.
+func _draw_map() -> void:
+	var player_room: RoomDiorama = building.room_at_point(player.current_floor, player.global_position.x)
+	for index: int in range(building.rooms.size()):
+		var room: RoomDiorama = building.rooms[index]
+		var column: int = index % ApartmentBuilding.COLUMN_COUNT
+		var row: int = building.floor_count - 1 - room.floor_index
+		var cell: Rect2 = map_cell(row, column)
+		draw_rect(cell, room_color(room))
+		if room == player_room:
+			draw_rect(cell.grow(1.0), UIStyle.TEXT, false, 1.0)
+
+func map_cell(row: int, column: int) -> Rect2:
+	return Rect2(MAP_ORIGIN + Vector2(column * (MAP_CELL.x + MAP_GAP), row * (MAP_CELL.y + MAP_GAP)), MAP_CELL)
+
+func room_color(room: RoomDiorama) -> Color:
+	match room.state():
+		RoomDiorama.RoomState.COLLAPSED: return ROOM_GONE
+		RoomDiorama.RoomState.CRITICAL: return UIStyle.DANGER.lerp(Color.WHITE, 0.25 * (0.5 + 0.5 * sin(_clock * 8.0)))
+		RoomDiorama.RoomState.DAMAGED: return UIStyle.ALERT
+	return ROOM_INTACT
 
 # ----------------------------------------------------------- boss strip ----
 
@@ -93,34 +237,35 @@ func _draw_boss_strip() -> void:
 	if waves == null:
 		return
 	var preparing: bool = waves.state in [DisasterWaveManager.State.PREPARATION_PHASE, DisasterWaveManager.State.BUILD_PREPARATION_PHASE]
-	var transition: bool = waves.state in [DisasterWaveManager.State.WAVE_INTRO, DisasterWaveManager.State.WAVE_OUTRO]
-	var wave: int = mini(waves.completed_waves + 1, DisasterWaveManager.TOTAL_WAVES) if preparing else waves.wave_number
-	var title: String = waves.boss_name()
 	var ratio: float = waves.boss_endurance / 100.0
-	var seconds: float = waves.siege_remaining
-	var accent: Color = Color("e0663f")
+	var mode_index: int = int(waves.mode)
+	var accent: Color = UIStyle.BOSS[clampi(mode_index, 0, 3)]
 	if preparing:
-		var duration: float = waves.build_duration if waves.state == DisasterWaveManager.State.BUILD_PREPARATION_PHASE else waves.preparation_duration
-		seconds = waves.preparation_remaining
-		ratio = waves.preparation_remaining / duration
-		accent = Color("4fd6c4")
-	elif transition:
-		var outro: bool = waves.state == DisasterWaveManager.State.WAVE_OUTRO
-		seconds = waves.siege_remaining if not outro else 0.0
-		ratio = 1.0 - waves.transition_remaining / (DisasterWaveManager.OUTRO_DURATION if outro else waves.intro_duration()) if not outro else 0.0
-	if waves.nova:
-		accent = Color("ff4a3a").lerp(Color("fff1d0"), .5 + .5 * sin(_clock * 14.0))
-	if waves.victory:
-		title = "%d/%d DALGA • ZAFER" % [DisasterWaveManager.TOTAL_WAVES, DisasterWaveManager.TOTAL_WAVES]
+		ratio = 1.0 if waves.prep_hold else waves.preparation_remaining / maxf(0.01, waves.preparation_total)
+		accent = UIStyle.MUTED
+	elif waves.state == DisasterWaveManager.State.WAVE_OUTRO:
 		ratio = 0.0
-	if waves.state == DisasterWaveManager.State.WAVE_INTRO: return
-	_text(Vector2(BOSS_BAR.get_center().x, BOSS_BAR.position.y-19), title, 26, CelArt.PAPER, HORIZONTAL_ALIGNMENT_CENTER)
-	_bar(BOSS_BAR, ratio, accent)
-	if not waves.victory:
-		_text(Vector2(BOSS_BAR.end.x + 18, BOSS_BAR.position.y+20), "%ds" % ceili(seconds), 19, CelArt.GOLD)
-		_text(Vector2(BOSS_BAR.end.x + 82, BOSS_BAR.position.y+20), "%%%d" % roundi(ratio*100), 17, CelArt.PAPER)
-	if preparing and not waves.upgrade_pending:
-		_text(Vector2(BOSS_BAR.get_center().x, 1064), "[F] HAZIRIM", 13, Color(CelArt.PAPER, .55), HORIZONTAL_ALIGNMENT_CENTER)
+	if waves.nova:
+		accent = UIStyle.DANGER.lerp(Color("fff1d0"), 0.5 + 0.5 * sin(_clock * 14.0))
+	_text(Vector2(BOSS_BAR.get_center().x, BOSS_BAR.position.y - 12), waves.boss_name(), UIStyle.SMALL, UIStyle.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	if preparing and not waves.upgrade_pending: _draw_sections()
+	draw_rect(BOSS_BAR, UIStyle.TROUGH)
+	draw_rect(Rect2(BOSS_BAR.position, Vector2(BOSS_BAR.size.x * clampf(ratio, 0.0, 1.0), BOSS_BAR.size.y)), accent)
+
+const SECTION_LABELS: Array[String] = ["1 Deprem", "2 Fırtına", "3 Sel", "4 Afet"]
+
+func _draw_sections() -> void:
+	var separator: String = " · "
+	var total: float = UIStyle.width(separator.join(SECTION_LABELS), UIStyle.SMALL)
+	var x: float = BOSS_BAR.get_center().x - total * 0.5
+	for index: int in range(SECTION_LABELS.size()):
+		var label: String = SECTION_LABELS[index]
+		var color: Color = UIStyle.TEXT if index == waves.completed_waves else UIStyle.MUTED
+		_text(Vector2(x, BOSS_BAR.position.y - 48), label, UIStyle.SMALL, color)
+		x += UIStyle.width(label, UIStyle.SMALL)
+		if index < SECTION_LABELS.size() - 1:
+			_text(Vector2(x, BOSS_BAR.position.y - 48), separator, UIStyle.SMALL, UIStyle.MUTED)
+			x += UIStyle.width(separator, UIStyle.SMALL)
 
 # ----------------------------------------------------------- equipment ----
 
@@ -137,21 +282,50 @@ func _draw_slots() -> void:
 		return
 	for i: int in range(SLOT_KINDS.size()):
 		var slot: Rect2 = slot_rect(i)
+		var pop: float = 1.0 + .22 * sin(PI * (1.0 - _slot_bounce[i] / .28)) if _slot_bounce[i] > 0 else 1.0
+		draw_set_transform(slot.get_center() * (1.0 - pop), 0, Vector2.ONE * pop)
 		var count: int = slot_count(i)
 		var aura: Color = LootSystem.AURA[SLOT_KINDS[i]]
-		var armed: bool = _slot_ready(i)
-		draw_rect(slot, Color(0.05, 0.07, 0.08, .55))
-		draw_rect(slot, INK, false, 4.0)
-		draw_line(slot.position + Vector2(4, 4), slot.position + Vector2(slot.size.x - 4, 4), Color(aura, .45), 2.0)
-		if armed:
-			draw_rect(slot.grow(3), Color(aura, .55 + .45 * sin(_clock * 8.0)), false, 3.0)
-		draw_set_transform(slot.get_center() + Vector2(-2, 0), 0, Vector2.ONE * 1.2)
+		draw_rect(slot, UIStyle.TROUGH)
+		var edge: Color = UIStyle.FAINT
+		if _slot_ready(i): edge = Color(aura, 0.55 + 0.45 * sin(_clock * 8.0))
+		if _slot_flash[i] > 0.0: edge = Color.WHITE.lerp(aura, 1.0 - _slot_flash[i] / 0.45)
+		draw_rect(slot, edge, false, 1.0 if edge == UIStyle.FAINT else 2.0)
+		draw_set_transform(slot.get_center(), 0, Vector2.ONE * (0.85 * pop))
 		EquipmentArt.draw_kit(self, SLOT_KINDS[i], _clock)
-		draw_set_transform(Vector2.ZERO)
+		draw_set_transform(slot.get_center() * (1.0 - pop), 0, Vector2.ONE * pop)
 		if count == 0:
-			draw_rect(slot.grow(-2), Color(0.03, 0.04, 0.05, .55))
-		_text(slot.end + Vector2(-4, -5), "x%d" % count, 16, CelArt.PAPER if count > 0 else Color("8b938c"), HORIZONTAL_ALIGNMENT_RIGHT)
-		_text(Vector2(slot.get_center().x, slot.end.y + 21), SLOT_LABELS[i], 13, Color(aura.lightened(.2), .9), HORIZONTAL_ALIGNMENT_CENTER)
+			draw_rect(slot.grow(-1), Color(0.02, 0.03, 0.04, 0.68))
+		else:
+			var badge: Rect2 = Rect2(slot.end - Vector2(16, 18), Vector2(16, 18))
+			draw_rect(badge, Color(0.02, 0.03, 0.04, 0.9))
+			_text(Vector2(badge.get_center().x + 1, badge.end.y - 2), str(count), UIStyle.SMALL, UIStyle.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+		draw_set_transform(Vector2.ZERO)
+
+func _draw_flying_icons() -> void:
+	for data: Dictionary in flying_icons:
+		var scale_size: float = lerpf(1.0, .75, clampf(float(data["age"]) / .5, 0, 1))
+		draw_set_transform(flight_position(data), 0, Vector2.ONE * scale_size)
+		EquipmentArt.draw_kit(self, data["kind"], _clock)
+	draw_set_transform(Vector2.ZERO)
+
+## Six non-overlapping bands: the strongest edge never exceeds alpha .45.
+func _draw_hit_edges() -> void:
+	var hit: float = clampf(hit_flash / .35, 0, 1)
+	var low: float = (.1 + .04 * sin(TAU * 1.6 * _clock)) if player.health > 0 and player.health / player.max_health < .3 else 0.0
+	vignette_alpha = minf(.45, hit * .45 + low)
+	if hit > 0: draw_rect(Rect2(0, 0, 1920, 1080), Color(UIStyle.DANGER, hit * .15))
+	if vignette_alpha <= 0: return
+	var previous: float = 0.0
+	for index: int in range(6):
+		var depth: float = lerpf(12, 70, index / 5.0)
+		var width: float = depth - previous
+		var color: Color = Color(UIStyle.DANGER, vignette_alpha * (1.0 - index / 6.0))
+		draw_rect(Rect2(previous, previous, 1920 - 2 * previous, width), color)
+		draw_rect(Rect2(previous, 1080 - depth, 1920 - 2 * previous, width), color)
+		draw_rect(Rect2(previous, depth, width, 1080 - 2 * depth), color)
+		draw_rect(Rect2(1920 - depth, depth, width, 1080 - 2 * depth), color)
+		previous = depth
 
 ## The slot whose kit the E key would spend right now pulses.
 func _slot_ready(index: int) -> bool:
@@ -161,91 +335,74 @@ func _slot_ready(index: int) -> bool:
 		return loot.column_kits > 0 and (loot.can_offer_repair() or (loot.can_build() and room.hp < room.max_hp))
 	return loot.barricade_kits > 0 and (loot.can_build() or loot.repair_alert(room)) and loot.next_component(room) == LootSystem.Kind.BARRICADE_KIT
 
-## Tiny top-right hints: help, pause and a speaker that shows the mute state.
-func _draw_corner_hints() -> void:
-	var muted: bool = sound != null and sound.muted
-	var sound_text: String = "[M] SES KAPALI" if muted else "[M] SES"
-	_text(Vector2(1888, 30), sound_text, 13, Color("ff8a7a", .8) if muted else Color(CelArt.PAPER, .5), HORIZONTAL_ALIGNMENT_RIGHT)
-	var x: float = 1888.0 - ThemeDB.fallback_font.get_string_size(sound_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x - 22.0
-	var tint: Color = Color("ff8a7a", .8) if muted else Color(CelArt.PAPER, .5)
-	draw_colored_polygon(PackedVector2Array([Vector2(x, 21), Vector2(x + 4, 21), Vector2(x + 9, 16), Vector2(x + 9, 32), Vector2(x + 4, 27), Vector2(x, 27)]), tint)
-	if muted:
-		draw_line(Vector2(x + 12, 19), Vector2(x + 19, 29), tint, 2.0)
-		draw_line(Vector2(x + 19, 19), Vector2(x + 12, 29), tint, 2.0)
-	else:
-		draw_arc(Vector2(x + 10, 24), 6.0, -PI * 0.3, PI * 0.3, 6, tint, 2.0)
-	_text(Vector2(x - 14, 30), "[H] YARDIM   [ESC] DURAKLAT", 13, Color(CelArt.PAPER, .5), HORIZONTAL_ALIGNMENT_RIGHT)
+## One short objective line at the top centre (preparation task, tutorial step, first
+## repair): a coloured tick, the line, and a soft dark band so it reads over the sky.
+const OBJECTIVE_Y: float = 66.0
 
-# -------------------------------------------------------------- banners ----
+func _draw_objective() -> void:
+	if game == null or game.tutorial == null or game.tutorial.objective_text == "": return
+	var message: String = game.tutorial.objective_text
+	var color: Color = game.tutorial.objective_color
+	var width: float = UIStyle.width(message, UIStyle.SMALL)
+	var band: Rect2 = Rect2(960.0 - width * 0.5 - 30.0, OBJECTIVE_Y - 30.0, width + 60.0, 40.0)
+	var progress: float = 1.0 - objective_pulse / objective_pulse_duration
+	var pop: float = 1.0 + (.065 if objective_pulse_duration > .5 else .04) * sin(PI * progress) if objective_pulse > 0 else 1.0
+	draw_set_transform(band.get_center() * (1.0 - pop), 0, Vector2.ONE * pop)
+	draw_rect(band, Color(0.02, 0.03, 0.04, 0.62))
+	draw_rect(Rect2(band.position.x, band.end.y - 3.0, band.size.x, 3.0), UIStyle.SAFE if objective_pulse > 0 else Color(color, 0.8))
+	if objective_pulse > 0: Debrief.draw_mark(self, Vector2(band.position.x + 16, OBJECTIVE_Y - 10), true)
+	else: draw_rect(Rect2(band.position.x + 12.0, OBJECTIVE_Y - 15.0, 8.0, 8.0), color)
+	_text(Vector2(960.0 + 6.0, OBJECTIVE_Y), message, UIStyle.SMALL, UIStyle.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+	draw_set_transform(Vector2.ZERO)
 
-## Short centred titles: wave entry, the final fusion reveal, nova and retreat.
-func _draw_banner() -> void:
-	if waves == null or waves.failed or waves.victory:
-		return
-	if waves.state == DisasterWaveManager.State.WAVE_INTRO:
-		return # BossCinematic owns the single intro title and letterbox.
-	elif waves.state == DisasterWaveManager.State.WAVE_OUTRO:
-		_text(Vector2(960, 540), "DALGA %02d PÜSKÜRTÜLDÜ" % waves.wave_number, 40, Color(Color("b0f1c7"), 1.0 - smoothstep(.6, 1.0, 1.0 - waves.transition_remaining / DisasterWaveManager.OUTRO_DURATION)), HORIZONTAL_ALIGNMENT_CENTER)
-	elif waves.nova and waves.siege_remaining > DisasterWaveManager.NOVA_WINDOW - 1.6:
-		var pulse: float = .7 + .3 * sin(_clock * 18.0)
-		_text(Vector2(960, 540), "NOVA", 56, Color(Color("d7fff5"), pulse), HORIZONTAL_ALIGNMENT_CENTER)
-		_text(Vector2(960, 580), "SON 15 SANİYE • ACİL YARDIM DÜŞÜYOR", 18, Color(Color("8fd8ff"), pulse), HORIZONTAL_ALIGNMENT_CENTER)
+## Only when muted: a small crossed speaker in the top-right corner.
+func _draw_mute() -> void:
+	if sound == null or not sound.muted: return
+	mute_drawn = true
+	var x: float = 1862.0
+	var tint: Color = Color(UIStyle.DANGER, 0.85)
+	draw_colored_polygon(PackedVector2Array([Vector2(x, 26), Vector2(x + 5, 26), Vector2(x + 11, 20), Vector2(x + 11, 38), Vector2(x + 5, 32), Vector2(x, 32)]), tint)
+	draw_line(Vector2(x + 15, 24), Vector2(x + 23, 34), tint, 2.0)
+	draw_line(Vector2(x + 23, 24), Vector2(x + 15, 34), tint, 2.0)
 
 func _draw_help() -> void:
-	var panel: Rect2 = Rect2(SLOT_ORIGIN.x, 940 - 34 - HELP_ROWS.size() * 30, 470, 34 + HELP_ROWS.size() * 30)
-	draw_rect(panel, Color(0.04, 0.05, 0.06, .82))
-	draw_rect(panel, INK, false, 4.0)
-	_text(panel.position + Vector2(18, 26), "KONTROLLER", 15, CelArt.GOLD)
+	var top: float = SLOT_ORIGIN.y - 40.0 - HELP_ROWS.size() * 30.0
+	draw_rect(Rect2(SLOT_ORIGIN.x - 16, top - 32, 320, HELP_ROWS.size() * 30.0 + 40), Color(0.02, 0.03, 0.04, 0.8))
 	for i: int in range(HELP_ROWS.size()):
-		var y: float = panel.position.y + 56 + i * 30
-		_text(Vector2(panel.position.x + 18, y), HELP_ROWS[i][0], 15, Color("ffd36b"))
-		_text(Vector2(panel.position.x + 214, y), HELP_ROWS[i][1], 15, CelArt.PAPER)
+		var y: float = top + i * 30.0
+		_text(Vector2(SLOT_ORIGIN.x, y), HELP_ROWS[i][0], UIStyle.SMALL, UIStyle.TEXT)
+		_text(Vector2(SLOT_ORIGIN.x + 112, y), HELP_ROWS[i][1], UIStyle.SMALL, UIStyle.MUTED)
 
 func _draw_outcome() -> void:
-	if waves == null:
+	if waves == null or not (waves.victory or waves.failed):
 		return
+	draw_rect(Rect2(0, 0, 1920, 1080), Color(0.02, 0.03, 0.04, 0.7))
+	var rows: Array[Dictionary] = Debrief.rows(game, waves.mode) if game != null else []
+	var title_alpha: float = clampf(outcome_reveal.clock / .25, 0, 1)
 	if waves.victory:
-		draw_rect(Rect2(0, 0, 1920, 1080), Color(.02, .05, .06, .55))
-		_text(Vector2(960, 470), "ZAFER", 30, CelArt.GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-		_text(Vector2(960, 530), DisasterWaveManager.VICTORY_TEXT, 34, Color("b0f1c7"), HORIZONTAL_ALIGNMENT_CENTER)
-		_text(Vector2(960, 580), "AYAKTA KALAN ODA %d/16" % (16 - building.collapsed_count()), 22, CelArt.PAPER, HORIZONTAL_ALIGNMENT_CENTER)
-		_text(Vector2(960, 630), "R • YENİ OYUN", 18, Color(CelArt.PAPER, .7), HORIZONTAL_ALIGNMENT_CENTER)
-	elif waves.failed:
-		draw_rect(Rect2(0, 0, 1920, 1080), Color(.06, .02, .02, .5))
+		_text(Vector2(960, 440), "Hayatta kaldın", UIStyle.TITLE, Color(UIStyle.TEXT, title_alpha), HORIZONTAL_ALIGNMENT_CENTER, true)
+	else:
 		var building_lost: bool = waves.fail_reason == DisasterWaveManager.FailReason.BUILDING
-		_text(Vector2(960, 500), "BİNA ÇÖKTÜ!" if building_lost else "KUŞATMA SONLANDI", 52, Color("ff5a4a") if building_lost else Color("e9b981"), HORIZONTAL_ALIGNMENT_CENTER)
-		_text(Vector2(960, 550), "ODALARI ZAMANINDA ONARAMADIN" if building_lost else "CAN TÜKENDİ", 22, CelArt.PAPER, HORIZONTAL_ALIGNMENT_CENTER)
-		_text(Vector2(960, 600), "R • YENİDEN DENE     1–4 • BOSS SEÇ", 18, Color(CelArt.PAPER, .7), HORIZONTAL_ALIGNMENT_CENTER)
+		_text(Vector2(960, 440), "Bina çöktü" if building_lost else "Yaralandın", UIStyle.TITLE, Color(UIStyle.DANGER if building_lost else UIStyle.TEXT, title_alpha), HORIZONTAL_ALIGNMENT_CENTER, true)
+	draw_karne(rows, 520.0)
+	_text(Vector2(960, 540.0 + KARNE_STEP * rows.size() + 40.0), "R  Yeni oyun" if waves.victory else "R  Bölümü tekrar dene", UIStyle.SMALL, Color(UIStyle.MUTED, outcome_reveal.hint_progress(rows.size())), HORIZONTAL_ALIGNMENT_CENTER, true)
+
+## Karne rows (see Debrief): mark, fact, tip. Shared layout with the card screen.
+func draw_karne(rows: Array[Dictionary], top: float) -> void:
+	for i: int in range(rows.size()):
+		var row: Dictionary = rows[i]
+		var y: float = top + i * KARNE_STEP
+		var alpha: float = outcome_reveal.progress(i)
+		var slide: float = -36.0 * (1.0 - alpha)
+		Debrief.draw_mark(self, Vector2(KARNE_LEFT + slide, y - 10), row["ok"], alpha)
+		_text(Vector2(KARNE_LEFT + 24 + slide, y), row["fact"], UIStyle.SMALL, Color(UIStyle.TEXT if row["ok"] else UIStyle.ALERT, alpha), HORIZONTAL_ALIGNMENT_LEFT, true)
+		if String(row["tip"]) != "":
+			_text(Vector2(KARNE_TIP + slide, y), row["tip"], UIStyle.SMALL, Color(UIStyle.MUTED, alpha), HORIZONTAL_ALIGNMENT_LEFT, true)
 
 # -------------------------------------------------------------- helpers ----
 
-## Thick INK frame, dark trough and a flat fill with a one-pixel cel highlight.
-func _bar(area: Rect2, ratio: float, color: Color) -> void:
-	draw_rect(area.grow(3), INK)
-	draw_rect(area, Color("1c2427"))
-	var fill: Rect2 = Rect2(area.position, Vector2(area.size.x * clampf(ratio, 0.0, 1.0), area.size.y))
-	if fill.size.x > 0.0:
-		draw_rect(fill, color)
-		draw_rect(Rect2(fill.position, Vector2(fill.size.x, maxf(2.0, area.size.y * .28))), color.lightened(.3))
-		draw_rect(Rect2(fill.position + Vector2(0, area.size.y - 2), Vector2(fill.size.x, 2)), color.darkened(.3))
-
-## Pixel sprite from a character map; "." is transparent.
-func _sprite(origin: Vector2, rows: Array[String], pixel: float, palette: Dictionary) -> void:
-	for y: int in range(rows.size()):
-		var row: String = rows[y]
-		for x: int in range(row.length()):
-			var key: String = row[x]
-			if palette.has(key):
-				draw_rect(Rect2(origin + Vector2(x, y) * pixel, Vector2.ONE * pixel), palette[key])
-
-func _text(point: Vector2, message: String, size: int, color: Color, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> void:
-	if color.a <= 0.01:
+func _text(point: Vector2, message: String, size: int, color: Color, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT, record_invisible: bool = false) -> void:
+	if color.a <= 0.01 and not record_invisible:
 		return
-	var font: Font = ThemeDB.fallback_font
-	var width: float = font.get_string_size(message, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
-	if align == HORIZONTAL_ALIGNMENT_CENTER: point.x -= width * .5
-	elif align == HORIZONTAL_ALIGNMENT_RIGHT: point.x -= width
-	draw_string_outline(font, point, message, HORIZONTAL_ALIGNMENT_LEFT, -1, size, maxi(5, size / 4), Color(INK, color.a))
-	draw_string(font, point, message, HORIZONTAL_ALIGNMENT_LEFT, -1, size, color)
+	drawn_rects.append(UIStyle.text(self, point, message, size, color, align))
 	drawn_texts.append(message)
-	drawn_rects.append(Rect2(point.x, point.y - size, width, size * 1.25))

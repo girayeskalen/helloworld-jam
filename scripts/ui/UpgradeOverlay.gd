@@ -1,10 +1,23 @@
 class_name UpgradeOverlay
 extends Control
-## Equipment dossiers retain native mouse, keyboard and scaled hit testing.
+signal karne_row_revealed(ok: bool)
+## After each disaster: the karne (up to three lines on what the preparation and the
+## player's behaviour did) above three cards — icon, short name, one effect line and
+## the key that picks it. Real Buttons keep native mouse, keyboard and scaled hit testing.
 var upgrades: SiegeUpgrades
 var fade: float = 0.0
 var cards: Array[Button] = []
-const ACCENTS: Array[Color] = [Color("9cbb9a"),Color("8eaebc"),Color("b2a2bb")]
+## Karne of the disaster just survived (Debrief rows) and the strings drawn for it.
+var karne_rows: Array[Dictionary] = []
+var karne_texts: PackedStringArray = PackedStringArray()
+var karne_reveal: KarneReveal = KarneReveal.new()
+var karne_revealed: int:
+	get: return karne_reveal.revealed
+const KARNE_TOP: float = 132.0
+const ACCENTS: Array[Color] = [Color("9cd39a"), Color("8ec3dc"), Color("c3a8dc")]
+const CARD_SIZE: Vector2 = Vector2(400, 420)
+const CARD_GAP: float = 40.0
+const CARD_TOP: float = 340.0
 
 func configure(system: SiegeUpgrades) -> void:
 	upgrades = system
@@ -12,8 +25,14 @@ func configure(system: SiegeUpgrades) -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	upgrades.selection_changed.connect(_refresh)
+	karne_reveal.row_revealed.connect(func(ok: bool) -> void: karne_row_revealed.emit(ok))
+
+func card_left(slot: int) -> float:
+	var total: float = CARD_SIZE.x * 3.0 + CARD_GAP * 2.0
+	return (1920.0 - total) * 0.5 + slot * (CARD_SIZE.x + CARD_GAP)
 
 func _refresh() -> void:
+	karne_reveal.reset()
 	for child: Node in get_children():
 		remove_child(child)
 		child.queue_free()
@@ -22,70 +41,65 @@ func _refresh() -> void:
 	if not visible: return
 	fade = 0.0
 	modulate.a = 0.0
-	var completed: int = upgrades.game.waves.completed_waves
-	var headings: Array[String] = ["BİR SONRAKİ DALGAYA HAZIRLAN","FIRTINA GERİ ÇEKİLDİ","SARSINTI DİNDİ","SULAR ÇEKİLDİ"]
-	FieldUI.label(self,"SAHA İKMALİ  /  %02d" % maxi(1,completed),Rect2(240,120,900,28),16,FieldUI.AMBER)
-	FieldUI.label(self,headings[clampi(completed,0,3)],Rect2(236,158,1450,68),45)
-	FieldUI.label(self,"Bir ekipman al. Binayı ayakta tut.",Rect2(240,237,1000,36),22,FieldUI.MUTED)
-	var step: Label = FieldUI.label(self,"[1]  [2]  [3]   /   SEÇ",Rect2(1330,243,350,30),16,FieldUI.MUTED)
-	step.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	karne_rows = Debrief.rows(upgrades.game, upgrades.game.waves.mode) if upgrades.game != null else []
+	UIStyle.label(self, "Güçlendirme seç", Rect2(0, 262, 1920, 40), UIStyle.MEDIUM, UIStyle.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 	for slot: int in range(upgrades.offers.size()):
 		var id: int = upgrades.offers[slot]
 		var data: Dictionary = SiegeUpgrades.CATALOG[id]
 		var accent: Color = ACCENTS[slot]
 		var card: UpgradeDossier = UpgradeDossier.new()
 		card.accent = accent
-		card.position = Vector2(240+slot*490,310)
-		card.size = Vector2(460,568)
+		card.position = Vector2(card_left(slot), CARD_TOP)
+		card.size = CARD_SIZE
 		card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		for state: String in ["normal","hover","pressed","focus"]:
-			var style: StyleBoxFlat = StyleBoxFlat.new()
-			style.bg_color = Color("1c272a") if state == "normal" else Color("2b3737")
-			style.border_color = Color("4c5856") if state == "normal" else accent
-			style.set_border_width_all(1 if state == "normal" else 2)
-			style.shadow_color = Color(0,0,0,.5)
-			style.shadow_size = 8
-			style.shadow_offset = Vector2(4,7)
-			card.add_theme_stylebox_override(state,style)
+		var empty: StyleBoxEmpty = StyleBoxEmpty.new()
+		for state: String in ["normal", "hover", "pressed", "focus", "hover_pressed"]:
+			card.add_theme_stylebox_override(state, empty)
 		add_child(card)
 		card.pressed.connect(_choose.bind(slot))
 		cards.append(card)
-		_card_label(card,"HAZIRLIK DONANIMI" if slot == 0 else "SAHA EKİPMANI",Rect2(25,16,390,24),13,accent)
 		var icon: UpgradeIcon = UpgradeIcon.new()
 		icon.kind = id
 		icon.accent = accent
-		icon.position = Vector2(166,65)
-		icon.size = Vector2(128,128)
+		icon.position = Vector2((CARD_SIZE.x - 128.0) * 0.5, 52)
+		icon.size = Vector2(128, 128)
 		card.add_child(icon)
-		_card_label(card,data["title"],Rect2(25,224,410,72),26,FieldUI.PAPER)
-		_card_label(card,data["effect"],Rect2(25,322,410,96),22,Color("d7dfd9"))
-		_card_label(card,"SAHA NOTU",Rect2(28,437,404,20),11,accent)
-		_card_label(card,data["note"],Rect2(28,464,404,52),15,FieldUI.MUTED)
-		_card_label(card,"[%d]  EKİPMANI AL" % (slot+1),Rect2(25,536,410,26),15,accent)
-	FieldUI.label(self,"SEÇİMDEN SONRA %d SN  /  E: ONAR  /  F: HAZIRIM" % int(upgrades.game.waves.build_duration),Rect2(240,915,1440,30),16,FieldUI.AMBER)
-	FieldUI.label(self,"Kalkanlar, onarım ışınları ve zaman etkileri oyun kurgusudur.",Rect2(240,962,1440,26),14,FieldUI.MUTED)
+		_card_label(card, data["title"], Rect2(20, 204, CARD_SIZE.x - 40, 84), UIStyle.MEDIUM, UIStyle.TEXT)
+		_card_label(card, data["effect"], Rect2(28, 296, CARD_SIZE.x - 56, 76), UIStyle.SMALL, UIStyle.MUTED)
+		_card_label(card, str(slot + 1), Rect2(0, CARD_SIZE.y - 44, CARD_SIZE.x, 36), UIStyle.SMALL, Color(accent, 0.8))
 	queue_redraw()
 
 func _choose(slot: int) -> void:
 	upgrades.choose(slot)
 
 func _card_label(card: Control, text: String, rect: Rect2, font_size: int, color: Color) -> void:
-	var label: Label = FieldUI.label(card,text,rect,font_size,color)
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.clip_text = true
+	var label: Label = UIStyle.label(card, text, rect, font_size, color, HORIZONTAL_ALIGNMENT_CENTER)
+	label.add_theme_constant_override("line_spacing", 8)
 
 func _draw() -> void:
-	draw_rect(Rect2(0,0,1920,1080),Color("080f13",.88))
-	draw_rect(Rect2(0,0,1920,76),Color("080d10",.85))
-	draw_line(Vector2(240,285),Vector2(1680,285),Color("64716b",.6),1)
-	FieldUI.grain(self,Rect2(160,90,1600,900),180)
-	for x: int in range(240,1680,28):
-		draw_line(Vector2(x,1032),Vector2(x+12,1032),Color("8b866a",.18),3)
+	draw_rect(Rect2(0, 0, 1920, 1080), Color(0.02, 0.03, 0.04, 0.86))
+	karne_texts = PackedStringArray()
+	if karne_rows.is_empty(): return
+	_karne_text(Vector2(960, KARNE_TOP - 44), "Karne", UIStyle.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	for i: int in range(karne_rows.size()):
+		var row: Dictionary = karne_rows[i]
+		var y: float = KARNE_TOP + i * GameHUD.KARNE_STEP
+		var alpha: float = karne_reveal.progress(i)
+		var slide: float = -36.0 * (1.0 - alpha)
+		Debrief.draw_mark(self, Vector2(GameHUD.KARNE_LEFT + slide, y - 10), row["ok"], alpha)
+		_karne_text(Vector2(GameHUD.KARNE_LEFT + 24 + slide, y), row["fact"], Color(UIStyle.TEXT if row["ok"] else UIStyle.ALERT, alpha))
+		if String(row["tip"]) != "": _karne_text(Vector2(GameHUD.KARNE_TIP + slide, y), row["tip"], Color(UIStyle.MUTED, alpha))
+
+func _karne_text(point: Vector2, message: String, color: Color, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> void:
+	UIStyle.text(self, point, message, UIStyle.SMALL, color, align)
+	karne_texts.append(message)
 
 func _process(delta: float) -> void:
 	if not visible: return
-	fade = minf(1.0,fade+delta/maxf(.01,Engine.time_scale)/.38)
-	modulate.a = smoothstep(0.0,1.0,fade)
+	karne_reveal.advance(delta / maxf(.001, Engine.time_scale), karne_rows)
+	fade = minf(1.0, fade + delta / maxf(.01, Engine.time_scale) / .3)
+	modulate.a = smoothstep(0.0, 1.0, fade)
 	for slot: int in range(cards.size()):
-		var reveal: float = smoothstep(0.0,1.0,clampf((fade-slot*.1)/.8,0,1))
-		cards[slot].position.y = 310+(1.0-reveal)*18
+		var reveal: float = smoothstep(0.0, 1.0, clampf((fade - slot * .1) / .8, 0, 1))
+		cards[slot].position.y = CARD_TOP + (1.0 - reveal) * 14
+	queue_redraw()

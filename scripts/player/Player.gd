@@ -10,6 +10,10 @@ signal jumped(air: bool)
 signal landed(impact: float)
 ## Step 7 graze reward (dash energy) was granted.
 signal grazed(world_position: Vector2)
+## Çök-Kapan-Tutun: C was pressed on the floor (drop, cover the head, hold on).
+signal cover_started
+## A tremor blocked a floor change ("sarsıntıda merdivene koşma").
+signal stair_blocked
 
 @export var custom_sprite: Texture2D
 @export var sprite_size: Vector2 = Vector2(64, 88)
@@ -71,6 +75,13 @@ var invulnerable: bool:
 		return is_dashing or hit_invulnerability > 0.0 or repair_shield > 0.0 or (mechanics != null and mechanics.floor_guard)
 ## True during the short scripted phase through a floor slab (double jump up / S down).
 var is_shifting: bool = false
+## Holding C on the floor: crouched with arms over the helmet, not moving.
+var covering: bool = false
+## A tremor is shaking the building: slow, unsteady steps and no floor changes.
+var shaking: bool = false
+## Hazırlık work animation (bolting, turning a valve): brief crouch, no movement.
+var work_time: float = 0.0
+const SHAKE_SPEED: float = 0.45
 var shift_direction: int = 0
 ## Current horizontal storm drift in px/s; input and dash fight against it.
 var wind_velocity: float = 0.0
@@ -160,6 +171,21 @@ func _physics_process(delta: float) -> void:
 		queue_redraw()
 		return
 	var direction: float = Input.get_axis("move_left", "move_right")
+	var want_cover: bool = InputMap.has_action(&"cover") and Input.is_action_pressed(&"cover") and is_on_floor() and not is_shifting and not is_dashing and _boost_floor < 0 and not Input.is_action_just_pressed("dash")
+	if want_cover != covering:
+		covering = want_cover
+		if covering:
+			cover_started.emit()
+			visual_scale = Vector2(1.2, 0.78)
+	if covering or work_time > 0.0:
+		work_time = maxf(0.0, work_time - delta)
+		velocity.x = move_toward(velocity.x, 0.0, braking * delta)
+		velocity.y = minf(velocity.y + gravity * delta, fast_fall_speed)
+		move_and_slide()
+		_sync_floor()
+		_update_pose(delta)
+		queue_redraw()
+		return
 	if not is_zero_approx(direction):
 		facing = signf(direction)
 	if is_shifting and shift_direction < 0:
@@ -245,7 +271,7 @@ func _physics_process(delta: float) -> void:
 
 ## Snappy run: near-instant acceleration and a dedicated turn-around rate.
 func _run_velocity(direction: float, delta: float) -> float:
-	var target: float = direction * run_speed * (1.3 if speed_boost > 0.0 else 1.0) * (1.0 - hazard_drag) + wind_velocity + hazard_pull
+	var target: float = direction * run_speed * (1.3 if speed_boost > 0.0 else 1.0) * (SHAKE_SPEED if shaking else 1.0) * (1.0 - hazard_drag) + wind_velocity + hazard_pull
 	var rate: float = acceleration if direction != 0.0 else braking
 	if direction != 0.0 and absf(velocity.x) > 20.0 and signf(direction) != signf(velocity.x):
 		rate = turn_acceleration
@@ -255,7 +281,8 @@ func _update_pose(delta: float) -> void:
 	var desired: Vector2 = Vector2(clampf(-velocity.x*.007,-4,4),clampf(-velocity.y*.004,-3,4))
 	_gear_velocity += ((desired-gear_offset)*140-_gear_velocity*18)*delta
 	gear_offset += _gear_velocity*delta
-	visual_scale = visual_scale.lerp(Vector2.ONE, 1.0 - exp(-13.0 * delta))
+	var rest: Vector2 = Vector2(1.16, 0.64) if covering else (Vector2(1.08, 0.84) if work_time > 0.0 else Vector2.ONE)
+	visual_scale = visual_scale.lerp(rest, 1.0 - exp(-13.0 * delta))
 	var grounded: bool = is_on_floor() and not is_shifting
 	var target_lean: float = 0.0
 	if not is_dashing:
@@ -307,6 +334,9 @@ func _press_down() -> bool:
 ## Down: a short scripted phase through the current slab.
 func try_floor_shift(direction: int) -> bool:
 	if building == null or health <= 0 or is_shifting or is_dashing:
+		return false
+	if shaking:
+		stair_blocked.emit()
 		return false
 	var target: int = current_floor + direction
 	if target < 0 or target >= building.floor_count:
@@ -497,6 +527,9 @@ func reset_player() -> void:
 	if building == null:
 		return
 	_graze_cooldown = 0.0
+	covering = false
+	shaking = false
+	work_time = 0.0
 	_ghost_phasing = false
 	speed_boost = 0.0
 	current_floor = 0
@@ -628,10 +661,18 @@ func _draw() -> void:
 		draw_set_transform(Vector2.ZERO)
 	else:
 		CharacterArt.draw_avatar(self, Vector2.ZERO, _stride, facing, roll, Color.WHITE, _pose())
-	# World-space health + stamina remain legible while rolling.
-	CelArt.rect(self, Rect2(-24, -108, 48, 7), Color("141b1e"), 1.5)
-	CelArt.rect(self, Rect2(-22, -106, 44 * health / max_health, 3), Color("8cbf93"), 0)
-	CelArt.rect(self, Rect2(-24, -97, 48, 5), Color("141b1e"), 1)
-	CelArt.rect(self, Rect2(-22, -96, 44 * stamina / 100.0, 2), CelArt.GOLD, 0)
+	if covering:
+		_draw_cover_arms()
 	if is_dashing:
 		CelArt.ellipse(self, Vector2(0, -34), Vector2(35, 43), Color(0.65, 0.88, 0.77, 0.08), 0)
+
+## Çök-Kapan-Tutun pose: both forearms folded over the helmet and neck.
+func _draw_cover_arms() -> void:
+	var top: float = -34.0 * visual_scale.y - 30.0 * visual_scale.y
+	for side: float in [-1.0, 1.0]:
+		var elbow: Vector2 = Vector2(side * 19.0 * facing, top + 14.0)
+		var hand: Vector2 = Vector2(-side * 3.0 * facing, top - 3.0)
+		CelArt.line(self, elbow, hand, CelArt.INK, 10)
+		CelArt.line(self, elbow, hand, CharacterArt.NAVY.lightened(0.1), 6)
+		CelArt.line(self, elbow - Vector2(2, 1), elbow + Vector2(3, 2), CharacterArt.ORANGE, 3)
+		CelArt.ellipse(self, hand, Vector2(5, 5), Color("25353c"), 2)

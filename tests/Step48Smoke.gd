@@ -47,7 +47,7 @@ func _equipment() -> void:
 	var l: LootSystem = game.loot
 	var p: SiegePlayer = game.player
 	var r: RoomDiorama = l.current_room()
-	_check(LootSystem.Kind.size() == 4 and l.loot_lifetime == 4 and l.max_active == 3,"Exactly four equipment types, base four-second lifetime, cap three")
+	_check(LootSystem.Kind.size() == 4 and l.loot_lifetime == 6 and l.max_active == 3,"Exactly four equipment types, base six-second lifetime, cap three")
 	for kind: int in range(4):
 		l.spawn(kind,8)
 		l.collect(0)
@@ -128,10 +128,10 @@ func _equipment() -> void:
 	l._next_spawn = 999
 	l.spawn(0,8)
 	l.advance(.45)
-	l.advance(3.999)
-	_check(l.items.size() == 1,"Base loot remains at 3.999 seconds on floor")
+	l.advance(5.999)
+	_check(l.items.size() == 1,"Base loot remains at 5.999 seconds on floor")
 	l.advance(.001)
-	_check(l.items.is_empty(),"Base loot expires at exactly four grounded seconds")
+	_check(l.items.is_empty(),"Base loot expires at exactly six grounded seconds")
 
 func _zone(floor_index: int) -> HazardAttack:
 	var a: HazardAttack = HazardAttack.new()
@@ -178,8 +178,8 @@ func _offers() -> void:
 			game.upgrades.choose((seed_value+wave)%3)
 	_check(correct,"150 selections across 50 runs (three card screens) guarantee left awareness, two distinct unowned action cards")
 	var text: bool = SiegeUpgrades.CATALOG.size() == 9
-	for card: Dictionary in SiegeUpgrades.CATALOG: text = text and card["effect"].length()>20 and card["note"].length()>20
-	_check(text,"All nine cards retain an effect plus a short awareness note")
+	for card: Dictionary in SiegeUpgrades.CATALOG: text = text and String(card["title"]).length()>3 and String(card["effect"]).length()>20 and String(card["effect"]).split(" ",false).size()<=7 and not card.has("note")
+	_check(text,"All nine cards keep a name and one short effect line, without lecture notes")
 
 func _framing() -> void:
 	_fresh()
@@ -209,7 +209,7 @@ func _reset() -> void:
 	for id: int in range(9): game.upgrades.apply_upgrade(id)
 	game.loot.activate_safety(game.building.rooms[0])
 	game.reset_game()
-	var clean: bool = game.player.max_health == 100 and game.player.run_speed == 403 and game.player.dash_duration == .25 and game.loot.loot_lifetime == 4 and game.loot.pickup_radius == 36 and game.loot.repair_amount == 45 and game.telegraphs.warning_bonus == 0 and game.building.secondary_factor == 1 and game.building.structural_factor == 1
+	var clean: bool = game.player.max_health == 100 and game.player.run_speed == 403 and game.player.dash_duration == .25 and game.loot.loot_lifetime == 6 and game.loot.pickup_radius == 36 and game.loot.repair_amount == 45 and game.telegraphs.warning_bonus == 0 and game.building.secondary_factor == 1 and game.building.structural_factor == 1
 	for r: RoomDiorama in game.building.rooms: clean = clean and r.max_hp == 100 and r.hp == 100 and r.flood_barrier_bonus == 0 and not r.auto_protection and not r.utilities_isolated
 	_check(clean and game.upgrades.selected.is_empty() and game.player.gear_offset == Vector2.ZERO,"R resets every new modifier, room installation and weighted equipment pose")
 
@@ -243,10 +243,7 @@ func _capture(directory: String) -> void:
 	for kind: int in range(3): game.loot.spawn(kind,kind+8)
 	game.loot.advance(.45)
 	await _save(directory,"loot-three-kits-hud.png")
-	var separated: bool = true
-	for i: int in range(game.labels.feedback_rects.size()):
-		for j: int in range(i): separated = separated and not game.labels.feedback_rects[i].intersects(game.labels.feedback_rects[j])
-	_check(separated,"Rapid installation feedback has no overlapping text bounds")
+	_check(not ("feedback_rects" in game.labels) and game.labels.texts_drawn == 0,"Rapid installation feedback adds no floating words to overlap")
 	game.loot.clear_drops()
 	game.loot.spawn(3,9)
 	game.loot.advance(.45)

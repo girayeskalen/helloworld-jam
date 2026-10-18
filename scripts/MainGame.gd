@@ -34,7 +34,7 @@ var front_end: SiegeFrontEnd
 @onready var loot: LootSystem = $World/Viewport/LootSystem
 @onready var flood: DisasterBoss = $World/Viewport/FloodBoss
 @onready var titan: DisasterBoss = $World/Viewport/CataclysmBoss
-## Keys 1-6 in DisasterWaveManager.Mode order.
+## Physical keys 1-4; their destination follows DisasterWaveManager.CAMPAIGN.
 const BOSS_SHORTCUTS: Array[StringName] = [&"storm_test", &"quake_test", &"flood_test", &"final_test"]
 var cinematic: BossCinematic
 var sprite_overrides: Dictionary = {}
@@ -43,6 +43,16 @@ var pause_menu: PauseMenu
 var mechanics: SiegeMechanics
 var upgrades: SiegeUpgrades
 var upgrade_overlay: UpgradeOverlay
+var preparedness: Preparedness
+var tremor: TremorSystem
+var tutorial: TutorialGuide
+var phase_checkpoint: PhaseCheckpoint
+var feel_fx: FeelFX
+var resetting: bool = false
+var hitstop_enabled: bool = false
+var hitstop_active: bool = false
+var _hitstop_last_usec: int = -300000
+var _hitstop_generation: int = 0
 
 func _ready() -> void:
 	_configure_pixel_view()
@@ -58,6 +68,8 @@ func _ready() -> void:
 	_bind_action(&"move_down", [KEY_S, KEY_DOWN])
 	_bind_action(&"jump", [KEY_W, KEY_UP])
 	_bind_action(&"dash", [KEY_SHIFT, KEY_SPACE], MOUSE_BUTTON_RIGHT)
+	# Çök-Kapan-Tutun: hold C on the floor during a tremor.
+	_bind_action(&"cover", [KEY_C])
 	_bind_action(&"test_shake", [KEY_T])
 	_bind_action(&"reset_player", [KEY_R])
 	_bind_action(&"start_wave", [KEY_F])
@@ -76,6 +88,7 @@ func _ready() -> void:
 	player.building = building
 	player.reset_player()
 	player.dash_started.connect(Callable(self, "_on_dash_started"))
+	hud.game = self
 	hud.player = player
 	hud.building = building
 	hud.waves = waves
@@ -95,6 +108,27 @@ func _ready() -> void:
 	world_viewport.add_child(mechanics)
 	mechanics.configure(self)
 	projectiles.mechanics = mechanics
+	preparedness = Preparedness.new()
+	preparedness.name = "Preparedness"
+	world_viewport.add_child(preparedness)
+	preparedness.configure(self)
+	tremor = TremorSystem.new()
+	tremor.name = "TremorSystem"
+	world_viewport.add_child(tremor)
+	tremor.configure(self)
+	tutorial = TutorialGuide.new()
+	tutorial.name = "TutorialGuide"
+	add_child(tutorial)
+	waves.preparedness = preparedness
+	waves.tremor = tremor
+	waves.tutorial = tutorial
+	tutorial.configure(self)
+	player.stair_blocked.connect(tremor.note_stair_attempt)
+	feel_fx = FeelFX.new()
+	feel_fx.name = "FeelFX"
+	world_viewport.add_child(feel_fx)
+	feel_fx.configure(self)
+	hud.configure_feel()
 	upgrade_overlay = UpgradeOverlay.new()
 	upgrade_overlay.name = "UpgradeOverlay"
 	$Interface.add_child(upgrade_overlay)
@@ -132,7 +166,7 @@ func _ready() -> void:
 
 func set_frontend_active(active: bool) -> void:
 	# Freeze simulation and gameplay input without freezing rain, room lamps or BGM.
-	for node: Node in [player,waves,loot,mechanics,projectiles,telegraphs]:
+	for node: Node in [player,waves,loot,mechanics,projectiles,telegraphs,preparedness,tutorial]:
 		node.set_physics_process(not active)
 	player.controls_locked = active
 	player.set_process_input(not active)
@@ -168,6 +202,10 @@ func _clip_bosses_at_ground() -> void:
 func _configure_pixel_view() -> void:
 	world_container.stretch_shrink = pixel_scale
 	game_camera.zoom = Vector2.ONE * base_zoom / float(pixel_scale)
+
+## Player damage scale from hazards: the tutorial fight is gentler.
+func hazard_scale() -> float:
+	return tutorial.easing() if tutorial != null else 1.0
 
 ## World position -> 1920x1080 HUD/screen position (through camera and pixel upscale).
 func world_to_screen(point: Vector2) -> Vector2:
@@ -217,11 +255,35 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 func reset_game() -> void:
+	clear_hitstop()
+	resetting = true
+	phase_checkpoint = null
 	waves.reset_cycle()
 	player.reset_player()
 	feedback.clear()
 	hud.hit_flash = 0.0
 	game_camera.clear_shake()
+	if feel_fx != null: feel_fx.clear()
+	labels.clear_feel()
+	hud.reset_feel()
+	resetting = false
+
+## R on defeat returns to preparation with the loadout/world at this boss entry.
+func retry_phase() -> void:
+	if not waves.failed or phase_checkpoint == null:
+		return
+	var saved: PhaseCheckpoint = phase_checkpoint
+	reset_game()
+	resetting = true
+	saved.restore(self)
+	resetting = false
+	phase_checkpoint = saved
+	waves.phase_changed.emit()
+	sound.play("ui_confirm")
+
+func select_section(index: int) -> void:
+	if index >= 0 and index < DisasterWaveManager.CAMPAIGN.size():
+		waves.start_siege(DisasterWaveManager.CAMPAIGN[index], true)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.physical_keycode == KEY_F9 and not event.echo:
@@ -229,19 +291,22 @@ func _unhandled_input(event: InputEvent) -> void:
 	if waves.upgrade_pending or event.is_echo():
 		return
 	if event.is_action_pressed("reset_player"):
-		reset_game()
+		if waves.failed: retry_phase()
+		else: reset_game()
 	elif waves.debug_enabled and event.is_action_pressed("upgrade_test"):
 		waves.test_upgrades()
 	elif event.is_action_pressed("repair"):
-		loot.repair_current_room()
+		# Preparedness tasks first; otherwise E repairs / installs as before.
+		if not preparedness.interact():
+			loot.repair_current_room()
 	elif event.is_action_pressed("start_wave"):
 		waves.start_next_wave()
 	else:
-		# Step 4.9: 1-6 jump straight to a boss with a fresh world. Inside the card
+		# 1-4 select a campaign section with a fresh world. Inside the card
 		# modal _input has already consumed 1/2/3 as card choices.
-		for mode: int in range(BOSS_SHORTCUTS.size()):
-			if event.is_action_pressed(BOSS_SHORTCUTS[mode]):
-				waves.start_siege(mode as DisasterWaveManager.Mode, true)
+		for section: int in range(BOSS_SHORTCUTS.size()):
+			if event.is_action_pressed(BOSS_SHORTCUTS[section]):
+				select_section(section)
 				return
 
 func _on_fusion_burst() -> void:
@@ -251,7 +316,30 @@ func _on_dash_started() -> void:
 	game_camera.apply_shake(2.0, 0.09)
 
 func _on_player_damaged(remaining_health: float) -> void:
-	hud.hit_flash = 0.2
+	hud.on_damage()
 	game_camera.apply_shake(9.0, 0.25)
 	if remaining_health <= 0:
 		waves.fail_siege()
+	else: hit_stop()
+
+## A generation token prevents an old real-time timer from ending a newer stop.
+func hit_stop() -> void:
+	var now: int = Time.get_ticks_usec()
+	if not hitstop_enabled or hitstop_active or player.health <= 0 or waves.failed or waves.victory or waves.state != DisasterWaveManager.State.SIEGE_PHASE or get_tree().paused or now - _hitstop_last_usec < 300000: return
+	hitstop_active = true
+	_hitstop_last_usec = now
+	_hitstop_generation += 1
+	var generation: int = _hitstop_generation
+	Engine.time_scale = .05
+	await get_tree().create_timer(.06, true, false, true).timeout
+	if generation == _hitstop_generation:
+		hitstop_active = false
+		Engine.time_scale = 1.0
+
+func clear_hitstop() -> void:
+	_hitstop_generation += 1
+	hitstop_active = false
+	Engine.time_scale = 1.0
+
+func _exit_tree() -> void:
+	clear_hitstop()

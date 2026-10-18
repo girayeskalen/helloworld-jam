@@ -302,11 +302,11 @@ func _loot_spawn_checks(p: SiegePlayer, b: ApartmentBuilding, loot: LootSystem) 
 			previous = index
 			if loot.items.size() >= 3:
 				loot.items.pop_front()
-	var spacing: bool = times[0] >= 5.5 and times[0] <= 6.52
+	var spacing: bool = times[0] >= 4.6 and times[0] <= 5.42
 	for i: int in range(1, times.size()):
 		var gap: float = times[i] - times[i - 1]
-		spacing = spacing and gap >= 5.5 - 0.02 and gap <= 6.5 + 0.02
-	_check(times.size() == 40 and spacing, "Every drop, including the first, waits 5.5-6.5 s")
+		spacing = spacing and gap >= 4.6 - 0.02 and gap <= 5.4 + 0.02
+	_check(times.size() == 40 and spacing, "Every drop, including the first, waits 4.6-5.4 s (20% more supplies)")
 	_check(not repeat, "Each drop lands in a different room than the previous one")
 	_check(not bad_room, "Drops avoid the player's room and collapsed rooms")
 	_check(rooms_seen.size() >= 10, "Drops spread across the building (%d rooms)" % rooms_seen.size())
@@ -388,7 +388,7 @@ func _repair_checks(p: SiegePlayer, b: ApartmentBuilding, w: DisasterWaveManager
 	loot.column_kits = 1
 	_check(loot.can_offer_repair(), "Damaged room plus cement enables repair")
 	await _rendered()
-	_check(game.labels.repair_markers == 1, "Damaged room has exactly one ONAR marker")
+	_check(game.labels.repair_markers == 1, "Damaged room has exactly one repair marker")
 	await _tap(KEY_E)
 	await _frames(1)
 	_check(room.hp == 85 and room.reinforcement_level == 3 and loot.column_kits == 0 and loot.barricade_kits == 0, "Siege column kit: +45 HP and structural support; barrier remains installed")

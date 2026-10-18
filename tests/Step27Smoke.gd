@@ -323,7 +323,7 @@ func _run() -> void:
 	p.current_floor = 1
 	game.storm.plan_pattern(w, 1, 1)
 	await _frames(3)
-	_check(game.labels.drawn >= 2, "Safe-floor plate and boss attack name are drawn in screen space (%d)" % game.labels.drawn)
+	_check(game.labels.safe_frames == 1 and game.labels.texts_drawn == 0, "Safe floor is framed in screen space without a plate or attack name (%d)" % game.labels.drawn)
 	w.reset_cycle()
 	p.reset_player()
 	for argument: String in OS.get_cmdline_user_args():

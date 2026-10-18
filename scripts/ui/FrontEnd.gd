@@ -1,12 +1,14 @@
 class_name SiegeFrontEnd
 extends CanvasLayer
-## A live view of the authored apartment through a rain-streaked window.
-## Gameplay is gated explicitly; weather, lighting and the existing score keep going.
+## Main menu over the live apartment: primary entries and four section choices on a shaded left
+## side, the real building lit by rain and lamps on the right. Gameplay is gated
+## explicitly; weather, lighting and the existing score keep going.
 signal exit_requested
 var game: MainGame
 var active: bool = true
 var settings_open: bool = false
 var launching: bool = false
+var selected_section: int = -1
 var settings_path: String = "user://siege-settings.cfg"
 var screen: Control
 var board: Control
@@ -18,9 +20,13 @@ var volume_text: Label
 var clock: float = 0.0
 var _loading: bool = true
 var _quitting: bool = false
+const LEFT: float = 148.0
+## One line of theme under the title: preparation is the game.
+const TAGLINE: String = "Hazırlık hayat kurtarır"
 
 func configure(owner_game: MainGame, preferences_path: String) -> void:
 	game = owner_game
+	game.hitstop_enabled = true
 	settings_path = preferences_path
 	layer = 50
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -37,12 +43,12 @@ func configure(owner_game: MainGame, preferences_path: String) -> void:
 	home.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	home.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	screen.add_child(home)
-	buttons["play"] = FieldUI.button(home,"SAHAYA GİR",Rect2(148,560,540,78),start_run,true)
-	buttons["settings"] = FieldUI.button(home,"AYARLAR",Rect2(148,654,540,72),show_settings)
-	buttons["exit"] = FieldUI.button(home,"ÇIKIŞ",Rect2(148,742,540,72),quit_game)
-	FieldUI.label(home,"Gece uzun. Bina ayakta kalmalı.",Rect2(148,431,650,44),25,FieldUI.PAPER)
-	FieldUI.label(home,"FIRTINA  /  DEPREM  /  SEL",Rect2(150,493,600,28),13,FieldUI.MUTED)
-	FieldUI.label(home,"Yön tuşlarıyla seç  ·  Enter ile başla",Rect2(150,854,650,28),15,FieldUI.MUTED)
+	buttons["play"] = UIStyle.item(home, "Başla", Rect2(LEFT - 28, 536, 460, 52), start_run)
+	buttons["settings"] = UIStyle.item(home, "Ayarlar", Rect2(LEFT - 28, 596, 460, 52), show_settings)
+	buttons["exit"] = UIStyle.item(home, "Çıkış", Rect2(LEFT - 28, 656, 460, 52), quit_game)
+	UIStyle.label(home, "Bölüm seç", Rect2(LEFT, 748, 460, 32), UIStyle.SMALL, UIStyle.MUTED)
+	for index: int in range(GameHUD.SECTION_LABELS.size()):
+		buttons["section_%d" % index] = UIStyle.item(home, GameHUD.SECTION_LABELS[index], Rect2(LEFT - 28, 790 + index * 42, 460, 38), start_section.bind(index), UIStyle.SMALL)
 	_build_settings()
 	_load_settings()
 	_loading = false
@@ -55,25 +61,45 @@ func _build_settings() -> void:
 	options.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	options.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	screen.add_child(options)
-	FieldUI.label(options,"AYARLAR",Rect2(148,428,600,50),32)
-	FieldUI.label(options,"ANA SES",Rect2(150,513,200,28),14,FieldUI.MUTED)
-	volume_text = FieldUI.label(options,"",Rect2(577,513,110,28),16,FieldUI.PAPER)
-	volume_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	UIStyle.label(options, "Ses", Rect2(LEFT, 580, 120, 40), UIStyle.MEDIUM, UIStyle.MUTED)
 	volume = HSlider.new()
-	volume.position = Vector2(150,558)
-	volume.size = Vector2(538,35)
+	volume.position = Vector2(LEFT + 128, 586)
+	volume.size = Vector2(240, 24)
 	volume.min_value = 0
 	volume.max_value = SoundManager.MAX_LEVEL
 	volume.step = 1
-	volume.add_theme_color_override("font_color",FieldUI.AMBER)
+	_dress_slider(volume)
 	options.add_child(volume)
 	volume.value_changed.connect(_volume_changed)
-	buttons["mute"] = FieldUI.button(options,"",Rect2(148,620,540,65),game.sound.toggle_mute)
-	buttons["fullscreen"] = FieldUI.button(options,"",Rect2(148,703,540,65),_toggle_fullscreen)
-	buttons["back"] = FieldUI.button(options,"GERİ",Rect2(148,813,540,65),show_home)
-	FieldUI.label(options,"M: ses aç/kapat   ·   − / +: ses   ·   Esc: geri",Rect2(150,912,650,28),15,FieldUI.MUTED)
+	volume_text = UIStyle.label(options, "", Rect2(LEFT + 384, 580, 72, 40), UIStyle.MEDIUM, UIStyle.TEXT, HORIZONTAL_ALIGNMENT_RIGHT)
+	buttons["mute"] = UIStyle.item(options, "", Rect2(LEFT - 28, 640, 500, 52), game.sound.toggle_mute)
+	buttons["fullscreen"] = UIStyle.item(options, "", Rect2(LEFT - 28, 700, 500, 52), _toggle_fullscreen)
+	buttons["tutorial"] = UIStyle.item(options, "", Rect2(LEFT - 28, 760, 500, 52), _toggle_tutorial)
+	buttons["back"] = UIStyle.item(options, "Geri", Rect2(LEFT - 28, 844, 500, 52), show_home)
+
+## Flat track and a small square knob in the UI palette instead of the stock look.
+static func _dress_slider(slider: HSlider) -> void:
+	var track: StyleBoxFlat = StyleBoxFlat.new()
+	track.bg_color = UIStyle.FAINT
+	track.content_margin_top = 2
+	track.content_margin_bottom = 2
+	var filled: StyleBoxFlat = StyleBoxFlat.new()
+	filled.bg_color = UIStyle.TEXT
+	filled.content_margin_top = 2
+	filled.content_margin_bottom = 2
+	slider.add_theme_stylebox_override("slider", track)
+	slider.add_theme_stylebox_override("grabber_area", filled)
+	slider.add_theme_stylebox_override("grabber_area_highlight", filled)
+	var knob: Image = Image.create(10, 18, false, Image.FORMAT_RGBA8)
+	knob.fill(UIStyle.TEXT)
+	var texture: ImageTexture = ImageTexture.create_from_image(knob)
+	for icon: String in ["grabber", "grabber_highlight", "grabber_disabled"]:
+		slider.add_theme_icon_override(icon, texture)
+	var focus: StyleBoxEmpty = StyleBoxEmpty.new()
+	slider.add_theme_stylebox_override("focus", focus)
 
 func open() -> void:
+	game.clear_hitstop()
 	game.pause_menu.set_open(false)
 	game.reset_game()
 	active = true
@@ -99,7 +125,14 @@ func show_home() -> void:
 	board.queue_redraw()
 
 func start_run() -> void:
+	_launch(-1)
+
+func start_section(index: int) -> void:
+	if index >= 0 and index < DisasterWaveManager.CAMPAIGN.size(): _launch(index)
+
+func _launch(section: int) -> void:
 	if launching or not active: return
+	selected_section = section
 	launching = true
 	game.sound.play("ui_confirm")
 	var tween: Tween = create_tween()
@@ -112,9 +145,11 @@ func _begin_run() -> void:
 	launching = false
 	screen.visible = false
 	game.set_frontend_active(false)
+	if selected_section >= 0: game.select_section(selected_section)
 	get_viewport().gui_release_focus()
 
 func quit_game() -> void:
+	game.clear_hitstop()
 	if _quitting: return
 	_quitting = true
 	_save_settings()
@@ -146,6 +181,8 @@ func _input(event: InputEvent) -> void:
 		game.sound.change_volume(PauseMenu._volume_step(key))
 	elif key.physical_keycode == KEY_F11:
 		_toggle_fullscreen()
+	elif not settings_open and key.physical_keycode >= KEY_1 and key.physical_keycode <= KEY_4:
+		start_section(key.physical_keycode - KEY_1)
 	else: return
 	get_viewport().set_input_as_handled()
 
@@ -161,20 +198,30 @@ func _toggle_fullscreen() -> void:
 	_save_settings()
 	_refresh()
 
+## The first preparation and disaster teach by doing; on by default, remembered.
+func _toggle_tutorial() -> void:
+	game.tutorial.set_enabled(not game.tutorial.enabled)
+	game.sound.play("ui_toggle")
+	_save_settings()
+	_refresh()
+
 func _settings_changed() -> void:
 	_refresh()
 	if not _loading: _save_settings()
 
 func _refresh() -> void:
 	volume.set_value_no_signal(game.sound.volume_level)
-	volume_text.text = "%d / 10" % game.sound.volume_level
-	(buttons["mute"] as Button).text = "SES  /  KAPALI" if game.sound.muted else "SES  /  AÇIK"
-	(buttons["fullscreen"] as Button).text = "EKRAN  /  TAM EKRAN" if _fullscreen() else "EKRAN  /  PENCERE"
+	volume_text.text = str(game.sound.volume_level)
+	(buttons["mute"] as Button).text = "Ses kapalı" if game.sound.muted else "Ses açık"
+	(buttons["fullscreen"] as Button).text = "Tam ekran" if _fullscreen() else "Pencere"
+	(buttons["tutorial"] as Button).text = "Öğretici açık" if game.tutorial.enabled else "Öğretici kapalı"
 	board.queue_redraw()
 
 func _load_settings() -> void:
+	game.tutorial.enabled = true
 	var config: ConfigFile = ConfigFile.new()
 	if config.load(settings_path) != OK: return
+	game.tutorial.enabled = bool(config.get_value("game","tutorial",true))
 	var target: int = clampi(int(config.get_value("audio","volume",8)),0,SoundManager.MAX_LEVEL)
 	if target != game.sound.volume_level: game.sound.change_volume(target-game.sound.volume_level)
 	if bool(config.get_value("audio","muted",false)) != game.sound.muted: game.sound.toggle_mute()
@@ -187,6 +234,7 @@ func _save_settings() -> void:
 	config.set_value("audio","volume",game.sound.volume_level)
 	config.set_value("audio","muted",game.sound.muted)
 	config.set_value("display","fullscreen",_fullscreen())
+	config.set_value("game","tutorial",game.tutorial.enabled)
 	var error: Error = config.save(settings_path)
 	if error != OK: push_warning("Ayarlar kaydedilemedi: %s" % error_string(error))
 
@@ -194,9 +242,6 @@ func _process(delta: float) -> void:
 	if not active: return
 	clock += delta
 	board.queue_redraw()
-
-func _text(point: Vector2, text: String, font_size: int, color: Color) -> void:
-	board.draw_string(ThemeDB.fallback_font,point,text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size,color)
 
 func _draw_board() -> void:
 	# The left is painted shadow; the right keeps the real apartment's depth.
@@ -208,22 +253,14 @@ func _draw_board() -> void:
 	for i: int in range(14):
 		board.draw_rect(Rect2(0,i*12,1920,12),Color("050b10",.65*(1.0-i/14.0)))
 		board.draw_rect(Rect2(0,1068-i*12,1920,12),Color("050b10",.8*(1.0-i/14.0)))
-	# A dark sill and water tracks place the viewer inside, looking into the rain.
-	board.draw_rect(Rect2(0,1036,1920,44),Color("080e12"))
-	board.draw_line(Vector2(0,1036),Vector2(1920,1036),Color("6b7875",.25),2)
-	board.draw_rect(Rect2(1858,0,15,1036),Color("0b1419",.85))
-	board.draw_line(Vector2(1857,0),Vector2(1857,1036),Color("697e86",.24),2)
+	# Faint rain on the glass between viewer and building.
 	for i: int in range(28):
 		var x: float = 812+fmod(i*137,1010)
 		var y: float = fposmod(i*83+clock*(14+i%6*6),1150)-100
 		board.draw_line(Vector2(x,y),Vector2(x-3,y+25+i%5*12),Color("a0b9bd",.05),1)
-	FieldUI.grain(board,Rect2(110,110,640,800),150)
-	board.draw_circle(Vector2(158,157),4,FieldUI.AMBER.darkened(.12+.1*sin(clock*.8)))
-	_text(Vector2(178,163),"AFET MÜDAHALE BİRİMİ",15,FieldUI.AMBER)
-	_text(Vector2(142,285),"AFET",100,FieldUI.PAPER)
-	_text(Vector2(142,388),"KUŞATMASI",90,FieldUI.PAPER)
-	# Thin worn paint across a few letter strokes, kept subtle for readability.
-	board.draw_line(Vector2(150,270),Vector2(390,270),Color("101a1d",.35),1)
-	board.draw_line(Vector2(270,368),Vector2(609,368),Color("101a1d",.3),1)
-	_text(Vector2(150,1000),"BİR BİNA. DÖRT AFET DALGASI.",13,FieldUI.MUTED)
-	_text(Vector2(1470,1000),"4 KAT   /   16 ODA",14,FieldUI.PAPER)
+	UIStyle.text(board, Vector2(LEFT, 392), "AFET", UIStyle.TITLE, UIStyle.TEXT)
+	UIStyle.text(board, Vector2(LEFT, 484), "KUŞATMASI", UIStyle.TITLE, UIStyle.TEXT)
+	if settings_open:
+		UIStyle.text(board, Vector2(LEFT, 552), "Ayarlar", UIStyle.MEDIUM, UIStyle.MUTED)
+	else:
+		UIStyle.text(board, Vector2(LEFT, 522), TAGLINE, UIStyle.SMALL, UIStyle.MUTED)

@@ -231,6 +231,14 @@ func _apply_state_to_props() -> void:
 			continue
 		if prop.kind in [BuildingProp.Kind.LAMP, BuildingProp.Kind.SKYLIGHT]:
 			continue
+		if prop.toppled:
+			prop.condition = BuildingProp.Condition.DAMAGED
+			continue
+		if prop.secured and prop.kind not in [BuildingProp.Kind.GAS_VALVE, BuildingProp.Kind.ELECTRICAL]:
+			prop.stop_shaking()
+			prop.tilt = 0.0
+			prop.condition = BuildingProp.Condition.REINFORCED
+			continue
 		if has_reinforcement(Reinforcement.ANCHOR):
 			prop.stop_shaking()
 			prop.tilt = 0.0

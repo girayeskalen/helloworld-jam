@@ -4,7 +4,7 @@ extends SceneTree
 var game: MainGame
 var checks: int = 0
 var failures: int = 0
-const NAMES: Array[String] = ["FIRTINA","DEPREM","SEL","DEPREM • SEL • FIRTINA"]
+const NAMES: Array[String] = ["FIRTINA","DEPREM","SEL","AFET"]
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -39,13 +39,13 @@ func _phases() -> void:
 		game.reset_game()
 		w.autoplay = false
 		w.start_siege(mode as DisasterWaveManager.Mode,true)
-		_check(w.boss_name() == NAMES[mode] and w.wave_number == mode+1,"Exact boss name/number for phase %d" % (mode+1))
+		_check(w.boss_name() == NAMES[mode] and w.wave_number == DisasterWaveManager.CAMPAIGN.find(mode)+1,"Exact boss name/number for phase %d" % (mode+1))
 		_check(w.intro_duration() >= 2.2 and w.intro_duration() <= 2.8 and game.player.controls_locked,"Cinematic intro lasts 2.2–2.8s and locks gameplay")
 		w.plan_attack(w._attack(HazardAttack.Kind.GLASS,0,Vector2.ZERO,Vector2.RIGHT))
 		w.advance_wave(w.intro_duration()*.5)
 		game.cinematic._process(0)
 		_check(game.cinematic.letterbox > .99 and game.game_camera.cinematic_offset.length() > 1 and game.game_camera.zoom.x > game.base_zoom/game.pixel_scale,"Mid-intro letterbox and gentle camera focus are active")
-		_check(game.telegraphs.pending.is_empty() and game.projectiles.active_count() == 0 and w.siege_remaining == 50 and game.player.health == 100,"Intro cannot launch hazards or spend player HP/fight seconds")
+		_check(game.telegraphs.pending.is_empty() and game.projectiles.active_count() == 0 and w.siege_remaining == w.siege_duration and game.player.health == 100,"Intro cannot launch hazards or spend player HP/fight seconds")
 		w.advance_wave(w.transition_remaining)
 		game.cinematic._process(0)
 		_check(w.state == DisasterWaveManager.State.SIEGE_PHASE and not game.player.controls_locked and game.cinematic.letterbox == 0 and game.game_camera.cinematic_offset == Vector2.ZERO,"Battle starts once, restores input/framing and removes cinema bars")
@@ -82,7 +82,7 @@ func _phases() -> void:
 	game.reset_game()
 	for key: int in range(KEY_1,KEY_4+1):
 		await _tap(key)
-		_check(w.mode == key-KEY_1 and w.state == DisasterWaveManager.State.WAVE_INTRO,"Physical shortcut %d selects its correct phase" % (key-KEY_1+1))
+		_check(w.mode == DisasterWaveManager.CAMPAIGN[key-KEY_1] and w.wave_number == key-KEY_1+1 and w.state == DisasterWaveManager.State.WAVE_INTRO,"Physical shortcut %d selects its campaign section" % (key-KEY_1+1))
 	var saved: int = w.mode
 	await _tap(KEY_5)
 	await _tap(KEY_6)

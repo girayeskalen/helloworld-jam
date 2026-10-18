@@ -23,6 +23,7 @@ const MAX_LEVEL: int = 10
 const PAUSE_CUTOFF: float = 650.0
 ## key: [volume_db, bus, throttle seconds].
 const MIX: Dictionary = {
+	"safe": [-12.0, BUS_SFX, .3], "karne_ok": [-12.0, BUS_UI, .05], "karne_miss": [-12.0, BUS_UI, .05],
 	"rain": [-17.0, BUS_MUSIC, 0.0], "drone": [-15.0, BUS_MUSIC, 0.0], "siege_pad": [-15.0, BUS_MUSIC, 0.0],
 	"kick": [-12.0, BUS_MUSIC, 0.05], "tick": [-24.0, BUS_MUSIC, 0.05], "clank": [-25.0, BUS_MUSIC, 0.05],
 	"warn": [-12.0, BUS_SFX, 0.14],
@@ -30,6 +31,8 @@ const MIX: Dictionary = {
 	"ui_resume": [-11.0, BUS_UI, 0.05], "ui_toggle": [-12.0, BUS_UI, 0.05],
 	"storm_in": [-6.0, BUS_SFX, 0.3], "storm_out": [-7.0, BUS_SFX, 0.3], "quake_in": [-6.0, BUS_SFX, 0.3],
 	"quake_out": [-6.0, BUS_SFX, 0.3], "flood_in": [-6.0, BUS_SFX, 0.3], "flood_out": [-7.0, BUS_SFX, 0.3],
+	"tremor": [-6.0, BUS_SFX, 1.0], "topple": [-8.0, BUS_SFX, 0.12], "secure": [-9.0, BUS_SFX, 0.1], "cover": [-13.0, BUS_SFX, 0.2],
+	"alarm": [-11.0, BUS_SFX, 0.6],
 	"fire_in": [-6.0, BUS_SFX, 0.3], "fire_out": [-8.0, BUS_SFX, 0.3], "titan_in": [-4.0, BUS_SFX, 0.3],
 	"titan_fuse": [-3.0, BUS_SFX, 0.3], "titan_out": [-4.0, BUS_SFX, 0.3],
 	"cast_storm": [SFX_REFERENCE_DB, BUS_SFX, 0.14], "cast_quake": [SFX_REFERENCE_DB, BUS_SFX, 0.14],
@@ -52,6 +55,7 @@ const CASTS: Array[String] = ["cast_storm", "cast_quake", "cast_flood", "cast_fi
 const INTROS: Array = [["storm_in"], ["quake_in"], ["flood_in"], ["titan_in"]]
 const OUTROS: Array = [["storm_out"], ["quake_out"], ["flood_out"], ["titan_out"]]
 var bgm_player: AudioStreamPlayer
+var bgm_layer: AudioStreamPlayer
 ## BGM playback rate during the fight climax (~+5% tempo).
 const CLIMAX_PITCH: float = 1.05
 var bgm_restarts: int = 0
@@ -80,6 +84,7 @@ var _cancel: bool = false
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _last_state: int = -1
 var _was_failed: bool = false
+var _room_states: Dictionary = {}
 var _was_victory: bool = false
 
 func _ready() -> void:
@@ -106,7 +111,15 @@ func _ready() -> void:
 	bgm_player.process_mode = Node.PROCESS_MODE_ALWAYS
 	bgm_player.stream = MusicScore.make_stream()
 	add_child(bgm_player)
+	bgm_layer = AudioStreamPlayer.new()
+	bgm_layer.name = "BGM_Layer"
+	bgm_layer.bus = "Master"
+	bgm_layer.volume_db = -60.0
+	bgm_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	bgm_layer.stream = MusicScore.make_layer_stream()
+	add_child(bgm_layer)
 	bgm_player.play()
+	bgm_layer.play()
 	_recipes = SoundRecipes.all()
 	_thread = Thread.new()
 	_thread.start(_bake_worker.bind(_recipes))
@@ -151,6 +164,15 @@ func configure(owner_game: MainGame) -> void:
 	game.upgrades.upgrade_selected.connect(func(_id: int) -> void: play("ui_confirm"))
 	game.mechanics.activated.connect(_on_module_activated)
 	game.mechanics.blocked.connect(func(_point: Vector2) -> void: play("block"))
+	game.preparedness.task_done.connect(_on_task_done)
+	game.preparedness.bag_used.connect(func(_point: Vector2) -> void: play("heal"))
+	game.preparedness.window_shattered.connect(func(_point: Vector2) -> void: play("impact_glass", 8.0))
+	game.tremor.warned.connect(func(_seconds: float) -> void: play("tremor"))
+	game.tremor.toppled.connect(func(_prop: BuildingProp) -> void: play("topple"))
+	game.tremor.debris.connect(_on_debris)
+	game.upgrade_overlay.karne_row_revealed.connect(_on_karne_row)
+	game.hud.karne_row_revealed.connect(_on_karne_row)
+	game.player.cover_started.connect(func() -> void: play("cover"))
 	for room: RoomDiorama in game.building.rooms:
 		room.state_changed.connect(_on_room_state)
 	for boss: DisasterBoss in w.bosses():
@@ -311,7 +333,10 @@ func advance(delta: float) -> void:
 	# unexpected stop without fighting explicit Master mute or tree pause.
 	if bgm_player != null and not bgm_player.playing and not muted:
 		bgm_player.play()
+		bgm_layer.play(bgm_player.get_playback_position())
 		bgm_restarts += 1
+	elif bgm_layer != null and bgm_player.playing and not bgm_layer.playing and not muted:
+		bgm_layer.play(bgm_player.get_playback_position())
 	if not is_baked(): _drain_baked()
 	var frozen: bool = get_tree() != null and get_tree().paused
 	if not frozen:
@@ -332,6 +357,11 @@ func _update_music(delta: float, frozen: bool) -> void:
 	# Step 7 climax (last 15 s): the score runs a touch faster; eased, never a jump.
 	if bgm_player != null and not frozen:
 		bgm_player.pitch_scale = move_toward(bgm_player.pitch_scale, CLIMAX_PITCH if w.is_climax() else 1.0, delta * 0.12)
+	if bgm_layer != null:
+		bgm_layer.pitch_scale = bgm_player.pitch_scale
+		var menu: bool = game.front_end != null and game.front_end.active
+		var layered: bool = siege and not menu and (w.is_climax() or w.siege_remaining <= 10.0 or w.nova)
+		bgm_layer.volume_db = move_toward(bgm_layer.volume_db, -10.0 if layered else -60.0, 62.5 * delta / maxf(.001, Engine.time_scale))
 	music_target["rain"] = -31.0
 	music_target["drone"] = -60.0
 	music_target["siege_pad"] = -60.0
@@ -389,6 +419,16 @@ static func impact_key(attack: HazardAttack) -> String:
 		HazardAttack.Kind.ROW_SWEEP: return "impact_stone" if attack.source == 1 else "whoosh"
 	return "whoosh"
 
+func _on_task_done(kind: int, _point: Vector2) -> void:
+	play(["secure", "secure", "safety", "safety", "pickup"][clampi(kind, 0, 4)])
+
+func _on_debris(covered: bool) -> void:
+	play("impact_stone", 3.0 if covered else 6.0)
+	if covered: play("safe")
+
+func _on_karne_row(ok: bool) -> void:
+	play("karne_ok" if ok else "karne_miss")
+
 func _on_land(impact: float) -> void:
 	play("drop_land", lerpf(-8.0, 0.0, clampf(impact, 0.0, 1.0)))
 
@@ -408,8 +448,13 @@ func _on_collect(kind: int) -> void:
 func _on_cards() -> void:
 	if game.upgrades.pending: play("ui_open")
 
-func _on_room_state(_room: RoomDiorama, state: int) -> void:
+func _on_room_state(room: RoomDiorama, state: int) -> void:
+	var previous: int = int(_room_states.get(room, RoomDiorama.RoomState.INTACT))
+	_room_states[room] = state
 	if state == RoomDiorama.RoomState.COLLAPSED: play("collapse_room")
+	# A room newly needs repair (or got worse) during a fight: one alert ping.
+	elif state in [RoomDiorama.RoomState.DAMAGED, RoomDiorama.RoomState.CRITICAL] and state > previous and game.waves.state == DisasterWaveManager.State.SIEGE_PHASE:
+		play("alarm")
 
 func _on_module_activated(id: int, _point: Vector2) -> void:
 	if id == SiegeUpgrades.Kind.AWARE_BAG: play("heal")

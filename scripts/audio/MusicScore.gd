@@ -16,6 +16,61 @@ const DRUM_GAIN: float = .25
 const LEAD_GAIN: float = .22
 static var _pcm: PackedByteArray = PackedByteArray()
 static var bake_usec: int = 0
+static var _layer_pcm: PackedByteArray = PackedByteArray()
+static var layer_bake_count: int = 0
+static var layer_bake_usec: int = 0
+
+static func make_layer_stream() -> AudioStreamWAV:
+	if _layer_pcm.is_empty(): _bake_layer()
+	var wav: AudioStreamWAV = AudioStreamWAV.new()
+	wav.mix_rate = RATE
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.stereo = false
+	wav.data = _layer_pcm
+	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wav.loop_begin = 0
+	wav.loop_end = SAMPLE_COUNT
+	return wav
+
+## D minor, matching the score's grid: eighth-note D2/D3, offbeat filtered hats,
+## quiet D5-F5-A5. Warm additive partials remain below 3.6 kHz.
+static func _bake_layer() -> void:
+	var started: int = Time.get_ticks_usec()
+	var samples: PackedFloat32Array = PackedFloat32Array()
+	samples.resize(SAMPLE_COUNT)
+	var notes: Array[float] = [587.3295, 698.4565, 880.0]
+	var noise: int = 672381
+	var noise_low: float = 0.0
+	var low: float = 0.0
+	var mean: float = 0.0
+	var coefficient: float = 1.0 - exp(-TAU * 1800.0 / RATE)
+	for i: int in range(SAMPLE_COUNT):
+		var t: float = float(i) / RATE
+		var eighth: float = fmod(t, BEAT * .5)
+		var step: int = int(t / (BEAT * .5))
+		var frequency: float = 73.4162 * (1.0 if step % 2 == 0 else 2.0)
+		var env: float = SoundSynth.envelope(eighth, BEAT * .5, [.008, .06, .35, .04])
+		var phase: float = TAU * frequency * eighth
+		var bass: float = (sin(phase) + .2 * sin(phase * 2) + .08 * sin(phase * 3)) * .3 * env
+		var arp: float = sin(TAU * notes[step % 3] * eighth) * env * exp(-eighth * 10) * .065
+		noise = (noise * 1664525 + 1013904223) & 0x7fffffff
+		var white: float = float(noise) / 1073741824.0 - 1.0
+		noise_low = lerpf(noise_low, white, .08)
+		var hat_time: float = eighth - BEAT * .25
+		var hat: float = (white - noise_low) * SoundSynth.envelope(hat_time, .10, [.006, .025, .0, .025]) * .04
+		low = lerpf(low, bass + arp + hat, coefficient)
+		samples[i] = low
+		mean += low
+	mean /= SAMPLE_COUNT
+	var peak: float = .000001
+	for i: int in range(SAMPLE_COUNT):
+		var edge: float = minf(1, minf(float(i), float(SAMPLE_COUNT - 1 - i)) / (RATE * .008))
+		samples[i] = (samples[i] - mean) * edge
+		peak = maxf(peak, absf(samples[i]))
+	_layer_pcm.resize(SAMPLE_COUNT * 2)
+	for i: int in range(SAMPLE_COUNT): _layer_pcm.encode_s16(i * 2, int(samples[i] * .55 / maxf(.55, peak) * 32767))
+	layer_bake_count += 1
+	layer_bake_usec = Time.get_ticks_usec() - started
 
 static func make_stream() -> AudioStreamWAV:
 	if _pcm.is_empty(): _bake()

@@ -264,9 +264,13 @@ func _storm_swoop(b: ApartmentBuilding, serial: int, floor_index: int) -> void:
 
 ## Wind-up lasts exactly as long as the attack's warning.
 func cue_attack(seconds: float) -> void:
+	wind_up(seconds)
+	cued.emit(seconds)
+
+## The same wind-up pose without announcing a pattern (tremor stomp).
+func wind_up(seconds: float) -> void:
 	_charge_total = maxf(seconds, 0.01)
 	_charge_left = _charge_total
-	cued.emit(seconds)
 
 func is_charging() -> bool:
 	return _charge_left > 0.0

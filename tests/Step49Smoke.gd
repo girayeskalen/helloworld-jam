@@ -66,8 +66,8 @@ func _hud() -> void:
 	var removed: bool = true
 	for text: String in REMOVED_HUD: removed = removed and not hud.drawn_texts.has(text)
 	_check(removed, "Old title, right-hand status box and bottom control table are gone")
-	for text: String in ["100/100", "%100", "FIRTINA", "4s", "KOLON", "SABİTLE", "GÜVENLİK", "x0"]:
-		_check(hud.drawn_texts.has(text), "Minimal HUD draws %s" % text)
+	_check(hud.drawn_texts == PackedStringArray(["DEPREM", "1 Deprem", " · ", "2 Fırtına", " · ", "3 Sel", " · ", "4 Afet"]), "Preparation HUD prints the coming boss and section shortcuts (%s)" % ", ".join(hud.drawn_texts))
+	_check(hud.room_color(game.building.rooms[0]) == GameHUD.ROOM_INTACT and hud.slot_count(0) == 0 and hud.slot_count(1) == 0 and hud.slot_count(2) == 0, "Health, rooms and empty kit slots are bars, cells and icons without numbers")
 	var clean: bool = true
 	for rect: Rect2 in hud.drawn_rects:
 		if rect.end.y > 700.0: clean = clean and (rect.end.x <= hud.slot_rect(2).end.x + 30.0 or rect.position.x >= GameHUD.BOSS_BAR.position.x-120)
@@ -75,10 +75,10 @@ func _hud() -> void:
 	_check(hud.slot_rect(2).end.x < 300.0 and hud.slot_rect(0).position.y > 940.0, "Three compact slots sit in the bottom-left corner")
 	Input.action_press(&"controls_help")
 	await _rendered()
-	_check(hud.drawn_texts.has("KONTROLLER") and hud.drawn_texts.has("A / D") and hud.drawn_texts.has("1 – 4"), "Holding Tab/H shows the updated controls card")
+	_check(hud.drawn_texts.has("A D") and hud.drawn_texts.has("SHIFT") and hud.drawn_texts.has("1-4") and not hud.drawn_texts.has("KONTROLLER"), "Holding Tab/H shows the compact key list")
 	Input.action_release(&"controls_help")
 	await _rendered()
-	_check(not hud.drawn_texts.has("A / D"), "Releasing Tab/H hides the help again")
+	_check(not hud.drawn_texts.has("A D"), "Releasing Tab/H hides the help again")
 	game.waves.start_next_wave()
 	game.waves.advance_wave(game.waves.intro_duration())
 	game.building.pacing_enabled = false
@@ -88,9 +88,11 @@ func _hud() -> void:
 	game.loot.activate_safety(game.building.rooms[5])
 	game.building.rooms[3].apply_damage(44)
 	await _rendered()
-	for text: String in ["85/100", "FIRTINA", "50s", "x2", "x1"]:
-		_check(hud.drawn_texts.has(text), "Siege HUD shows %s" % text)
-	_check(hud.drawn_texts.has("%%%d" % roundi(game.building.integrity)), "Building bar prints integrity as %%NN")
+	_check(hud.drawn_texts.has("DEPREM") and hud.drawn_texts.has("2") and hud.drawn_texts.has("1"), "Siege HUD shows the boss name and plain kit counts (%s)" % ", ".join(hud.drawn_texts))
+	var words: bool = true
+	for text: String in hud.drawn_texts: words = words and (text == "DEPREM" or text.is_valid_int())
+	_check(words, "No health, seconds or percentage numbers are printed during the siege")
+	_check(hud.room_color(game.building.rooms[3]) == UIStyle.ALERT and hud.room_color(game.building.rooms[0]) == GameHUD.ROOM_INTACT, "Building state reads from the room mini-map (damaged room turns amber)")
 	_check(hud.slot_count(0) == 2 and hud.slot_count(1) == 1 and hud.slot_count(2) == 1, "Slots count column kits, fixing kits and protected rooms")
 	var top_ok: bool = true
 	for rect: Rect2 in hud.drawn_rects:
@@ -102,7 +104,7 @@ func _hud() -> void:
 
 func _timing() -> void:
 	var w: DisasterWaveManager = game.waves
-	_check(w.siege_duration == 50.0 and w.build_duration == 4.0 and DisasterWaveManager.TOTAL_WAVES == 4 and DisasterWaveManager.Mode.size() == 4, "Four phases of 50 seconds, with four-second construction")
+	_check(w.siege_duration == 40.0 and w.build_duration == 10.0 and DisasterWaveManager.TOTAL_WAVES == 4 and DisasterWaveManager.Mode.size() == 4, "Four phases of 40 seconds, with 10-second Hazırlık")
 	game.reset_game()
 	_quiet()
 	var flashes: int = game.weather.flash_count
@@ -115,16 +117,16 @@ func _timing() -> void:
 	w.advance_wave(.002)
 	_check(fusions == 1 and game.weather.flash_count > flashes and game.game_camera.shake_strength() > 10.0, "At 55% the four energies collide: lightning flash and heavy shake")
 	w.advance_wave(1.258)
-	_check(w.state == DisasterWaveManager.State.WAVE_INTRO and is_equal_approx(w.siege_remaining, 50.0), "Fusion cannot end before 2.0 s nor spend fight time")
+	_check(w.state == DisasterWaveManager.State.WAVE_INTRO and is_equal_approx(w.siege_remaining, w.siege_duration), "Fusion cannot end before 2.0 s nor spend fight time")
 	w.advance_wave(.001)
 	_check(w.state == DisasterWaveManager.State.SIEGE_PHASE and game.titan.fusion == 1.0 and fusions == 1, "Titan is formed exactly at 2.0 s; the collision fires once")
-	_check(w.boss_name() == "DEPREM • SEL • FIRTINA" and w.phase_label() == "AFET KUŞATMASI", "Exact plain final boss name and siege label")
-	w.advance_wave(34.999)
-	_check(not w.nova, "No nova before the final 15 seconds")
+	_check(w.boss_name() == "AFET" and w.phase_label() == "AFET KUŞATMASI", "Exact plain final boss name and siege label")
+	w.advance_wave(27.999)
+	_check(not w.nova, "No nova before the final 12 seconds")
 	w.advance_wave(.002)
-	_check(w.nova and w.phase_label() == "SON 15 SANİYE · KATAKLİZMA NOVA", "Nova begins in the last 15 seconds")
-	w.advance_wave(15.0)
-	_check(w.state == DisasterWaveManager.State.WAVE_OUTRO and not w.nova, "50 s ends the final fight and clears the overload")
+	_check(w.nova and w.phase_label() == "SON 12 SANİYE · KATAKLİZMA NOVA", "Nova begins in the last 12 seconds")
+	w.advance_wave(12.0)
+	_check(w.state == DisasterWaveManager.State.WAVE_OUTRO and not w.nova, "40 s ends the final fight and clears the overload")
 	w.advance_wave(DisasterWaveManager.OUTRO_DURATION)
 	_check(w.victory and w.completed_waves == 4, "Fourth retreat is the campaign victory")
 
@@ -141,7 +143,7 @@ func _shortcuts() -> void:
 	var keys: Array[int] = [KEY_1, KEY_2, KEY_3]
 	for mode: int in range(3):
 		await _tap(keys[mode])
-		_check(w.mode == mode and w.wave_number == mode + 1 and not game.titan.visible, "Key %d starts boss mode %d with a fresh world" % [mode + 1, mode])
+		_check(w.mode == DisasterWaveManager.CAMPAIGN[mode] and w.wave_number == mode + 1 and not game.titan.visible, "Key %d starts its campaign section with a fresh world" % (mode + 1))
 	w.state = DisasterWaveManager.State.BUILD_PREPARATION_PHASE
 	game.upgrades.open_selection()
 	var offered: int = game.upgrades.offers[2]
@@ -294,7 +296,7 @@ func _nova() -> void:
 	var l: LootSystem = game.loot
 	l.clear_drops()
 	l.messages.clear()
-	w.siege_remaining = 15.012
+	w.siege_remaining = 12.012
 	w._marathon_clock = 5.0
 	w.advance_wave(.01, .01)
 	_check(not w.nova and l.items.is_empty(), "Overload waits for the last 15 seconds")
@@ -408,7 +410,7 @@ func _final_fight() -> void:
 		if not a.is_armed() or a.warning_elapsed < required - .00001 or a.warning_elapsed > a.warning_duration + .017: bad += 1
 	w.autoplay = false
 	print("FINAL_FIGHT ticks=%d siege=%d launches=%d peak=%d supplies=%d integrity=%.1f" % [ticks, siege_ticks, launches.size(), peak, w.nova_supplies, game.building.integrity])
-	_check(w.victory and not w.failed and absi(siege_ticks - 3000) <= 2, "A real 50-second final fight runs to victory (%d siege ticks)" % siege_ticks)
+	_check(w.victory and not w.failed and absi(siege_ticks - 2400) <= 2, "A real 40-second final fight runs to victory (%d siege ticks)" % siege_ticks)
 	var all_combos: bool = true
 	for pattern: int in [HazardAttack.Pattern.STEAM_TSUNAMI, HazardAttack.Pattern.STEAM_BURST, HazardAttack.Pattern.FIRENADO, HazardAttack.Pattern.SEISMIC_TIDE, HazardAttack.Pattern.QUADRANT_SEAL, HazardAttack.Pattern.CATACLYSM_NOVA]:
 		all_combos = all_combos and patterns.has(pattern)
@@ -476,7 +478,7 @@ func _capture(directory: String) -> void:
 	game.projectiles.clear()
 	game.telegraphs.clear()
 	game.loot.set_physics_process(true)
-	w.siege_remaining = 15.2
+	w.siege_remaining = 12.2
 	w.autoplay = true
 	await _frames(40)
 	await _save(directory, "07-nova-warning.png")

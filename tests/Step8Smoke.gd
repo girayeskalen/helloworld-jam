@@ -106,7 +106,7 @@ func _quake() -> void:
 func _cards() -> void:
 	_check(SiegeUpgrades.CATALOG.size() == 9 and SiegeUpgrades.AWARENESS.size() == 3,"Catalogue is exactly three awareness and six action mechanics")
 	for data: Dictionary in SiegeUpgrades.CATALOG:
-		_check(String(data["effect"]).split(" ",false).size() <= 12 and not String(data["effect"]).contains("%") and not String(data["note"]).contains("yıkımını önler"),"Card is concise, mechanical and avoids an engineering guarantee: "+String(data["title"]))
+		_check(String(data["effect"]).split(" ",false).size() <= 12 and not String(data["effect"]).contains("%") and not String(data["effect"]).contains("yıkımını önler") and not String(data["effect"]).contains("garanti"),"Card is concise, mechanical and avoids an engineering guarantee: "+String(data["title"]))
 	var grouped: bool = true
 	for seed_value: int in range(100):
 		_fresh()
@@ -230,7 +230,7 @@ func _drone() -> void:
 	_check(Vector2(game.loot.items[0]["position"]).distance_to(p.global_position) < first.distance_to(p.global_position),"Drone visibly pulls a landed drop toward the player")
 	m.advance(.5,.5)
 	_check(game.loot.items.is_empty() and game.loot.column_kits == 1,"Attracted loot enters actual inventory")
-	_check(game.loot.loot_lifetime == 4,"Drone does not silently retain an obsolete passive lifetime bonus")
+	_check(game.loot.loot_lifetime == 6,"Drone does not silently retain an obsolete passive lifetime bonus")
 
 func _time() -> void:
 	_fresh(SiegeUpgrades.Kind.GRAZE_TIME)

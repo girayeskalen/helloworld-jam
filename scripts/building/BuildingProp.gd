@@ -42,10 +42,26 @@ var sway: float = 0.0:
 var tilt: float = 0.0:
 	set(value):
 		tilt = value
-		if _shake_left <= 0.0:
+		if _shake_left <= 0.0 and not toppled:
 			rotation = value
 ## Condition authored by the level data; restored when the building is reset.
 var authored_condition: Condition = Condition.UNSECURED
+## Hazırlık: bolted to the wall (tall furniture) or shut off (gas valve, main panel).
+## Survives room damage/repair refreshes; cleared only by a full reset.
+var secured: bool = false:
+	set(value):
+		if secured == value: return
+		secured = value
+		if value and toppled: set_toppled(false)
+		queue_redraw()
+		invalidate_static()
+## Knocked over by a tremor: lies on its side (rotated about the foot point) until
+## the player secures it again in the next preparation.
+var toppled: bool = false
+var topple_direction: float = 1.0
+var _topple_progress: float = 1.0
+const TOPPLE_TIME: float = 0.32
+const TOPPLE_ANGLE: float = PI * 0.5 - 0.07
 var _rest_position: Vector2 = Vector2.ZERO
 var _shake_left: float = 0.0
 var _shake_clock: float = 0.0
@@ -54,7 +70,7 @@ var _static_cache: SubViewport
 var _cache_bounds: Rect2
 var _visual_dirty: bool = false
 var static_revision: int = 0
-const CACHE_FIELDS: Array[String] = ["custom_sprite","kind","condition","prop_size","palette","floor_index","object_id"]
+const CACHE_FIELDS: Array[String] = ["custom_sprite","kind","condition","prop_size","palette","floor_index","object_id","secured"]
 
 func _ready() -> void:
 	_rest_position = position
@@ -77,17 +93,37 @@ func _refresh_static() -> void:
 	queue_redraw()
 
 func shake_unsecured(duration: float) -> void:
-	if condition == Condition.UNSECURED:
+	if condition == Condition.UNSECURED and not secured and not toppled:
 		_shake_left = maxf(_shake_left, duration)
 		set_process(true)
 
 func stop_shaking() -> void:
 	_shake_left = 0.0
-	rotation = tilt
+	rotation = rest_rotation()
 	position = _rest_position
-	set_process(false)
+	set_process(_topple_progress < 1.0)
+
+## Falls toward `direction` (-1 left, +1 right); instant=true skips the animation.
+func set_toppled(value: bool, direction: float = 1.0, instant: bool = false) -> void:
+	toppled = value
+	topple_direction = signf(direction) if not is_zero_approx(direction) else 1.0
+	_shake_left = 0.0
+	position = _rest_position
+	_topple_progress = 0.0 if value and not instant else 1.0
+	rotation = rest_rotation()
+	set_process(_topple_progress < 1.0)
+
+func rest_rotation() -> float:
+	if not toppled: return tilt
+	# Ease-in: a tall cabinet starts slowly and slams down.
+	return topple_direction * TOPPLE_ANGLE * pow(_topple_progress, 2.2)
 
 func _process(delta: float) -> void:
+	if _topple_progress < 1.0:
+		_topple_progress = minf(1.0, _topple_progress + delta / TOPPLE_TIME)
+		rotation = rest_rotation()
+		if _topple_progress >= 1.0 and _shake_left <= 0.0: set_process(false)
+		return
 	if _shake_left <= 0:
 		return
 	_shake_left = maxf(0.0, _shake_left - delta)
@@ -98,7 +134,7 @@ func _process(delta: float) -> void:
 		stop_shaking()
 
 func state_record() -> Dictionary:
-	return {"id": String(object_id), "kind": kind, "condition": condition, "floor": floor_index}
+	return {"id": String(object_id), "kind": kind, "condition": condition, "floor": floor_index, "secured": secured, "toppled": toppled}
 
 func _draw() -> void:
 	if not _cache_source and _static_cache != null:
@@ -125,7 +161,9 @@ func _draw() -> void:
 		Kind.KITCHEN: _kitchen()
 		_: FurnitureArt.draw_furniture(self, kind, prop_size, palette)
 	draw_set_transform(Vector2.ZERO)
-	if condition == Condition.REINFORCED and kind == Kind.WINDOW:
+	if kind in [Kind.GAS_VALVE, Kind.ELECTRICAL]:
+		if secured: _shutoff_tag()
+	elif condition == Condition.REINFORCED and kind == Kind.WINDOW:
 		_window_shutter()
 	elif condition == Condition.REINFORCED and kind != Kind.PILLAR:
 		_l_brackets()
@@ -145,6 +183,20 @@ func _l_brackets() -> void:
 	var top: Vector2 = Vector2(w * 0.4, -prop_size.y + 6.0)
 	draw_polyline(PackedVector2Array([top + Vector2(-10, 0), top, top + Vector2(0, -10)]), CelArt.INK, 6.0, true)
 	draw_polyline(PackedVector2Array([top + Vector2(-10, 0), top, top + Vector2(0, -10)]), Color(Color("4fc3ff"), 0.9), 2.6, true)
+
+## Shut-off utility: the handle turned across the pipe / breaker down, with a green tag.
+func _shutoff_tag() -> void:
+	var y: float = -61.0 if kind == Kind.GAS_VALVE else -40.0
+	if kind == Kind.GAS_VALVE:
+		CelArt.line(self, Vector2(-17, y), Vector2(17, y), CelArt.INK, 8)
+		CelArt.line(self, Vector2(-15, y), Vector2(15, y), Color("d94f3a"), 4)
+	else:
+		CelArt.rect(self, Rect2(-14, -58, 26, 26), Color("2b3330"))
+		CelArt.line(self, Vector2(-6, -40), Vector2(6, -40), Color("d94f3a"), 4)
+	var tag: Vector2 = Vector2(14, y + 12)
+	CelArt.poly(self, PackedVector2Array([tag, tag + Vector2(14, 0), tag + Vector2(17, 6), tag + Vector2(14, 12), tag + Vector2(0, 12)]), Color("5fd18a"), 2)
+	CelArt.line(self, tag + Vector2(4, 4), tag + Vector2(7, 8), CelArt.INK, 2)
+	CelArt.line(self, tag + Vector2(7, 8), tag + Vector2(12, 2), CelArt.INK, 2)
 
 ## Fortified window: corrugated steel shutter half-drawn and a sandbag sill.
 func _window_shutter() -> void:

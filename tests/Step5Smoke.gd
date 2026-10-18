@@ -62,6 +62,7 @@ func _synthesis() -> void:
 	var clicks_ok: bool = true
 	var dark_ok: bool = true
 	var loops_ok: bool = true
+	var feel_ok: bool = true
 	var report: PackedStringArray = PackedStringArray()
 	for key: String in SoundRecipes.ORDER:
 		var stream: AudioStreamWAV = sound.streams[key]
@@ -80,6 +81,9 @@ func _synthesis() -> void:
 			mean += s[i]
 			if i > 0: diff += (s[i] - s[i - 1]) * (s[i] - s[i - 1])
 		var bright: float = sqrt(diff / maxf(energy, 0.000001))
+		if key in ["safe", "karne_ok", "karne_miss"]:
+			feel_ok = feel_ok and peak <= .6 and float(recipes[key]["lp"]) <= 1800.0
+			for layer: Dictionary in recipes[key]["layers"]: feel_ok = feel_ok and float(layer["env"][0]) >= .004
 		levels_ok = levels_ok and peak >= 0.3 and peak <= 0.93 and absf(mean / s.size()) < 0.01
 		if loop:
 			loops_ok = loops_ok and stream.loop_mode == AudioStreamWAV.LOOP_FORWARD and stream.loop_end == s.size() and absf(s[s.size() - 1] - s[0]) < 0.05
@@ -99,6 +103,7 @@ func _synthesis() -> void:
 	_check(clicks_ok, "Soft attack (no start click) and a release that ends in silence")
 	_check(dark_ok, "Filtered, dark spectrum: no fizzy or harsh sound (bright: %s)" % ", ".join(report))
 	_check(loops_ok, "Rain, drone and siege pad loop seamlessly")
+	_check(feel_ok and SoundSynth.HARMONIC_CEILING <= 3600.0, "Success recipes have soft ADSR attacks, <=0.6 peaks and a low-passed final stage")
 	var unique: Dictionary = {}
 	for keys: Array in SoundManager.INTROS + SoundManager.OUTROS:
 		for key: String in keys: unique[key] = true
@@ -130,9 +135,9 @@ func _pause_menu() -> void:
 	var music_bus: int = AudioServer.get_bus_index(SoundManager.BUS_MUSIC)
 	_check(sound.paused_view and AudioServer.is_bus_effect_enabled(music_bus, 0), "Pause muffles the music bed with a low-pass")
 	await _tap(KEY_M)
-	_check(sound.muted and AudioServer.is_bus_mute(0) and (menu.buttons["mute"] as Button).text == "[M] SES: KAPALI", "M mutes inside the pause menu and the button says KAPALI")
+	_check(sound.muted and AudioServer.is_bus_mute(0) and (menu.buttons["mute"] as Button).text == "Ses kapalı", "M mutes inside the pause menu and the button says Ses kapalı")
 	await _tap(KEY_M)
-	_check(not sound.muted and not AudioServer.is_bus_mute(0) and (menu.buttons["mute"] as Button).text == "[M] SES: AÇIK", "M unmutes again")
+	_check(not sound.muted and not AudioServer.is_bus_mute(0) and (menu.buttons["mute"] as Button).text == "Ses açık", "M unmutes again")
 	var level: int = sound.volume_level
 	await _tap(KEY_MINUS, 45)
 	_check(sound.volume_level == level - 1, "- lowers the volume one step")
@@ -166,10 +171,10 @@ func _pause_menu() -> void:
 	game.upgrades.choose(0)
 	await _tap(KEY_M)
 	await _rendered()
-	_check(sound.muted and game.hud.drawn_texts.has("[M] SES KAPALI") and game.hud.drawn_texts.has("[H] YARDIM   [ESC] DURAKLAT"), "M works in play; HUD corner shows [ESC] DURAKLAT and the muted speaker")
+	_check(sound.muted and game.hud.mute_drawn and not ", ".join(game.hud.drawn_texts).contains("SES") and not ", ".join(game.hud.drawn_texts).contains("["), "M works in play; the HUD corner shows only a crossed speaker")
 	await _tap(KEY_M)
 	await _rendered()
-	_check(not sound.muted and game.hud.drawn_texts.has("[M] SES"), "HUD speaker returns to [M] SES")
+	_check(not sound.muted and not game.hud.mute_drawn, "Unmuting hides the speaker icon again")
 	game.player.set_physics_process(false)
 
 # ---------------------------------------------------------------- events ----
@@ -178,6 +183,17 @@ func _events() -> void:
 	var w: DisasterWaveManager = game.waves
 	game.reset_game()
 	_quiet()
+	sound.advance(1.0)
+	var safe_before: int = sound.plays("safe")
+	game.tremor.debris.emit(true)
+	_check(sound.plays("safe") == safe_before + 1 and sound.history.back()["key"] == "safe", "Covered tremor debris plays the warm safe chime through its existing signal")
+	sound.advance(.4)
+	game.tremor.debris.emit(false)
+	_check(sound.plays("safe") == safe_before + 1 and sound.history.back()["key"] == "impact_stone", "Uncovered debris retains the original impact without a success sound")
+	for ok: bool in [true, false]:
+		sound.advance(.1)
+		game.hud.karne_row_revealed.emit(ok)
+		_check(sound.history.back()["key"] == ("karne_ok" if ok else "karne_miss") and sound.history.back()["bus"] == SoundManager.BUS_UI, "Revealed karne row uses the correct bounded UI voice")
 	sound.history.clear()
 	for mode: int in range(4):
 		sound.advance(1.0)
@@ -343,7 +359,7 @@ func _music() -> void:
 	for i: int in range(150): sound.advance(1.0/60.0)
 	_check(sound.plays("kick") == kicks and sound.plays("tick") == ticks,"PCM score drums replace duplicate frame-scheduled pulses")
 	_siege(DisasterWaveManager.Mode.CATACLYSM)
-	w.siege_remaining = 14
+	w.siege_remaining = 11
 	w.advance_wave(.01,.01)
 	sound.advance(.1)
 	_check(w.nova and sound.bgm_player.playing and sound.bgm_player.stream == music_stream,"Nova preserves audible continuous music")

@@ -228,3 +228,48 @@ Hazır kaynaklar: yeni görsel/ses/font/metin paketi veya bağımlılık kullan�
 ## 18 Ekim 2026 — Geri dönüş ve menü Git teslimi
 
 Kullanıcının açık push isteği üzerine OpenAI Codex, Adım 8 geri dönüşünü ve sonraki ana menü/saha arayüzü çalışmasını ayrı commitler olarak kaydetti. STATUS ve devir belgelerindeki güncel giriş/süre/teslim bilgileri düzenlendi. Bu aşamada yeni oyun kodu, görsel veya ses üretilmedi; önceki 18 paket / 1.297 kontrol ve native sonuçlarının kayıtları ile değişikliklerin aynı olduğu kontrol edildi. Eski web worktree'sindeki 22 yerel değişiklik teslimin dışındadır. Yeni araç/bağımlılık eklenmedi; önceki Git/GitHub CLI geliştirme aracı beyanı geçerlidir.
+
+## 18 Ekim 2026 — Minimal arayüz ve özgün piksel yazı tipi (Claude)
+
+Araç: **Anthropic Claude (Claude Code, Opus 5.5)**. Kullanıcı bütün tasarım kararlarını Claude'a bıraktı ve arayüzün "AI yazmış" görünmesinden, her yerdeki yazılardan şikâyet ederek olabildiğince minimal, oynanışa odaklı bir ekran istedi.
+
+- Görsel — Kullanıldı: AI destekli GDScript çizimiyle 10 dilimli can barı, enerji çizgisi, 4×4 oda haritası, sayı rozetli ekipman ikonları, ince boss çizgisi, çarpılı hoparlör, onarım elması, E tuş başlığı, güvenli kat çerçevesi, kutusuz menü/duraklatma/kart düzeni ve odak karesi. `scripts/ui/GameHUD.gd`, `WorldLabels.gd`, `PauseMenu.gd`, `FrontEnd.gd`, `UpgradeOverlay.gd`, `UpgradeDossier.gd`, `BossCinematic.gd`, `MenuItem.gd`, `UIStyle.gd`. `FieldUI.gd` kaldırıldı; oyuncu üstündeki dünya içi can/enerji barı silindi.
+- Yazı tipi — Kullanıldı (AI üretimi): `scripts/ui/PixelFont.gd` içindeki 5×7 büyük harf, Türkçe aksanlı harf (Ç Ğ İ Ö Ş Ü), rakam ve noktalama glifleri bu görevde satır satır yazıldı; çalışma anında Godot `FontFile` olarak üretilir. Harici font dosyası indirilmedi veya repoya eklenmedi; denenen Press Start 2P dosyaları (Türkçe büyük harfleri küçük harf yüksekliğinde çizdiği için) silindi ve kullanılmıyor.
+- Metin — Kullanıldı: kısa Türkçe menü/duraklatma/sonuç yazıları ve dokuz kartın yeni kısa adları ile en çok yedi kelimelik etki satırları. Kart yüzündeki AFAD/USGS kaynaklı bilgi notları kaldırıldı; kartlarda gerçek hayat güvenlik tavsiyesi veya yapı garantisi yoktur.
+- Kod — Kullanıldı: HUD/dünya işareti/menü yeniden yazımı, `mute_drawn` ve `room_color` gibi test kancaları, yeni `tests/MinimalUISmoke.gd`, eski metin beklentilerinin yeni davranışa uyarlanması (Step2/5/7/8/27/3Loot/48/49).
+- Ses — Kullanılmadı: yeni ses yok; mevcut seslerin bağlantısı değişmedi.
+- Diğer — Kullanıldı: tasarım kararları, Godot 4.7.2/4.3 otomatik testleri ve gerçek renderer ile 1920×1080 PNG incelemesi.
+
+Hazır kaynaklar: yeni görsel/ses/font/metin paketi veya bağımlılık kullanılmadı. Godot motoru ve önceki kaynak bildirimleri geçerlidir. Gerçek test sonuçları ve denenmeyenler STATUS.md'dedir; otomatik testler insan beğenisi yerine geçmez.
+
+## 18 Ekim 2026 — Afete hazırlık güncellemesi: Hazırlık, sarsıntı, öğretici ve karne (Claude)
+
+Araç: **Anthropic Claude (Claude Code, Opus 5.5)**. Kullanıcı bütün tasarım kararlarını Claude'a bıraktı ve oyunun game jam teması "afete hazırlık ve farkındalık"tan uzaklaştığını, jüri ölçütlerine (oynanabilirlik, temayla ilişki, yaratıcılık, görsel/işitsel, teknik) göre uyarlanmasını ve ilk bossun öğretici olmasını istedi.
+
+- Tasarım — Kullanıldı (AI kararı): deprem-önce kampanya; Hazırlık görevleri (eşya sabitleme, gaz, çanta, kepenk, sigorta) ve oyundaki karşılıkları; sarsıntı ve Çök-Kapan-Tutun mekaniği; yazısız öğretici; karne. Sayılar oyun dengesidir.
+- Kod — Kullanıldı: `scripts/prep/Preparedness.gd`, `TutorialGuide.gd`, `Debrief.gd`, `scripts/combat/TremorSystem.gd`; DisasterWaveManager (sıra, süreler, desen beklemesi), Player (C ile örtünme, sallantıda yavaşlama/kat kilidi), BuildingProp/RoomDiorama (sabitlenmiş/devrilmiş eşya), TelegraphSystem (sarsıntı uyarısı), ProjectilePool, MainGame, HUD/WorldLabels/UpgradeOverlay/FrontEnd/PauseMenu; yeni `tests/Step9Smoke.gd` ve eski testlerin yeni sıra/süreye uyarlanması.
+- Görsel — Kullanıldı (AI destekli GDScript çizimi): görev işaretleri, E iş halkası, tuş başlıkları ve oklar, sarsıntı uyarı çerçevesi/tavan tozu/ekran kenarı, devrilen eşya animasyonu, kapatılmış vana/pano etiketi, çömelmiş oyuncu pozu, cam kırıkları ve gaz sisi, karne işaretleri.
+- Ses — Kullanıldı (AI tarifi, prosedürel sentez): `tremor`, `topple`, `secure`, `cover` tarifleri mevcut SoundSynth ile üretilir; harici ses dosyası yok.
+- Metin — Kullanıldı: kısa Türkçe karne satırları ve öneriler, menü alt başlığı, kart adı "Sakin Kal", README/AGENTS/STATUS/BEYAN/SOURCES. Karne önerileri AFAD sayfalarının arama sonuçlarındaki kısa özetlerine dayanır (SOURCES.md); gerçek hayatta güvenlik garantisi veya mühendislik talimatı olarak sunulmaz.
+- Diğer — Kullanıldı: Godot 4.7.2/4.3 otomatik testleri ve gerçek renderer ile 1920×1080 PNG incelemesi.
+
+Hazır kaynaklar: yeni görsel/ses/font paketi, eklenti veya bağımlılık kullanılmadı. AFAD sayfaları doğrudan açılamadı (HTTP 500); bilgiler resmî alan adındaki arama sonucu özetlerinden alındı ve SOURCES.md'de bu sınırlamayla kayıtlıdır.
+
+## 18 Ekim 2026 — Cila: akış, görev satırı ve onarım öğreticisi (Claude)
+
+Araç: **Anthropic Claude (Claude Code, Opus 5.5)**. Kullanıcının oyun testinden sonraki geri bildirimiyle (ne yapıldığı anlaşılmıyor, onarım uyarısı zor görülüyor ve öğretilmiyor, bölümler yavaş; loot 6 sn ve %20 daha sık) tasarım kararları Claude'a bırakıldı.
+
+- Kod — Kullanıldı: görev satırı (`TutorialGuide` objective, `Preparedness.objective`, `GameHUD._draw_objective`), onarım rehberi ve oda çerçevesi/halkası (`WorldLabels`), boş ara Hazırlık kısaltması, 40 sn savaş ve tempo/sarsıntı/öğretici süreleri, loot süresi/sıklığı; Step9Smoke `_polish` ve eski testlerin yeni sürelere uyarlanması.
+- Görsel — Kullanıldı (AI destekli GDScript çizimi): üst görev bandı, hasarlı oda çerçevesi, büyük uyarı elması ve halkalar, kit üstü ok.
+- Ses — Kullanıldı (AI tarifi, prosedürel): `alarm` (oda hasar uyarısı). Harici ses dosyası yok.
+- Metin — Kullanıldı: kısa Türkçe görev satırları ("Gardırobu sabitle: devrilmesin" vb.).
+
+Hazır kaynak, eklenti veya bağımlılık eklenmedi.
+
+## 18 Ekim 2026 — Bölüm kontrol noktası ve bölüm seçimi (OpenAI Codex)
+
+Araç: **OpenAI Codex**. Tasarım kullanıcı tarafından aktarılan Claude kararlarıdır. Kod katkısı: PhaseCheckpoint değer kopyaları, yenilgide aynı fazın Hazırlık evresinden tekrar, kart/kit/oda/eşya/görev/öğretici durumunun geri yüklenmesi, tam sıfırlamadan ayrım; CAMPAIGN sıralı 1–4, ana menü bölüm öğeleri, Hazırlık satırı ve finalin AFET adı. Metin/görsel katkısı mevcut PixelFont/UIStyle ile kısa bölüm ve tekrar ipuçlarıdır. Step10Smoke ve etkilenen regresyon beklentileri, iki motorla doğrulama ve belgeler bu kapsamda AI desteğiyle hazırlanmıştır. Yeni harici görsel/font/ses/bağımlılık veya afet güvenliği iddiası eklenmedi. Test sonuçları STATUS.md dosyasındadır; commit/push yapılmadı.
+
+## 18 Ekim 2026 — Başarı anları ve oyun hissi (OpenAI Codex)
+
+Araç: **OpenAI Codex**. Kullanıcının aktardığı Claude kararları ve sayıları uygulandı. Kod/görsel katkı: FeelFX sınırlı dünya efektleri, görev bandı tiki, tek oda durum geçişinden yeşil onarım çerçevesi, doğru Çök-Kapan-Tutun halkası, can izi/kenar vinyeti/titreme/iyileşme, loot ikon uçuşu/slot hareketi ve KarneReveal kademeli satırları. Ses/müzik katkısı: SoundRecipes safe/karne_ok/karne_miss tarifleri ve MusicScore başlangıçta pişirilen senkron Re minör ek PCM katmanı; harici ses örneği yok. Normal girişte istekteki kısa vuruş donması ve bütün iptal noktaları eklendi. Metin katkısı yalnız belgeler; oyun içi metinler ve oynanış sayıları korunur. Step11Smoke, Step5 olay/kalite kontrolleri, mevcut regresyonlar ve native görüntü incelemesi AI desteğiyle hazırlanmıştır. Yeni harici görsel/font/ses/eklenti/bağımlılık veya afet güvenliği iddiası eklenmedi. Gerçek doğrulama ve sınırlar STATUS.md dosyasındadır. Commit/push yapılmadı.
